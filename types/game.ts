@@ -4,6 +4,7 @@ export interface Block {
   type: BlockType;
   shape: number[][];
   color: string;
+  uniqueId: string;
 }
 
 export interface GameState {
@@ -18,6 +19,10 @@ export interface GameState {
   } | null;
   previewBlock: Block | null;
   placedPiecesCount: number;
+  draggedPiece: Block | null;
+  dragPosition: { x: number; y: number } | null;
+  hoverCell: { x: number; y: number } | null;
+  validPositions: { x: number; y: number }[];
 }
 
 export interface GameSettings {

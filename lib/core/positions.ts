@@ -92,7 +92,7 @@ export function findAllValidPositions(board: Matrix, block: Block): Position[] {
   return validPositions;
 }
 
-function isValidPlacement(
+export function isValidPlacement(
   board: Matrix,
   block: Block,
   position: Position

@@ -50,6 +50,7 @@ export class BlockGenerator {
       type,
       shape: this.getShapeForType(type),
       color: this.getColorForType(type),
+      uniqueId: `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     };
   }
 
@@ -61,6 +62,7 @@ export class BlockGenerator {
       type,
       shape: this.getShapeForType(type),
       color: this.getColorForType(type),
+      uniqueId: `${type}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     };
   }
 

@@ -5,6 +5,48 @@ import { ScoreCalculator } from '../utils/ScoreCalculator';
 import { DifficultyEvaluator } from '../utils/DifficultyEvaluator';
 import { useGameLogger } from '../hooks/useGameLogger';
 
+// Функция для проверки валидности размещения блока
+function isValidPlacement(board: number[][], block: Block, x: number, y: number): boolean {
+  const shape = block.shape;
+  
+  for (let i = 0; i < shape.length; i++) {
+    for (let j = 0; j < shape[i].length; j++) {
+      if (shape[i][j] === 1) {
+        const boardX = x + j;
+        const boardY = y + i;
+        
+        // Проверяем границы доски
+        if (boardX < 0 || boardX >= board[0].length || boardY < 0 || boardY >= board.length) {
+          return false;
+        }
+        
+        // Проверяем, что клетка не занята
+        if (board[boardY][boardX] === 1) {
+          return false;
+        }
+      }
+    }
+  }
+  
+  return true;
+}
+
+// Функция для размещения блока на доске
+function placeBlockOnBoard(board: number[][], block: Block, x: number, y: number): number[][] {
+  const newBoard = board.map(row => [...row]);
+  const shape = block.shape;
+  
+  for (let i = 0; i < shape.length; i++) {
+    for (let j = 0; j < shape[i].length; j++) {
+      if (shape[i][j] === 1) {
+        newBoard[y + i][x + j] = 1;
+      }
+    }
+  }
+  
+  return newBoard;
+}
+
 const DEFAULT_SETTINGS: GameSettings = {
   width: 8,
   height: 8,
@@ -22,6 +64,8 @@ interface GameStore extends GameState {
   resetGame: () => void;
   setCurrentPieces: (pieces: Block[]) => void;
   setPreviewBlock: (block: Block | null) => void;
+  onGameOver: (() => void) | null;
+  setOnGameOver: (callback: (() => void) | null) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => {
@@ -100,10 +144,40 @@ export const useGameStore = create<GameStore>((set, get) => {
       hoverCell: null
     });
 
+    // Проверяем завершение игры после размещения фигуры
+    const finalBoard = linesToClear.length > 0 ? clearLines(newBoard, linesToClear) : newBoard;
+    if (checkGameOver(finalBoard, newCurrentPieces)) {
+      // Игра завершена - вызываем onGameOver
+      setTimeout(() => {
+        const { onGameOver } = get();
+        if (onGameOver) {
+          onGameOver();
+        }
+      }, 100); // Небольшая задержка для завершения анимаций
+      return;
+    }
+
     // Генерируем новые фигуры только если разместили все 3 и это не повторная генерация
     if (newPlacedCount === 3 && newCurrentPieces.length === 0) {
       const blockGenerator = new BlockGenerator();
-      const newBlocks = blockGenerator.generateNextBlocks(newBoard);
+      const newBlocks = blockGenerator.generateNextBlocks(finalBoard);
+      
+      // Проверяем завершение игры после генерации новых фигур
+      if (checkGameOver(finalBoard, newBlocks)) {
+        set({ 
+          currentPieces: newBlocks,
+          previewBlock: blockGenerator.getPreviewBlock(),
+          placedPiecesCount: 0
+        });
+        setTimeout(() => {
+          const { onGameOver } = get();
+          if (onGameOver) {
+            onGameOver();
+          }
+        }, 100);
+        return;
+      }
+      
       set({ 
         currentPieces: newBlocks,
         previewBlock: blockGenerator.getPreviewBlock(),
@@ -165,6 +239,35 @@ export const useGameStore = create<GameStore>((set, get) => {
     return board;
   };
 
+  // Функция для проверки возможности размещения блока
+  function canPlaceBlock(board: number[][], block: Block): boolean {
+    for (let y = 0; y < board.length; y++) {
+      for (let x = 0; x < board[0].length; x++) {
+        if (isValidPlacement(board, block, x, y)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  // Функция для проверки завершения игры
+  function checkGameOver(board: number[][], currentPieces: Block[]): boolean {
+    // Если нет фигур, игра не может быть завершена
+    if (currentPieces.length === 0) {
+      return false;
+    }
+    
+    // Проверяем, можно ли разместить хотя бы одну из оставшихся фигур
+    for (const piece of currentPieces) {
+      if (canPlaceBlock(board, piece)) {
+        return false; // Игра может продолжаться
+      }
+    }
+    
+    return true; // Ни одну фигуру нельзя разместить
+  }
+
   return {
     board: [],
     currentPieces: [],
@@ -174,7 +277,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     previewBlock: null,
     placedPiecesCount: 0,
     draggedPiece: null,
-    dragPosition: { x: 0, y: 0 },
+    dragPosition: null,
     hoverCell: null,
     validPositions: [],
 
@@ -196,7 +299,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         previewBlock: null,
         placedPiecesCount: 0,
         draggedPiece: null,
-        dragPosition: { x: 0, y: 0 },
+        dragPosition: null,
         hoverCell: null,
         validPositions: [],
       });
@@ -204,5 +307,7 @@ export const useGameStore = create<GameStore>((set, get) => {
     },
     setCurrentPieces: (pieces: Block[]) => set({ currentPieces: pieces }),
     setPreviewBlock: (block: Block | null) => set({ previewBlock: block }),
+    onGameOver: null,
+    setOnGameOver: (callback: (() => void) | null) => set({ onGameOver: callback }),
   };
 }); 

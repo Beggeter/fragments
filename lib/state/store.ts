@@ -29,6 +29,8 @@ export interface ExtendedGameState extends GameState {
   setCurrentPieces: (pieces: Block[]) => void;
   setPreviewBlock: (block: Block | null) => void;
   scoreDisplayCoords?: { x: number; y: number } | null;
+  onGameOver: (() => void) | null;
+  setOnGameOver: (callback: (() => void) | null) => void;
 }
 
 const scoreCalculator = new ScoreCalculator();
@@ -95,6 +97,53 @@ const calculateScore = (
     cellsInLines,
     piece
   );
+};
+
+// Функция для проверки возможности размещения блока
+const canPlaceBlock = (board: Matrix, block: Block): boolean => {
+  for (let y = 0; y < board.length; y++) {
+    for (let x = 0; x < board[0].length; x++) {
+      // Проверяем, можно ли разместить блок в позиции (x, y)
+      const canPlace = block.matrix.every((row, dy) => {
+        return row.every((cell, dx) => {
+          if (cell.value === 1) {
+            const boardX = x + dx;
+            const boardY = y + dy;
+            return (
+              boardX >= 0 &&
+              boardX < board[0].length &&
+              boardY >= 0 &&
+              boardY < board.length &&
+              board[boardY][boardX].value === 0
+            );
+          }
+          return true;
+        });
+      });
+      
+      if (canPlace) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
+// Функция для проверки завершения игры
+const checkGameOver = (board: Matrix, currentPieces: Block[]): boolean => {
+  // Если нет фигур, игра не может быть завершена
+  if (currentPieces.length === 0) {
+    return false;
+  }
+  
+  // Проверяем, можно ли разместить хотя бы одну из оставшихся фигур
+  for (const piece of currentPieces) {
+    if (canPlaceBlock(board, piece)) {
+      return false; // Игра может продолжаться
+    }
+  }
+  
+  return true; // Ни одну фигуру нельзя разместить
 };
 
 export const useGameStore = create<
@@ -195,6 +244,20 @@ export const useGameStore = create<
       isAnimating: hasCellsToClear, // Set animation state if there are lines to clear
     });
 
+    // Проверяем завершение игры после размещения фигуры
+    const finalBoard = hasCellsToClear ? boardAfterClearing : newBoard;
+    if (checkGameOver(finalBoard, newCurrentPieces)) {
+      // Игра завершена
+      set({ gameOver: true });
+      setTimeout(() => {
+        const { onGameOver } = get();
+        if (onGameOver) {
+          onGameOver();
+        }
+      }, 100);
+      return;
+    }
+
     // If there are lines to clear, update the board after animation
     if (hasCellsToClear) {
       setTimeout(() => {
@@ -208,6 +271,23 @@ export const useGameStore = create<
     // Handle new blocks if needed
     if (newPiecesPlaced === 0) {
       const newBlocks = blockGenerator.generateNextBlocks(boardAfterClearing);
+      
+      // Проверяем завершение игры после генерации новых фигур
+      if (checkGameOver(boardAfterClearing, newBlocks)) {
+        set({
+          currentPieces: newBlocks,
+          previewBlock: blockGenerator.getPreviewBlock(),
+          gameOver: true,
+        });
+        setTimeout(() => {
+          const { onGameOver } = get();
+          if (onGameOver) {
+            onGameOver();
+          }
+        }, 100);
+        return;
+      }
+      
       set({
         currentPieces: newBlocks,
         previewBlock: blockGenerator.getPreviewBlock(),
@@ -238,4 +318,7 @@ export const useGameStore = create<
   hoverCell: null,
   setHoverCell: (cell: { x: number; y: number } | null) =>
     set({ hoverCell: cell }),
+    
+  onGameOver: null,
+  setOnGameOver: (callback: (() => void) | null) => set({ onGameOver: callback }),
 }));

@@ -198,11 +198,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     initializeGame,
     score,
     lastScoreResult,
-
     setCurrentPieces,
     previewBlock,
     setPreviewBlock,
     resetGame,
+    gameOver,
+    setOnGameOver,
   } = useGameStore();
 
   const {
@@ -218,7 +219,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [isAnimating, setIsAnimating] = useState(false);
   const [nextBlocks, setNextBlocks] = useState<Block[]>([]);
   const [selectedBlock, setSelectedBlock] = useState<Block | null>(null);
-  const [isGameOver, setIsGameOver] = useState(false);
   const [combo, setCombo] = useState(0);
   const [blockEvaluations, setBlockEvaluations] = useState<
     Array<{
@@ -524,6 +524,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     "purple",
     "orange",
   ]; // добавьте все ваши цвета
+
+  // Устанавливаем onGameOver callback в store
+  useEffect(() => {
+    setOnGameOver(() => {
+      onGameOver();
+    });
+    
+    return () => {
+      setOnGameOver(null);
+    };
+  }, [onGameOver, setOnGameOver]);
+
   return (
     <div className={`flex flex-col items-center gap-6 min-h-screen bg-[var(--game-background)] p-4 no-select`}>
       <SVGPreloader colors={allColors} />
@@ -629,6 +641,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         calculateDynamicOffset={calculateDynamicOffset}
         onPieceStart={handlePieceStart}
       />
+      
+      {/* Game Over Modal */}
+      {gameOver && (
+        <GameOver 
+          onPlayAgain={() => {
+            resetGame();
+          }} 
+        />
+      )}
     
     </div>
   );
