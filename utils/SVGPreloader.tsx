@@ -14,5 +14,5 @@ export const SVGPreloader: React.FC<SVGPreloaderProps> = ({ colors }) => {
     });
   }, [colors]);
 
-  return null; // Этот компонент ничего не рендерит
+  return null;
 }; 

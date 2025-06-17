@@ -34,6 +34,7 @@ export interface ScoreResult {
   isBoardCleared: boolean;
   totalPoints: number;
   movesSinceLastSuccess: number;
+  pixelPosition?: { x: number; y: number };
 }
 
 export interface GameState {

@@ -408,3 +408,47 @@ body {
   transform-origin: center;
 }
 
+@keyframes scoreplus-fly {
+  0% {
+    left: var(--scoreplus-x);
+    top: var(--scoreplus-y);
+    opacity: 1;
+    transform: scale(0);
+  }
+  30% {
+    left: var(--scoreplus-x);
+    top: var(--scoreplus-y);
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  60% {
+    left: var(--scoreplus-x);
+    top: var(--scoreplus-y);
+    opacity: 1;
+    transform: scale(1.2);
+  }
+  75% {
+    left: var(--scoreplus-x-to);
+    top: var(--scoreplus-y-to);
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  80% {
+    left: var(--scoreplus-x-to);
+    top: var(--scoreplus-y-to);
+    opacity: 0.3;
+    transform: scale(0.7);
+  }
+  100% {
+    left: var(--scoreplus-x-to);
+    top: var(--scoreplus-y-to);
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+
+.scoreplus-fly {
+  animation: scoreplus-fly 0.9s ease-in-out forwards;
+  will-change: left, top, opacity, transform;
+  filter: brightness(4);
+}

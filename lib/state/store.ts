@@ -18,7 +18,7 @@ import { ScoreCalculator } from "../core/score";
 import { BlockGenerator } from "../core/blockGenerator";
 import { DifficultyEvaluator } from "../core/difficulty";
 
-interface ExtendedGameState extends GameState {
+export interface ExtendedGameState extends GameState {
   round: number;
   piecesPlaced: number;
   validPositions: Position[];
@@ -28,6 +28,7 @@ interface ExtendedGameState extends GameState {
   blockEvaluations: Array<{ difficulty: number; scorePotential: number }>;
   setCurrentPieces: (pieces: Block[]) => void;
   setPreviewBlock: (block: Block | null) => void;
+  scoreDisplayCoords?: { x: number; y: number } | null;
 }
 
 const scoreCalculator = new ScoreCalculator();

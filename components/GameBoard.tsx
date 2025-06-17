@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback, use } from "react";
+import React, { useEffect, useRef, useState, useCallback, useLayoutEffect } from "react";
 import { useGameStore } from "../lib/state/store";
 import { getCellsToClear } from "@/lib/core/engine";
 import { findNearestValidPosition } from "../lib/core/positions";
-import { DraggablePiece } from "./DraggablePiece";
 import { Block, BlockColor, Matrix, Position } from "../lib/data/types";
 import { getEventCoordinates } from "@/utils/events";
 import { ScoreDisplay } from "./board/ScoreDisplay";
@@ -15,6 +14,8 @@ import { ScoreCalculator } from "../lib/core/scoreCalculator";
 import { Piece } from "./pieces/Piece";
 import { ComboVisualizer } from "./board/ComboVisualizer";
 import { SVGPreloader } from "@/utils/SVGPreloader";
+import { DraggablePiecesSection } from "./DraggablePiecesSection";
+
 
 const DEFAULT_CELL_SIZE = 43.75;
 
@@ -86,7 +87,7 @@ const useGridPosition = () => {
 
   // Для удобного "ускорения" движения призрака фигуры
   const calculateDynamicOffset = useCallback(
-    (cursorX: number, cursorY: number) => {
+    (cursorX: number, cursorY: number): Position => {
       const referenceHeight = window.innerHeight;
       const referenceWidth = window.innerWidth;
       const referenceCenter = referenceWidth / 2;
@@ -105,7 +106,7 @@ const useGridPosition = () => {
 
       const dynamicOffsetX = 1 - normalizedCursorX * maxOffsetX;
 
-      return [dynamicOffsetX, dynamicOffsetY];
+      return { x: dynamicOffsetX, y: dynamicOffsetY };
     },
     []
   );
@@ -130,7 +131,7 @@ const useGridPosition = () => {
       const { draggedPiece } = useGameStore.getState();
       if (!draggedPiece) return null;
 
-      const [dynamicOffsetX, dynamicOffsetY] = calculateDynamicOffset(
+      const { x: dynamicOffsetX, y: dynamicOffsetY } = calculateDynamicOffset(
         currentDragPosition.x,
         currentDragPosition.y
       );
@@ -239,19 +240,39 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [currentSetNumber, setCurrentSetNumber] = useState(1);
 
   const [lastHighlightedPosition, setLastHighlightedPosition] =
-  useState<Position | null>(null);
+    useState<Position | null>(null);
 
-// Добавим новые состояния для хранения линий
-const [clearingHorizontalLines, setClearingHorizontalLines] = useState<
-  number[]
->([]);
-const [clearingVerticalLines, setClearingVerticalLines] = useState<number[]>(
-  []
-);
+  // Добавим новые состояния для хранения линий
+  const [clearingHorizontalLines, setClearingHorizontalLines] = useState<
+    number[]
+  >([]);
+  const [clearingVerticalLines, setClearingVerticalLines] = useState<number[]>(
+    []
+  );
 
   const blockGenerator = new BlockGenerator();
   const scoreCalculator = new ScoreCalculator();
   const difficultyEvaluator = new DifficultyEvaluator();
+
+  const scoreDisplayRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    function updateCoords() {
+      if (scoreDisplayRef.current && boardRef.current) {
+        const scoreRect = scoreDisplayRef.current.getBoundingClientRect();
+        const boardRectDom = boardRef.current.getBoundingClientRect();
+        const scoreDisplayCoords = {
+          x: scoreRect.left - boardRectDom.left,
+          y: scoreRect.top + scoreRect.height / 2 - boardRectDom.top,
+        };
+        useGameStore.setState({ scoreDisplayCoords });
+      }
+    }
+    updateCoords();
+    window.addEventListener('resize', updateCoords);
+    return () => window.removeEventListener('resize', updateCoords);
+  }, []);
+
 
   useEffect(() => {
     if (isAnimating) {
@@ -288,7 +309,13 @@ const [clearingVerticalLines, setClearingVerticalLines] = useState<number[]>(
       setPlacedPiecesCount(0);
       setIsGeneratingNewSet(false);
     }
-  }, [board, blockGenerator, setCurrentPieces, setPreviewBlock, isGeneratingNewSet]);
+  }, [
+    board,
+    blockGenerator,
+    setCurrentPieces,
+    setPreviewBlock,
+    isGeneratingNewSet,
+  ]);
 
   const handlePieceStart = useCallback(
     (piece: Block, x: number, y: number) => {
@@ -338,6 +365,18 @@ const [clearingVerticalLines, setClearingVerticalLines] = useState<number[]>(
             setIsAnimating(false);
           }, 300);
         });
+
+        // --- ДОБАВЛЕНО: сохраняем пиксельные координаты в lastScoreResult ---
+        setTimeout(() => {
+          const { lastScoreResult } = useGameStore.getState();
+          if (lastScoreResult && boardRect && dynamicCellSize) {
+            const pixelX = hoverCell.x * (dynamicCellSize + GAP_SIZE_PX) 
+            const pixelY = hoverCell.y * (dynamicCellSize + GAP_SIZE_PX) 
+            lastScoreResult.pixelPosition = { x: pixelX, y: pixelY };
+            useGameStore.setState({ lastScoreResult: { ...lastScoreResult } });
+          }
+        }, 0);
+        // --- КОНЕЦ ДОБАВЛЕНИЯ ---
       } else {
         placePiece(x, y);
       }
@@ -486,20 +525,22 @@ const [clearingVerticalLines, setClearingVerticalLines] = useState<number[]>(
     "orange",
   ]; // добавьте все ваши цвета
   return (
-    <div className="flex flex-col items-center gap-8 min-h-screen bg-[var(--game-background)] p-4 no-select">
+    <div className={`flex flex-col items-center gap-6 min-h-screen bg-[var(--game-background)] p-4 no-select`}>
       <SVGPreloader colors={allColors} />
       {/* Top section: Score and Settings (placeholder) */}
-      <div className="flex justify-between w-full items-center">
+
+      <div className="flex justify-between w-full -mb-6 items-center md:max-w-xs md:max-h-xs">
         <div className="text-2xl font-figtree font-bold text-white">
           500 {/* Placeholder for trophy */}
         </div>
-        <ScoreDisplay newScore={score} moveScore={lastScoreResult} />
-
         <div className="text-2xl font-bold text-white" onClick={onExitGame}>
           ⚙️ {/* Placeholder for settings icon */}
         </div>
       </div>
-      {/* <div className="w-1/2 break-all h-[3vh]">
+      <div className="flex justify-center items-center w-full -mb-6">
+        <ScoreDisplay ref={scoreDisplayRef} newScore={score} moveScore={lastScoreResult} />
+      </div>
+      {/* <div className="w-1/2 break-all h-[3vh] z-9999">
         Debug: {JSON.stringify(lastScoreResult)}
       </div> */}
       {/* Middle section: Power-ups (placeholder) */}
@@ -578,47 +619,17 @@ const [clearingVerticalLines, setClearingVerticalLines] = useState<number[]>(
           </div>
         </div>
       </div>
+
       {/* Draggable Pieces */}
-      <div className="flex justify-center gap-4 mt-4 relative ">
-        {currentPieces.map((piece) => {
-          const isBeingDragged = draggedPiece?.uniqueId === piece.uniqueId;
-
-          let itemStyle = {}; // Initialize an empty style object
-
-          if (isBeingDragged && dragPosition) {
-            const [dynamicGhostOffsetX, dynamicGhostOffsetY] =
-              calculateDynamicOffset(dragPosition.x, dragPosition.y);
-            // Calculate multiplier only when draggedPiece is guaranteed to exist
-            const offsetYMultiplier = draggedPiece.matrix.length < 2 ? 2 : 1;
-
-            itemStyle = {
-              left:
-                dragPosition.x -
-                ((piece.matrix[0].length * dynamicCellSize) / 2) *
-                  dynamicGhostOffsetX,
-              top:
-                dragPosition.y -
-                piece.matrix.length *
-                  dynamicCellSize *
-                  dynamicGhostOffsetY *
-                  offsetYMultiplier,
-            };
-          }
-
-          return (
-            <DraggablePiece
-              key={piece.uniqueId}
-              piece={piece}
-              onStart={handlePieceStart}
-              style={itemStyle}
-              isGhost={isBeingDragged}
-              ghostSize={dynamicCellSize}
-              originalSize={dynamicCellSize * 0.6}
-            />
-          );
-        })}
-      </div>
-      {isGameOver && <GameOver />}
+      <DraggablePiecesSection
+        currentPieces={currentPieces}
+        draggedPiece={draggedPiece}
+        dragPosition={dragPosition}
+        dynamicCellSize={dynamicCellSize}
+        calculateDynamicOffset={calculateDynamicOffset}
+        onPieceStart={handlePieceStart}
+      />
+    
     </div>
   );
 };

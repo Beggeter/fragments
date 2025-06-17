@@ -2,13 +2,13 @@ import { ScoreResult } from "@/lib/data/types";
 import { ColorTheme, colorThemes } from "../UI/colorThemes";
 import React, { useState, useEffect } from "react";
 import { animate, useMotionValue, motion } from "framer-motion";
+import { useGameStore } from "../../lib/state/store";
 
 interface ComboVisualizerProps {
   speed?: number;
   className?: string;
   lastScore: ScoreResult | null;
 }
-
 
 /**
  * Gets the appropriate color theme based on the combo level
@@ -53,6 +53,8 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   const blurValue = useMotionValue(`${blur[0]}px`);
   const brightnessValue = useMotionValue(1);
 
+  const scoreDisplayCoords = useGameStore((s) => s.scoreDisplayCoords);
+
   const [currentTheme, setCurrentTheme] = useState<ColorTheme>(
     getThemeByScore(lastScore?.comboLevel)
   );
@@ -62,10 +64,13 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   const [debugMode, setDebugMode] = useState(false);
   const [activeTheme, setActiveTheme] = useState(1);
   const [activeBlur, setActiveBlur] = useState(1);
+  const [showScorePlus, setShowScorePlus] = useState(false);
+
   // Handle combo level changes
   useEffect(() => {
     if (lastScore?.comboLevel) {
       setIsExploding(true);
+      handleVibrate();
       const timer = setTimeout(() => setIsExploding(false), 400);
       return () => clearTimeout(timer);
     }
@@ -80,6 +85,29 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   }, [lastScore?.comboLevel]);
 
   useEffect(() => {
+    if (lastScore?.pixelPosition) {
+      setShowScorePlus(false);
+
+      const delay = 600;
+      const duration = 900;
+
+      const delayTimer = setTimeout(() => {
+        setShowScorePlus(true);
+        const hideTimer = setTimeout(() => setShowScorePlus(false), duration);
+        return () => clearTimeout(hideTimer);
+      }, delay);
+
+      return () => clearTimeout(delayTimer);
+    }
+  }, [lastScore?.pixelPosition]);
+
+  const handleVibrate = () => {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate([20]);
+    }
+  };
+
+  useEffect(() => {
     const t = debugMode ? currentTheme : theme;
     const b = debugMode ? currentBlur : blur;
 
@@ -87,6 +115,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
     animate(borderStart, t.borderStart, { duration: 0.7 });
     animate(borderMiddle, t.borderMiddle, { duration: 0.7 });
     animate(borderEnd, t.borderEnd, { duration: 0.7 });
+
     if (isExploding) {
       animate(blurValue, `${b[0] * 1.6}px`, { duration: 0.4 });
       animate(brightnessValue, 1.4, { duration: 0.4 }); // Добавляем анимацию brightness
@@ -106,6 +135,48 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
     "--blur-type": blurValue,
     "--brightness": brightnessValue,
   } as React.CSSProperties;
+
+  const renderScorePlus = () => {
+    if (!lastScore?.pixelPosition) return null;
+    const { x, y } = lastScore.pixelPosition;
+    if (scoreDisplayCoords) {
+      return (
+        <div
+          style={
+            {
+              "--scoreplus-x": `${x}px`,
+              "--scoreplus-y": `${y}px`,
+              "--scoreplus-x-to": `${scoreDisplayCoords.x}px`,
+              "--scoreplus-y-to": `${scoreDisplayCoords.y}px`,
+              pointerEvents: "none",
+              color: theme.background,
+              textShadow: "0 0 8px #000, 0 0 2px #fff",
+              position: "absolute",
+            } as React.CSSProperties
+          }
+          className="scoreplus-fly text-4xl z-2000 font-extrabold font-figtree"
+        >
+          +{lastScore?.clearedLinesPoints * lastScore?.comboBonus}
+        </div>
+      );
+    }
+    // fallback: просто на месте
+    return (
+      <div
+        style={{
+          left: x,
+          top: y,
+          pointerEvents: "none",
+          color: theme.background,
+          textShadow: "0 0 8px #000, 0 0 2px #fff",
+          position: "absolute",
+        }}
+        className="text-4xl z-2000 font-extrabold font-figtree"
+      >
+        +{lastScore?.clearedLinesPoints * lastScore?.comboBonus}
+      </div>
+    );
+  };
 
   return (
     <>
@@ -175,6 +246,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
           </div>
         )}
       </div>
+      {showScorePlus && renderScorePlus()}
     </>
   );
 };
