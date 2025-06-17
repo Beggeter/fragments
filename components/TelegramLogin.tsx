@@ -1,0 +1,235 @@
+"use client";
+
+import React, { useEffect, useState } from 'react';
+import { Button } from './UI/Button';
+
+interface TelegramUser {
+  id: number;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  photo_url?: string;
+  auth_date: number;
+  hash: string;
+}
+
+interface TelegramLoginProps {
+  onLoginSuccess: (user: any, sessionToken: string) => void;
+}
+
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp: {
+        initData: string;
+        initDataUnsafe: {
+          user?: TelegramUser;
+        };
+        ready: () => void;
+        expand: () => void;
+        close: () => void;
+        MainButton: {
+          text: string;
+          color: string;
+          textColor: string;
+          isVisible: boolean;
+          isActive: boolean;
+          show: () => void;
+          hide: () => void;
+          enable: () => void;
+          disable: () => void;
+          onClick: (callback: () => void) => void;
+        };
+      };
+    };
+  }
+}
+
+const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess }) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null);
+
+  useEffect(() => {
+    // Проверяем, запущено ли приложение в Telegram
+    if (window.Telegram?.WebApp) {
+      const tg = window.Telegram.WebApp;
+      
+      // Инициализируем Telegram Web App
+      tg.ready();
+      tg.expand();
+
+      // Получаем данные пользователя
+      if (tg.initDataUnsafe.user) {
+        setTelegramUser(tg.initDataUnsafe.user);
+      }
+
+      // Настраиваем главную кнопку
+      tg.MainButton.text = 'Войти в игру';
+      tg.MainButton.color = '#0088cc';
+      tg.MainButton.textColor = '#ffffff';
+      tg.MainButton.show();
+      tg.MainButton.enable();
+
+      // Обработчик нажатия на кнопку
+      tg.MainButton.onClick(handleTelegramLogin);
+    }
+  }, []);
+
+  const handleTelegramLogin = async () => {
+    if (!telegramUser) {
+      setError('Данные пользователя Telegram не найдены');
+      return;
+    }
+
+    setIsLoading(true);
+    setError('');
+
+    try {
+      // Парсим initData для получения хеша
+      const urlParams = new URLSearchParams(window.Telegram?.WebApp.initData || '');
+      const hash = urlParams.get('hash');
+      
+      if (!hash) {
+        throw new Error('Hash не найден в данных Telegram');
+      }
+
+      // Подготавливаем данные для авторизации
+      const authData = {
+        ...telegramUser,
+        hash: hash,
+      };
+
+      // Отправляем запрос на сервер
+      const response = await fetch('/api/auth/telegram', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(authData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Сохраняем токен сессии
+        localStorage.setItem('sessionToken', data.sessionToken);
+        localStorage.setItem('userData', JSON.stringify(data.user));
+        
+        onLoginSuccess(data.user, data.sessionToken);
+      } else {
+        setError(data.error || 'Ошибка авторизации');
+      }
+    } catch (err) {
+      console.error('Telegram login error:', err);
+      setError('Ошибка подключения к серверу');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Если приложение не запущено в Telegram, показываем инструкцию
+  if (!window.Telegram?.WebApp) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 max-w-md w-full text-center">
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-white mb-2">📱 Telegram Login</h1>
+            <p className="text-gray-300">Для входа используйте Telegram</p>
+          </div>
+          
+          <div className="space-y-4 text-left">
+            <div className="bg-blue-500/20 border border-blue-500/30 rounded-lg p-4">
+              <h3 className="text-blue-300 font-semibold mb-2">Как войти:</h3>
+              <ol className="text-gray-300 text-sm space-y-2">
+                <li>1. Откройте Telegram</li>
+                <li>2. Найдите нашего бота</li>
+                <li>3. Нажмите кнопку "Играть"</li>
+                <li>4. Авторизуйтесь в игре</li>
+              </ol>
+            </div>
+            
+            <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-4">
+              <h3 className="text-yellow-300 font-semibold mb-2">⚠️ Важно:</h3>
+              <p className="text-gray-300 text-sm">
+                Это приложение работает только внутри Telegram Web App. 
+                Откройте его через бота для полного доступа к функциям.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Если пользователь не авторизован в Telegram
+  if (!telegramUser) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 max-w-md w-full text-center">
+          <h1 className="text-3xl font-bold text-white mb-4">🔐 Авторизация</h1>
+          <p className="text-gray-300 mb-6">
+            Для входа в игру необходимо авторизоваться в Telegram
+          </p>
+          
+          {error && (
+            <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-3 text-red-300 text-sm mb-4">
+              {error}
+            </div>
+          )}
+          
+          <Button
+            onClick={handleTelegramLogin}
+            disabled={isLoading}
+            variant="primary"
+            size="lg"
+            className="w-full"
+          >
+            {isLoading ? 'Авторизация...' : 'Войти через Telegram'}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Показываем информацию о пользователе
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
+      <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 max-w-md w-full text-center">
+        <div className="mb-6">
+          {telegramUser.photo_url && (
+            <img
+              src={telegramUser.photo_url}
+              alt="Profile"
+              className="w-20 h-20 rounded-full mx-auto mb-4 border-4 border-white/20"
+            />
+          )}
+          <h1 className="text-2xl font-bold text-white mb-2">
+            Привет, {telegramUser.first_name}!
+          </h1>
+          {telegramUser.username && (
+            <p className="text-gray-300">@{telegramUser.username}</p>
+          )}
+        </div>
+        
+        {error && (
+          <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-3 text-red-300 text-sm mb-4">
+            {error}
+          </div>
+        )}
+        
+        <Button
+          onClick={handleTelegramLogin}
+          disabled={isLoading}
+          variant="primary"
+          size="lg"
+          className="w-full"
+        >
+          {isLoading ? 'Вход в игру...' : 'Войти в игру'}
+        </Button>
+      </div>
+    </div>
+  );
+};
+
+export default TelegramLogin; 
