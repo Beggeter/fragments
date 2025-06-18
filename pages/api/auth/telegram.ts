@@ -83,7 +83,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     console.log('🔑 TELEGRAM AUTH: Bot token check', {
       hasToken: !!botToken,
-      tokenLength: botToken?.length || 0
+      tokenLength: botToken?.length || 0,
+      tokenStart: botToken?.substring(0, 10) + '...',
+      tokenEnd: botToken?.substring(botToken.length - 10)
     });
 
     if (!botToken) {
@@ -199,10 +201,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 function verifyTelegramSignature(authData: TelegramAuthData, botToken: string): boolean {
   try {
     console.log('🔐 TELEGRAM AUTH: Starting signature verification');
+    console.log('📊 TELEGRAM AUTH: All auth data fields:', Object.keys(authData));
     
-    // Создаем строку для проверки (исключаем поля с undefined значениями)
-    const dataCheckString = Object.keys(authData)
-      .filter(key => key !== 'hash' && authData[key as keyof TelegramAuthData] !== undefined)
+    // Создаем строку для проверки (исключаем поля с undefined значениями и пустыми строками)
+    const filteredKeys = Object.keys(authData).filter(key => {
+      const value = authData[key as keyof TelegramAuthData];
+      const isValid = key !== 'hash' && value !== undefined && value !== null && value !== '';
+      console.log(`🔍 TELEGRAM AUTH: Field ${key} = "${value}" (${typeof value}) - ${isValid ? 'INCLUDED' : 'EXCLUDED'}`);
+      return isValid;
+    });
+    
+    console.log('✅ TELEGRAM AUTH: Included fields:', filteredKeys);
+    
+    const dataCheckString = filteredKeys
       .sort()
       .map(key => `${key}=${authData[key as keyof TelegramAuthData]}`)
       .join('\n');
@@ -218,7 +229,8 @@ function verifyTelegramSignature(authData: TelegramAuthData, botToken: string): 
     console.log('🔐 TELEGRAM AUTH: Hash comparison', {
       calculatedHash: hash,
       receivedHash: authData.hash,
-      isValid: hash === authData.hash
+      isValid: hash === authData.hash,
+      dataCheckStringLength: dataCheckString.length
     });
     
     return hash === authData.hash;
