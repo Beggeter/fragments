@@ -13,6 +13,7 @@ interface TelegramAuthData {
   photo_url?: string;
   auth_date?: number;
   hash: string;
+  initData?: string;
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -93,10 +94,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ error: 'Server configuration error' });
     }
 
-    const isValidSignature = verifyTelegramSignature(authData, botToken);
+    // Проверяем подпись - используем initData если доступен, иначе обычную проверку
+    let isValidSignature = false;
+    
+    if (authData.initData) {
+      console.log('🔐 TELEGRAM AUTH: Using initData for signature verification');
+      isValidSignature = verifyTelegramInitData(authData.initData, botToken);
+    } else {
+      console.log('🔐 TELEGRAM AUTH: Using individual fields for signature verification');
+      isValidSignature = verifyTelegramSignature(authData, botToken);
+    }
+
     console.log('🔐 TELEGRAM AUTH: Signature verification', {
       isValid: isValidSignature,
-      telegramId: authData.id
+      telegramId: authData.id,
+      method: authData.initData ? 'initData' : 'individual fields'
     });
 
     if (!isValidSignature) {
@@ -236,6 +248,49 @@ function verifyTelegramSignature(authData: TelegramAuthData, botToken: string): 
     return hash === authData.hash;
   } catch (error) {
     console.error('💥 TELEGRAM AUTH: Error verifying signature:', error);
+    return false;
+  }
+}
+
+// Функция проверки подписи Telegram с использованием initData
+function verifyTelegramInitData(initData: string, botToken: string): boolean {
+  try {
+    console.log('🔐 TELEGRAM AUTH: Starting initData verification');
+    
+    // Парсим initData
+    const urlParams = new URLSearchParams(initData);
+    const signature = urlParams.get('signature');
+    
+    if (!signature) {
+      console.log('❌ TELEGRAM AUTH: No signature found in initData');
+      return false;
+    }
+    
+    // Создаем строку для проверки (все параметры кроме signature)
+    const dataCheckString = Array.from(urlParams.entries())
+      .filter(([key]) => key !== 'signature')
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => `${key}=${value}`)
+      .join('\n');
+
+    console.log('📝 TELEGRAM AUTH: InitData check string', dataCheckString);
+
+    // Создаем секретный ключ
+    const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
+    
+    // Вычисляем хеш
+    const hash = crypto.createHmac('sha256', secretKey).update(dataCheckString).digest('hex');
+    
+    console.log('🔐 TELEGRAM AUTH: InitData hash comparison', {
+      calculatedHash: hash,
+      receivedSignature: signature,
+      isValid: hash === signature,
+      dataCheckStringLength: dataCheckString.length
+    });
+    
+    return hash === signature;
+  } catch (error) {
+    console.error('💥 TELEGRAM AUTH: Error verifying initData:', error);
     return false;
   }
 } 

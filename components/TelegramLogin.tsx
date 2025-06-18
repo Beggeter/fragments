@@ -154,6 +154,7 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess }) => {
         ...telegramUser,
         hash: hash,
         auth_date: authDate ? parseInt(authDate) : undefined,
+        initData: initData,
       };
 
       // Отправляем запрос на сервер
