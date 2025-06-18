@@ -25,6 +25,48 @@ const MenuButton: FC<MenuButtonProps> = ({
   textClasses = "",
   imageClasses,
 }) => {
+  // Функция для определения, является ли иконка SVG
+  const isSvg = (icon: StaticImageData | string) => {
+    if (typeof icon === 'string') {
+      return icon.includes('.svg');
+    }
+    return icon.src.includes('.svg');
+  };
+
+  // Компонент для отображения изображения с поддержкой iOS
+  const ImageComponent = ({ icon, alt, className }: { icon: StaticImageData | string, alt: string, className?: string }) => {
+    if (isSvg(icon)) {
+      // Для SVG используем обычный img тег на iOS
+      const src = typeof icon === 'string' ? icon : icon.src;
+      return (
+        <img
+          src={src}
+          alt={alt}
+          className={className || "w-auto h-full object-contain max-h-[6vh]"}
+          style={{
+            WebkitTransform: 'translateZ(0)',
+            transform: 'translateZ(0)',
+            WebkitBackfaceVisibility: 'hidden',
+            backfaceVisibility: 'hidden',
+          }}
+        />
+      );
+    }
+
+    // Для других форматов используем Next.js Image
+    return (
+      <Image
+        src={icon}
+        alt={alt}
+        width={48}
+        height={48}
+        className={className || "w-auto h-full object-contain max-h-[6vh]"}
+        unoptimized={true}
+        priority={true}
+      />
+    );
+  };
+
   return (
     <button
       className={`menu-button ${gradientClass} ${className}`}
@@ -34,14 +76,7 @@ const MenuButton: FC<MenuButtonProps> = ({
         {/* Левая иконка */}
         {leftIcon && (
           <span className="menu-shadow flex items-center justify-center h-[3rem] min-w-[3rem]">
-            <Image
-              src={leftIcon}
-              alt="left icon"
-              className="w-auto max-h-[100%] object-contain"
-              width={0}
-              height={0}
-              priority={true}
-            />
+            <ImageComponent icon={leftIcon} alt="left icon" />
           </span>
         )}
 
@@ -57,14 +92,7 @@ const MenuButton: FC<MenuButtonProps> = ({
         {/* Правая иконка */}
         {rightIcon && (
           <span className={`${imageClasses} flex items-center justify-center `}>
-            <Image
-              src={rightIcon}
-              alt="right icon"
-              className={` w-auto h-full object-contain max-h-[6vh]`}
-              width={0}
-              height={0}
-              priority={true}
-            />
+            <ImageComponent icon={rightIcon} alt="right icon" />
           </span>
         )}
       </span>

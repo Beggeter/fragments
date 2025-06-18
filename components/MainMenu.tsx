@@ -26,14 +26,30 @@ const MainMenu: FC<MainMenuProps> = ({ onStartClassic }) => {
       >
         <BackgroundAnimation className="absolute inset-0 -top-15 overflow-x-hidden px-4 " />
         <span className="absolute top-4 right-4 text-3xl menu-shadow">
-          <Image src={settings} alt="settings" className="w-10 h-10  " />
+          <img 
+            src={settings.src} 
+            alt="settings" 
+            className="w-10 h-10"
+            style={{
+              WebkitTransform: 'translateZ(0)',
+              transform: 'translateZ(0)',
+              WebkitBackfaceVisibility: 'hidden',
+              backfaceVisibility: 'hidden',
+            }}
+          />
         </span>
         <main className="flex flex-col gap-[15vh] items-center">
           <TopButtons />
-          <Image
-            src={logo}
+          <img
+            src={logo.src}
             alt="FRAGMENTS"
-            className="px-3 sm:px-10 max-w-[90vw] md:max-w-[30%]  z-100"
+            className="px-3 sm:px-10 max-w-[90vw] md:max-w-[30%] z-100"
+            style={{
+              WebkitTransform: 'translateZ(0)',
+              transform: 'translateZ(0)',
+              WebkitBackfaceVisibility: 'hidden',
+              backfaceVisibility: 'hidden',
+            }}
           />
           <BottomButtons onStartClassic={onStartClassic} />
         </main>

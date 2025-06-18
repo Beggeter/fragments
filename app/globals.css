@@ -452,3 +452,40 @@ body {
   will-change: left, top, opacity, transform;
   filter: brightness(4);
 }
+
+/* iOS-specific fixes for SVG images */
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari specific styles */
+  img[src*=".svg"] {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+  
+  /* Force hardware acceleration for SVG images */
+  .falling-element img,
+  .menu-button img,
+  .menu-shadow img {
+    -webkit-transform: translate3d(0, 0, 0);
+    transform: translate3d(0, 0, 0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    -webkit-perspective: 1000;
+    perspective: 1000;
+  }
+  
+  /* Ensure SVG images are visible on iOS */
+  img[src*=".svg"] {
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+}
+
+/* Additional fixes for iOS Safari */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  img[src*=".svg"] {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}

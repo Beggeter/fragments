@@ -61,9 +61,9 @@ const BackgroundAnimation: FC<BackgroundAnimationProps> = ({ className }) => {
             } // Указываем тип для поддержки CSS переменных
           ></div>
         ) : (
-          <Image
+          <img
             key={element.id}
-            src={star}
+            src={star.src}
             alt="star"
             className="falling-element absolute"
             style={
@@ -73,6 +73,10 @@ const BackgroundAnimation: FC<BackgroundAnimationProps> = ({ className }) => {
                 left: `${element.initialLeft}%`,
                 "--animation-duration": `${element.duration}s`,
                 "--animation-delay": `${element.delay}s`,
+                WebkitTransform: 'translateZ(0)',
+                transform: 'translateZ(0)',
+                WebkitBackfaceVisibility: 'hidden',
+                backfaceVisibility: 'hidden',
               } as React.CSSProperties
             }
           />
