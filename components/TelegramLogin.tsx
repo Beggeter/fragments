@@ -67,6 +67,12 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess, seamless 
 
   useEffect(() => {
     const checkTelegramWebApp = async () => {
+      // Проверяем, не авторизован ли уже пользователь
+      if (localStorage.getItem('sessionToken')) {
+        console.log('✅ TELEGRAM LOGIN: User already authenticated, skipping');
+        return;
+      }
+
       // Добавляем небольшую задержку для загрузки скрипта
       await new Promise(resolve => setTimeout(resolve, 100));
       
@@ -127,6 +133,12 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess, seamless 
     // Проверяем, не авторизован ли уже пользователь
     if (localStorage.getItem('sessionToken')) {
       console.log('✅ TELEGRAM LOGIN: User already authenticated, skipping login');
+      return;
+    }
+
+    // Проверяем, не выполняется ли уже авторизация
+    if (isLoading) {
+      console.log('⏳ TELEGRAM LOGIN: Authorization already in progress, skipping');
       return;
     }
 

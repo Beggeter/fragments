@@ -22,6 +22,13 @@ const HomePage: React.FC = () => {
   // Автоматическое определение Telegram и скрытная авторизация
   useEffect(() => {
     const checkTelegramAndAutoAuth = async () => {
+      // Проверяем, не авторизован ли уже пользователь
+      if (localStorage.getItem('sessionToken')) {
+        console.log('✅ User already authenticated, skipping auto auth');
+        setIsTelegramAutoAuth(false);
+        return;
+      }
+
       await new Promise(resolve => setTimeout(resolve, 200));
       if (window.Telegram?.WebApp) {
         setIsTelegramAutoAuth(true);
@@ -64,7 +71,7 @@ const HomePage: React.FC = () => {
       setIsTelegramAutoAuth(false);
     };
     checkTelegramAndAutoAuth();
-  }, [loginUser]);
+  }, []); // Убрали loginUser из зависимостей
 
   // useEffect для управления экраном на основе статуса авторизации
   useEffect(() => {
@@ -106,6 +113,7 @@ const HomePage: React.FC = () => {
       logout();
     }
     setAutoAuthCompleted(false);
+    setIsTelegramAutoAuth(false);
     setCurrentScreen("login choice");
   };
 
