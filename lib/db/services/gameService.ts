@@ -1,7 +1,7 @@
 import { eq, and, desc } from 'drizzle-orm';
 import { db } from '../index';
 import { userGames, recordHistory } from '../schema';
-import type { UserGame, NewUserGame, BoardState, GamePiece, GameData } from '../types';
+import type { UserGame, NewUserGame, BoardState, GamePiece, GameData, RecordHistory } from '../types';
 
 export class GameService {
   // Создание новой игры для пользователя
@@ -48,7 +48,7 @@ export class GameService {
   // Удаление игры (при завершении)
   static async deleteGame(gameId: number): Promise<boolean> {
     const result = await db.delete(userGames).where(eq(userGames.id, gameId));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Сохранение рекорда

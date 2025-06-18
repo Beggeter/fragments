@@ -124,7 +124,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Ищем пользователя в базе данных
     console.log('🔍 TELEGRAM AUTH: Looking for user in database', authData.id);
-    let user = await db.select().from(users).where(eq(users.telegramId, authData.id)).limit(1);
+    let user = await db.select().from(users).where(eq(users.telegramId, authData.id.toString())).limit(1);
 
     if (user.length === 0) {
       console.log('👤 TELEGRAM AUTH: Creating new user', {
@@ -134,14 +134,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       // Создаем нового пользователя
       const newUser = {
-        telegramId: authData.id,
+        telegramId: authData.id.toString(),
         firstName: authData.first_name,
         lastName: authData.last_name || null,
         username: authData.username || null,
-        photoUrl: authData.photo_url || null,
+        avatarUrl: authData.photo_url || null,
         role: 'user' as const,
         createdAt: new Date(),
-        lastLoginAt: new Date(),
+        updatedAt: new Date(),
         currency: 1000, // Начальная валюта
       };
 
@@ -164,13 +164,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await db
         .update(users)
         .set({ 
-          lastLoginAt: new Date(),
+          updatedAt: new Date(),
           firstName: authData.first_name,
           lastName: authData.last_name || null,
           username: authData.username || null,
-          photoUrl: authData.photo_url || null,
+          avatarUrl: authData.photo_url || null,
         })
-        .where(eq(users.telegramId, authData.id));
+        .where(eq(users.telegramId, authData.id.toString()));
       
       console.log('✅ TELEGRAM AUTH: User updated successfully');
     }
@@ -183,7 +183,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const sessionToken = generateJWT({
       userId: user[0].id,
-      telegramId: user[0].telegramId,
+      telegramId: parseInt(user[0].telegramId),
     });
 
     const responseData = {
@@ -194,7 +194,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         firstName: user[0].firstName,
         lastName: user[0].lastName,
         username: user[0].username,
-        photoUrl: user[0].photoUrl,
+        avatarUrl: user[0].avatarUrl,
         role: user[0].role,
         currency: user[0].currency,
       },

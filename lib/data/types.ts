@@ -1,4 +1,4 @@
-export type BlockColor = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange';
+export type BlockColor = 'red' | 'blue' | 'green' | 'yellow' | 'purple' | 'orange' | 'pink' | 'cyan';
 
 export interface Cell {
   value: number;
@@ -46,6 +46,6 @@ export interface GameState {
   lastScoreResult: ScoreResult | null;
 }
 
-export const BLOCK_COLORS: BlockColor[] = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
+export const BLOCK_COLORS: BlockColor[] = ['red', 'blue', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan'];
 
 export type Board = Cell[][];

@@ -1,4 +1,4 @@
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, ne, count, sum } from 'drizzle-orm';
 import { db } from '../index';
 import { users, userGames, currencyTransactions, recordHistory } from '../schema';
 import type { User, NewUser, UserRole } from '../types';
@@ -72,7 +72,7 @@ export class UserService {
     return await db
       .select()
       .from(users)
-      .where(eq(users.record, 0).not())
+      .where(ne(users.record, 0))
       .orderBy(desc(users.record))
       .limit(limit);
   }
@@ -80,7 +80,7 @@ export class UserService {
   // Удаление пользователя (только для админов)
   static async deleteUser(id: number): Promise<boolean> {
     const result = await db.delete(users).where(eq(users.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
 
   // Проверка существования пользователя
@@ -96,19 +96,19 @@ export class UserService {
 
     // Получаем количество игр
     const gamesCount = await db
-      .select({ count: db.fn.count() })
+      .select({ count: count() })
       .from(userGames)
       .where(eq(userGames.userId, userId));
 
     // Получаем общую сумму транзакций
     const totalTransactions = await db
-      .select({ sum: db.fn.sum(currencyTransactions.amount) })
+      .select({ sum: sum(currencyTransactions.amount) })
       .from(currencyTransactions)
       .where(eq(currencyTransactions.userId, userId));
 
     // Получаем количество рекордов
     const recordsCount = await db
-      .select({ count: db.fn.count() })
+      .select({ count: count() })
       .from(recordHistory)
       .where(eq(recordHistory.userId, userId));
 

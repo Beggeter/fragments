@@ -32,7 +32,13 @@ const HomePage: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 200));
       if (window.Telegram?.WebApp) {
         setIsTelegramAutoAuth(true);
-        const tg = window.Telegram.WebApp;
+        const tg = window.Telegram?.WebApp;
+        
+        if (!tg) {
+          console.log('❌ TELEGRAM AUTO AUTH: WebApp not found');
+          return;
+        }
+        
         const user = tg.initDataUnsafe?.user;
         if (user) {
           try {

@@ -57,6 +57,7 @@ export interface CurrencyTransactionMetadata {
   boosterId?: number;
   adminId?: number;
   reason?: string;
+  referredUserId?: number;
 }
 
 export interface GameData {

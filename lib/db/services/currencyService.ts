@@ -1,8 +1,10 @@
 import { eq, and, desc, gte, lte } from 'drizzle-orm';
 import { db } from '../index';
 import { currencyTransactions, users } from '../schema';
-import type { CurrencyTransaction, NewCurrencyTransaction, CurrencyTransactionType, CurrencyTransactionMetadata } from '../types';
+import type { CurrencyTransaction, NewCurrencyTransaction, CurrencyTransactionMetadata } from '../types';
+import { CurrencyTransactionType } from '../types';
 import { UserService } from './userService';
+import { count, sum, avg } from 'drizzle-orm';
 
 export class CurrencyService {
   // Добавление валюты пользователю
@@ -167,11 +169,11 @@ export class CurrencyService {
         stats.totalSpent += Math.abs(amount);
       }
 
-      if (!stats.byType[transaction.type]) {
-        stats.byType[transaction.type] = { count: 0, total: 0 };
+      if (!stats.byType[transaction.type as CurrencyTransactionType]) {
+        stats.byType[transaction.type as CurrencyTransactionType] = { count: 0, total: 0 };
       }
-      stats.byType[transaction.type].count++;
-      stats.byType[transaction.type].total += amount;
+      stats.byType[transaction.type as CurrencyTransactionType].count++;
+      stats.byType[transaction.type as CurrencyTransactionType].total += amount;
     }
 
     return stats;
@@ -291,9 +293,9 @@ export class CurrencyService {
   static async getGlobalCurrencyStats() {
     const result = await db
       .select({
-        totalUsers: db.fn.count(users.id),
-        totalCurrency: db.fn.sum(users.currency),
-        averageCurrency: db.fn.avg(users.currency),
+        totalUsers: count(users.id),
+        totalCurrency: sum(users.currency),
+        averageCurrency: avg(users.currency),
       })
       .from(users);
 

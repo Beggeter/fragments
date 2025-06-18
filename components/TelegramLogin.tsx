@@ -18,34 +18,6 @@ interface TelegramLoginProps {
   seamless?: boolean;
 }
 
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp: {
-        initData: string;
-        initDataUnsafe: {
-          user?: TelegramUser;
-        };
-        ready: () => void;
-        expand: () => void;
-        close: () => void;
-        MainButton: {
-          text: string;
-          color: string;
-          textColor: string;
-          isVisible: boolean;
-          isActive: boolean;
-          show: () => void;
-          hide: () => void;
-          enable: () => void;
-          disable: () => void;
-          onClick: (callback: () => void) => void;
-        };
-      };
-    };
-  }
-}
-
 const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess, seamless = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -95,7 +67,12 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess, seamless 
       await sendDebugLog('check_telegram_webapp', debugData);
 
       if (hasTelegram) {
-        const tg = window.Telegram.WebApp;
+        const tg = window.Telegram?.WebApp;
+        
+        if (!tg) {
+          console.log('❌ TELEGRAM LOGIN: WebApp not found');
+          return;
+        }
         
         // Инициализируем Telegram Web App
         tg.ready();
@@ -156,7 +133,7 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess, seamless 
 
     try {
       // Парсим initData для получения хеша и auth_date
-      const initData = window.Telegram?.WebApp.initData || '';
+      const initData = window.Telegram?.WebApp?.initData || '';
       const urlParams = new URLSearchParams(initData);
       const hash = urlParams.get('hash');
       const authDate = urlParams.get('auth_date');
