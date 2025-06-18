@@ -14,6 +14,7 @@ const HomePage: React.FC = () => {
   const [score, setScore] = useState(0);
   const [currentScreen, setCurrentScreen] = useState<Screen>("loading");
   const [isTelegramAutoAuth, setIsTelegramAutoAuth] = useState(false);
+  const [autoAuthCompleted, setAutoAuthCompleted] = useState(false);
   
   const { isAdmin, isLoading: adminLoading, loginAsAdmin, logoutAdmin, getTimeRemaining } = useAdminAuth();
   const { user, isLoading: userLoading, isAuthenticated, loginUser, logout } = useUser();
@@ -68,6 +69,7 @@ const HomePage: React.FC = () => {
                 localStorage.setItem('userData', JSON.stringify(data.user));
                 
                 loginUser(data.user, data.sessionToken);
+                setAutoAuthCompleted(true);
                 setCurrentScreen("main menu");
                 return;
               } else {
@@ -95,7 +97,7 @@ const HomePage: React.FC = () => {
 
   // Проверяем, какой способ входа использовать
   useEffect(() => {
-    if (!adminLoading && !userLoading && !isTelegramAutoAuth) {
+    if (!adminLoading && !userLoading && !isTelegramAutoAuth && !autoAuthCompleted) {
       if (isAdmin) {
         setCurrentScreen("main menu");
       } else if (isAuthenticated) {
@@ -104,7 +106,7 @@ const HomePage: React.FC = () => {
         setCurrentScreen("login choice");
       }
     }
-  }, [isAdmin, isAuthenticated, adminLoading, userLoading, isTelegramAutoAuth]);
+  }, [isAdmin, isAuthenticated, adminLoading, userLoading, isTelegramAutoAuth, autoAuthCompleted]);
 
   const handleAdminLoginSuccess = (adminToken: string, expiresAt: string) => {
     loginAsAdmin(adminToken, expiresAt);
@@ -122,6 +124,7 @@ const HomePage: React.FC = () => {
     } else {
       logout();
     }
+    setAutoAuthCompleted(false);
     setCurrentScreen("login choice");
   };
 
@@ -134,7 +137,7 @@ const HomePage: React.FC = () => {
   };
 
   // Показываем загрузку пока проверяем статус авторизации
-  if (adminLoading || userLoading || currentScreen === "loading") {
+  if ((adminLoading || userLoading || currentScreen === "loading") && !autoAuthCompleted) {
     return (
       <div className="min-h-screen bg-blue-900 flex items-center justify-center">
         <div className="text-white text-xl">
@@ -218,7 +221,7 @@ const HomePage: React.FC = () => {
         <AdminLogin onLoginSuccess={handleAdminLoginSuccess} />
       )}
       
-      {currentScreen === "telegram login" && (
+      {currentScreen === "telegram login" && !autoAuthCompleted && (
         <TelegramLogin onLoginSuccess={handleTelegramLoginSuccess} seamless={isTelegramAutoAuth} />
       )}
       

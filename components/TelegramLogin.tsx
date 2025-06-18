@@ -99,8 +99,8 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess, seamless 
         if (user) {
           setTelegramUser(user);
           
-          // В бесшовном режиме автоматически авторизуемся
-          if (seamless) {
+          // В бесшовном режиме автоматически авторизуемся только если пользователь еще не авторизован
+          if (seamless && !localStorage.getItem('sessionToken')) {
             console.log('🚀 SEAMLESS MODE: Auto-authorizing user');
             handleTelegramLogin();
           }
@@ -124,6 +124,12 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess, seamless 
   }, [seamless]);
 
   const handleTelegramLogin = async () => {
+    // Проверяем, не авторизован ли уже пользователь
+    if (localStorage.getItem('sessionToken')) {
+      console.log('✅ TELEGRAM LOGIN: User already authenticated, skipping login');
+      return;
+    }
+
     if (!telegramUser) {
       setError('Данные пользователя Telegram не найдены');
       await sendDebugLog('auth_error', {
