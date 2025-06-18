@@ -1,7 +1,7 @@
 // src/pages/New.tsx
 import Image from "next/image";
 import { FC } from "react";
-import logo from "@/public/logo frame.svg";
+import logo from "@/public/logo-frame.svg";
 import bullseye from "@/public/bullseye.svg";
 import infinity from "@/public/infinity.svg";
 import cart from "@/public/cart.svg";

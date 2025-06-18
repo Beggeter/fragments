@@ -64,6 +64,8 @@ const HomePage: React.FC = () => {
 
               if (response.ok) {
                 console.log('✅ TELEGRAM AUTO AUTH: Auto login successful');
+                console.log('🎯 Setting autoAuthCompleted = true');
+                console.log('🎯 Setting currentScreen = "main menu"');
                 // Сохраняем токен сессии
                 localStorage.setItem('sessionToken', data.sessionToken);
                 localStorage.setItem('userData', JSON.stringify(data.user));
@@ -97,16 +99,37 @@ const HomePage: React.FC = () => {
 
   // Проверяем, какой способ входа использовать
   useEffect(() => {
+    console.log('🔄 SCREEN LOGIC:', {
+      adminLoading,
+      userLoading,
+      isTelegramAutoAuth,
+      autoAuthCompleted,
+      isAdmin,
+      isAuthenticated,
+      currentScreen
+    });
+
     if (!adminLoading && !userLoading && !isTelegramAutoAuth && !autoAuthCompleted) {
       if (isAdmin) {
+        console.log('🎯 Setting screen to main menu (admin)');
         setCurrentScreen("main menu");
       } else if (isAuthenticated) {
+        console.log('🎯 Setting screen to main menu (authenticated)');
         setCurrentScreen("main menu");
       } else {
+        console.log('🎯 Setting screen to login choice');
         setCurrentScreen("login choice");
       }
     }
   }, [isAdmin, isAuthenticated, adminLoading, userLoading, isTelegramAutoAuth, autoAuthCompleted]);
+
+  // Принудительная установка экрана в главное меню для авторизованных пользователей
+  useEffect(() => {
+    if ((isAuthenticated || isAdmin) && currentScreen !== "main menu" && currentScreen !== "classic mode") {
+      console.log('🎯 FORCE: Setting screen to main menu (user authenticated)');
+      setCurrentScreen("main menu");
+    }
+  }, [isAuthenticated, isAdmin, currentScreen]);
 
   const handleAdminLoginSuccess = (adminToken: string, expiresAt: string) => {
     loginAsAdmin(adminToken, expiresAt);
@@ -137,7 +160,7 @@ const HomePage: React.FC = () => {
   };
 
   // Показываем загрузку пока проверяем статус авторизации
-  if ((adminLoading || userLoading || currentScreen === "loading") && !autoAuthCompleted) {
+  if ((adminLoading || userLoading || currentScreen === "loading") && !autoAuthCompleted && !isAuthenticated && !isAdmin) {
     return (
       <div className="min-h-screen bg-blue-900 flex items-center justify-center">
         <div className="text-white text-xl">
@@ -186,6 +209,17 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-blue-900">
+      {/* Отладочная информация */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="fixed top-4 left-4 z-50 bg-black/80 backdrop-blur-sm rounded-lg px-4 py-2 text-white text-xs shadow-lg">
+          <div>Screen: {currentScreen}</div>
+          <div>AutoAuth: {isTelegramAutoAuth ? 'true' : 'false'}</div>
+          <div>Completed: {autoAuthCompleted ? 'true' : 'false'}</div>
+          <div>Authenticated: {isAuthenticated ? 'true' : 'false'}</div>
+          <div>Admin: {isAdmin ? 'true' : 'false'}</div>
+        </div>
+      )}
+
       {/* Статус пользователя */}
       {(isAdmin || isAuthenticated) && currentScreen !== "login choice" && (
         <div className="fixed top-4 right-4 z-50 bg-green-600/90 backdrop-blur-sm rounded-lg px-4 py-2 text-white text-sm shadow-lg">
@@ -229,12 +263,26 @@ const HomePage: React.FC = () => {
         <MainMenu onStartClassic={hadleStartClassic} />
       )}
       
+      {/* Дополнительная проверка для отображения главного меню */}
+      {!currentScreen && (isAuthenticated || isAdmin) && (
+        <MainMenu onStartClassic={hadleStartClassic} />
+      )}
+      
       {currentScreen === "classic mode" && (
         <GameBoard
           onExitGame={handleGoToMenu}
           onScoreUpdate={(newScore) => setScore(newScore)}
           onGameOver={() => console.log("Game Over")}
         />
+      )}
+
+      {/* Fallback для отладки */}
+      {!currentScreen && (
+        <div className="min-h-screen bg-blue-900 flex items-center justify-center">
+          <div className="text-white text-xl">
+            Ошибка: currentScreen не установлен
+          </div>
+        </div>
       )}
     </div>
   );
