@@ -68,11 +68,17 @@ const useBoardAndCellSizes = () => {
     }
 
     // Also listen to window resize as a fallback/additional measure
-    window.addEventListener("resize", updateSizes);
+    if (typeof window !== 'undefined') {
+      window.addEventListener("resize", updateSizes);
+
+      return () => {
+        resizeObserver.disconnect();
+        window.removeEventListener("resize", updateSizes);
+      };
+    }
 
     return () => {
       resizeObserver.disconnect();
-      window.removeEventListener("resize", updateSizes);
     };
   }, [boardRef, cellRef]);
 
@@ -88,6 +94,10 @@ const useGridPosition = () => {
   // Для удобного "ускорения" движения призрака фигуры
   const calculateDynamicOffset = useCallback(
     (cursorX: number, cursorY: number): Position => {
+      if (typeof window === 'undefined') {
+        return { x: 1, y: 2 };
+      }
+      
       const referenceHeight = window.innerHeight;
       const referenceWidth = window.innerWidth;
       const referenceCenter = referenceWidth / 2;
@@ -269,8 +279,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       }
     }
     updateCoords();
-    window.addEventListener('resize', updateCoords);
-    return () => window.removeEventListener('resize', updateCoords);
+    
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', updateCoords);
+      return () => window.removeEventListener('resize', updateCoords);
+    }
+    
+    return undefined;
   }, []);
 
 
@@ -428,21 +443,25 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       setLastHighlightedPosition(null); // Сбрасываем при окончании перетаскивания
     };
 
-    window.addEventListener("touchstart", handleStart, { passive: false });
-    window.addEventListener("mousemove", handleMove);
-    window.addEventListener("touchmove", handleMove, { passive: false });
-    window.addEventListener("mouseup", handleEnd);
-    window.addEventListener("touchend", handleEnd);
-    window.addEventListener("touchcancel", handleEnd);
+    if (typeof window !== 'undefined') {
+      window.addEventListener("touchstart", handleStart, { passive: false });
+      window.addEventListener("mousemove", handleMove);
+      window.addEventListener("touchmove", handleMove, { passive: false });
+      window.addEventListener("mouseup", handleEnd);
+      window.addEventListener("touchend", handleEnd);
+      window.addEventListener("touchcancel", handleEnd);
 
-    return () => {
-      window.removeEventListener("touchstart", handleStart);
-      window.removeEventListener("mousemove", handleMove);
-      window.removeEventListener("touchmove", handleMove);
-      window.removeEventListener("mouseup", handleEnd);
-      window.removeEventListener("touchend", handleEnd);
-      window.removeEventListener("touchcancel", handleEnd);
-    };
+      return () => {
+        window.removeEventListener("touchstart", handleStart);
+        window.removeEventListener("mousemove", handleMove);
+        window.removeEventListener("touchmove", handleMove);
+        window.removeEventListener("mouseup", handleEnd);
+        window.removeEventListener("touchend", handleEnd);
+        window.removeEventListener("touchcancel", handleEnd);
+      };
+    }
+    
+    return undefined;
   }, [
     draggedPiece,
     updateDrag,

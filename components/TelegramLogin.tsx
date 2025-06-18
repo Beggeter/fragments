@@ -39,8 +39,13 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess, seamless 
 
   useEffect(() => {
     const checkTelegramWebApp = async () => {
+      // Проверяем, что мы на клиенте
+      if (typeof window === 'undefined') {
+        return;
+      }
+
       // Проверяем, не авторизован ли уже пользователь
-      if (localStorage.getItem('sessionToken')) {
+      if (typeof window !== 'undefined' && localStorage.getItem('sessionToken')) {
         console.log('✅ TELEGRAM LOGIN: User already authenticated, skipping');
         return;
       }
@@ -83,7 +88,7 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess, seamless 
           setTelegramUser(user);
           
           // В бесшовном режиме автоматически авторизуемся только если пользователь еще не авторизован
-          if (seamless && !localStorage.getItem('sessionToken')) {
+          if (seamless && typeof window !== 'undefined' && !localStorage.getItem('sessionToken')) {
             console.log('🚀 SEAMLESS MODE: Auto-authorizing user');
             handleTelegramLogin();
           }
@@ -107,8 +112,13 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess, seamless 
   }, [seamless]);
 
   const handleTelegramLogin = async () => {
+    // Проверяем, что мы на клиенте
+    if (typeof window === 'undefined') {
+      return;
+    }
+
     // Проверяем, не авторизован ли уже пользователь
-    if (localStorage.getItem('sessionToken')) {
+    if (typeof window !== 'undefined' && localStorage.getItem('sessionToken')) {
       console.log('✅ TELEGRAM LOGIN: User already authenticated, skipping login');
       return;
     }
@@ -187,8 +197,10 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess, seamless 
         });
 
         // Сохраняем токен сессии
-        localStorage.setItem('sessionToken', data.sessionToken);
-        localStorage.setItem('userData', JSON.stringify(data.user));
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('sessionToken', data.sessionToken);
+          localStorage.setItem('userData', JSON.stringify(data.user));
+        }
         
         onLoginSuccess(data.user, data.sessionToken);
       } else {
@@ -211,6 +223,11 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess, seamless 
       setIsLoading(false);
     }
   };
+
+  // Проверяем, что мы на клиенте перед рендерингом
+  if (typeof window === 'undefined') {
+    return null;
+  }
 
   // Если приложение не запущено в Telegram, показываем инструкцию
   if (!window.Telegram?.WebApp) {

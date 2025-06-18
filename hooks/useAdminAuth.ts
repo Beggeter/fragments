@@ -22,6 +22,17 @@ export const useAdminAuth = () => {
   }, []);
 
   const checkAdminStatus = () => {
+    // Проверяем, что мы на клиенте
+    if (typeof window === 'undefined') {
+      setAuthState({
+        isAdmin: false,
+        adminToken: null,
+        expiresAt: null,
+        isLoading: false,
+      });
+      return;
+    }
+
     try {
       const adminToken = localStorage.getItem('adminToken');
       const expiresAt = localStorage.getItem('adminExpiresAt');
@@ -73,8 +84,10 @@ export const useAdminAuth = () => {
   };
 
   const loginAsAdmin = (adminToken: string, expiresAt: string) => {
-    localStorage.setItem('adminToken', adminToken);
-    localStorage.setItem('adminExpiresAt', expiresAt);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('adminToken', adminToken);
+      localStorage.setItem('adminExpiresAt', expiresAt);
+    }
     
     setAuthState({
       isAdmin: true,
@@ -85,8 +98,10 @@ export const useAdminAuth = () => {
   };
 
   const logoutAdmin = () => {
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminExpiresAt');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('adminToken');
+      localStorage.removeItem('adminExpiresAt');
+    }
     
     setAuthState({
       isAdmin: false,

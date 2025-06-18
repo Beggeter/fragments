@@ -35,6 +35,12 @@ export const useUser = () => {
   }, []);
 
   const checkUserSession = () => {
+    // Проверяем, что мы на клиенте
+    if (typeof window === 'undefined') {
+      setUserState(prev => ({ ...prev, isLoading: false }));
+      return;
+    }
+
     try {
       const sessionToken = localStorage.getItem('sessionToken');
       const userData = localStorage.getItem('userData');
@@ -68,8 +74,10 @@ export const useUser = () => {
   };
 
   const loginUser = (user: User, sessionToken: string) => {
-    localStorage.setItem('sessionToken', sessionToken);
-    localStorage.setItem('userData', JSON.stringify(user));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sessionToken', sessionToken);
+      localStorage.setItem('userData', JSON.stringify(user));
+    }
     
     setUserState({
       user,
@@ -80,8 +88,10 @@ export const useUser = () => {
   };
 
   const logout = () => {
-    localStorage.removeItem('sessionToken');
-    localStorage.removeItem('userData');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('sessionToken');
+      localStorage.removeItem('userData');
+    }
     
     setUserState({
       user: null,
@@ -94,7 +104,9 @@ export const useUser = () => {
   const updateUser = (updates: Partial<User>) => {
     if (userState.user) {
       const updatedUser = { ...userState.user, ...updates };
-      localStorage.setItem('userData', JSON.stringify(updatedUser));
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('userData', JSON.stringify(updatedUser));
+      }
       
       setUserState(prev => ({
         ...prev,

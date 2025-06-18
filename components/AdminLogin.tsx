@@ -31,8 +31,10 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess }) => {
 
       if (response.ok) {
         // Сохраняем админ-статус в localStorage
-        localStorage.setItem('adminToken', data.adminToken);
-        localStorage.setItem('adminExpiresAt', data.expiresAt);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('adminToken', data.adminToken);
+          localStorage.setItem('adminExpiresAt', data.expiresAt);
+        }
         
         onLoginSuccess(data.adminToken, data.expiresAt);
       } else {

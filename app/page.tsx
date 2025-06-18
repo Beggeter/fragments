@@ -8,99 +8,188 @@ import TelegramLogin from "@/components/TelegramLogin";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useUser } from "@/hooks/useUser";
 
-type Screen = "loading" | "login choice" | "admin login" | "telegram login" | "main menu" | "classic mode" | "settings";
+type Screen = "loading" | "admin login" | "telegram login" | "main menu" | "classic mode" | "settings";
+
+// Функция для надежного определения Telegram WebApp
+const isLaunchedInTelegram = (): boolean => {
+  if (typeof window === 'undefined') {
+    console.log('🔍 SSR: window не определен');
+    return false;
+  }
+
+  // Проверяем наличие Telegram WebApp объекта
+  const hasTelegramWebApp = !!(window.Telegram && window.Telegram.WebApp);
+  
+  // Проверяем наличие tgWebAppData в URL (самый надежный способ)
+  const urlParams = new URLSearchParams(window.location.search);
+  const hasTgWebAppData = urlParams.has('tgWebAppData');
+  
+  // Проверяем наличие initData в Telegram WebApp
+  const hasInitData = !!(window.Telegram?.WebApp?.initData);
+  
+  // Проверяем наличие пользователя в initDataUnsafe
+  const hasUser = !!(window.Telegram?.WebApp?.initDataUnsafe?.user);
+  
+  // Проверяем, что initData не пустая строка
+  const hasValidInitData = !!(window.Telegram?.WebApp?.initData && window.Telegram.WebApp.initData.length > 0);
+  
+  // Дополнительная отладка
+  console.log('🔍 Детальная проверка контекста запуска:');
+  console.log('  - window.Telegram:', window.Telegram);
+  console.log('  - window.Telegram?.WebApp:', window.Telegram?.WebApp);
+  console.log('  - window.Telegram?.WebApp?.initData:', window.Telegram?.WebApp?.initData);
+  console.log('  - window.Telegram?.WebApp?.initDataUnsafe:', window.Telegram?.WebApp?.initDataUnsafe);
+  console.log('  - URL:', window.location.href);
+  console.log('  - URL params:', urlParams.toString());
+  console.log('  - Telegram WebApp объект:', hasTelegramWebApp);
+  console.log('  - tgWebAppData в URL:', hasTgWebAppData);
+  console.log('  - initData:', hasInitData);
+  console.log('  - hasValidInitData:', hasValidInitData);
+  console.log('  - user в initDataUnsafe:', hasUser);
+  
+  // Считаем Telegram WebApp только если есть tgWebAppData в URL ИЛИ валидные данные в объекте
+  // Это более строгая проверка, которая исключает ложные срабатывания в браузере
+  const isTelegram = hasTgWebAppData || (hasTelegramWebApp && (hasValidInitData || hasUser));
+  
+  console.log('📱 Итоговый результат:', isTelegram ? 'Telegram WebApp' : 'Обычный браузер');
+  
+  return isTelegram;
+};
 
 const HomePage: React.FC = () => {
   const [score, setScore] = useState(0);
   const [currentScreen, setCurrentScreen] = useState<Screen>("loading");
   const [isTelegramAutoAuth, setIsTelegramAutoAuth] = useState(false);
   const [autoAuthCompleted, setAutoAuthCompleted] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   
   const { isAdmin, isLoading: adminLoading, loginAsAdmin, logoutAdmin, getTimeRemaining } = useAdminAuth();
   const { user, isLoading: userLoading, isAuthenticated, loginUser, logout } = useUser();
 
-  // Автоматическое определение Telegram и скрытная авторизация
+  // Инициализация: определяем контекст и показываем соответствующий экран
   useEffect(() => {
-    const checkTelegramAndAutoAuth = async () => {
-      // Проверяем, не авторизован ли уже пользователь
-      if (localStorage.getItem('sessionToken')) {
-        console.log('✅ User already authenticated, skipping auto auth');
-        setIsTelegramAutoAuth(false);
+    const initializeApp = async () => {
+      // Проверяем, что мы на клиенте
+      if (typeof window === 'undefined') {
         return;
       }
 
-      await new Promise(resolve => setTimeout(resolve, 200));
-      if (window.Telegram?.WebApp) {
-        setIsTelegramAutoAuth(true);
-        const tg = window.Telegram?.WebApp;
-        
-        if (!tg) {
-          console.log('❌ TELEGRAM AUTO AUTH: WebApp not found');
-          return;
-        }
-        
-        const user = tg.initDataUnsafe?.user;
-        if (user) {
-          try {
-            const initData = tg.initData || '';
-            const urlParams = new URLSearchParams(initData);
-            const hash = urlParams.get('hash');
-            const authDate = urlParams.get('auth_date');
-            if (hash) {
-              const authData = {
-                ...user,
-                hash: hash,
-                auth_date: authDate ? parseInt(authDate) : undefined,
-                initData: initData,
-              };
-              const response = await fetch('/api/auth/telegram', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(authData),
-              });
-              const data = await response.json();
-              if (response.ok) {
-                localStorage.setItem('sessionToken', data.sessionToken);
-                localStorage.setItem('userData', JSON.stringify(data.user));
-                loginUser(data.user, data.sessionToken);
-                setAutoAuthCompleted(true);
-                return;
-              }
-            }
-          } catch (error) {
-            console.error('💥 TELEGRAM AUTO AUTH: Error during auto login:', error);
-          }
-        }
-        setCurrentScreen("telegram login");
+      console.log('🚀 Инициализация приложения...');
+
+      // Проверяем, есть ли уже авторизованный пользователь
+      const existingSessionToken = localStorage.getItem('sessionToken');
+      const existingAdminToken = localStorage.getItem('adminToken');
+
+      if (existingSessionToken || existingAdminToken) {
+        console.log('✅ Найден существующий токен, пропускаем инициализацию');
+        setIsInitialized(true);
         return;
       }
-      setIsTelegramAutoAuth(false);
+
+      // Определяем контекст: Telegram WebApp или браузер
+      const isInTelegram = isLaunchedInTelegram();
+
+      if (isInTelegram) {
+        // В Telegram: пытаемся автоматическую авторизацию
+        console.log('📱 Telegram: запускаем автоматическую авторизацию');
+        setIsTelegramAutoAuth(true);
+        
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+          const user = tg.initDataUnsafe?.user;
+          if (user) {
+            try {
+              const initData = tg.initData || '';
+              const urlParams = new URLSearchParams(initData);
+              const hash = urlParams.get('hash');
+              const authDate = urlParams.get('auth_date');
+              
+              if (hash) {
+                console.log('🔐 Telegram: пытаемся авторизовать пользователя');
+                const authData = {
+                  ...user,
+                  hash: hash,
+                  auth_date: authDate ? parseInt(authDate) : undefined,
+                  initData: initData,
+                };
+                
+                const response = await fetch('/api/auth/telegram', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify(authData),
+                });
+                
+                const data = await response.json();
+                if (response.ok) {
+                  console.log('✅ Telegram: автоматическая авторизация успешна');
+                  localStorage.setItem('sessionToken', data.sessionToken);
+                  localStorage.setItem('userData', JSON.stringify(data.user));
+                  loginUser(data.user, data.sessionToken);
+                  setAutoAuthCompleted(true);
+                  setCurrentScreen("main menu");
+                  setIsInitialized(true);
+                  return;
+                } else {
+                  console.log('❌ Telegram: автоматическая авторизация не удалась');
+                }
+              }
+            } catch (error) {
+              console.error('💥 Telegram: ошибка автоматической авторизации:', error);
+            }
+          }
+        }
+        
+        // Если автоматическая авторизация не удалась, показываем Telegram login
+        console.log('📱 Telegram: показываем экран Telegram login');
+        setCurrentScreen("telegram login");
+      } else {
+        // В браузере: сразу показываем админ-логин
+        console.log('🌐 Браузер: показываем админ-логин');
+        setCurrentScreen("admin login");
+      }
+      
+      setIsInitialized(true);
     };
-    checkTelegramAndAutoAuth();
-  }, []); // Убрали loginUser из зависимостей
+
+    initializeApp();
+  }, []); // Запускаем только один раз при монтировании
 
   // useEffect для управления экраном на основе статуса авторизации
   useEffect(() => {
-    // Только если пользователь авторизован и экран не установлен
+    // Проверяем, что мы на клиенте
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    // Если пользователь авторизован, переключаем на главное меню
     if (
       (isAuthenticated || isAdmin) &&
       currentScreen !== "main menu" &&
       currentScreen !== "classic mode" &&
       currentScreen !== "settings"
     ) {
+      console.log('✅ Пользователь авторизован, переключаем на главное меню');
       setCurrentScreen("main menu");
     }
-    // Если пользователь не авторизован, сбрасываем на выбор входа
+    
+    // Если пользователь не авторизован и приложение инициализировано, 
+    // но экран не установлен, показываем соответствующий экран
     if (
       !isAuthenticated &&
       !isAdmin &&
-      currentScreen !== "login choice" &&
-      currentScreen !== "admin login" &&
-      currentScreen !== "telegram login"
+      isInitialized &&
+      !currentScreen
     ) {
-      setCurrentScreen("login choice");
+      const isInTelegram = isLaunchedInTelegram();
+      if (isInTelegram) {
+        console.log('📱 Telegram: показываем Telegram login');
+        setCurrentScreen("telegram login");
+      } else {
+        console.log('🌐 Браузер: показываем админ-логин');
+        setCurrentScreen("admin login");
+      }
     }
-  }, [isAuthenticated, isAdmin]);
+  }, [isAuthenticated, isAdmin, isInitialized, currentScreen]);
 
   const handleAdminLoginSuccess = (adminToken: string, expiresAt: string) => {
     loginAsAdmin(adminToken, expiresAt);
@@ -120,7 +209,13 @@ const HomePage: React.FC = () => {
     }
     setAutoAuthCompleted(false);
     setIsTelegramAutoAuth(false);
-    setCurrentScreen("login choice");
+    
+    // Показываем соответствующий экран в зависимости от контекста
+    if (typeof window !== 'undefined' && isLaunchedInTelegram()) {
+      setCurrentScreen("telegram login");
+    } else {
+      setCurrentScreen("admin login");
+    }
   };
 
   const hadleStartClassic = () => {
@@ -131,8 +226,8 @@ const HomePage: React.FC = () => {
     setCurrentScreen("main menu");
   };
 
-  // Показываем загрузку пока проверяем статус авторизации
-  if ((adminLoading || userLoading || currentScreen === "loading") && !autoAuthCompleted && !isAuthenticated && !isAdmin) {
+  // Показываем загрузку пока проверяем статус авторизации или инициализируем приложение
+  if (!isInitialized || (adminLoading || userLoading) && !autoAuthCompleted && !isAuthenticated && !isAdmin) {
     return (
       <div className="min-h-screen bg-blue-900 flex items-center justify-center">
         <div className="text-white text-xl">
@@ -142,58 +237,25 @@ const HomePage: React.FC = () => {
     );
   }
 
-  // Компонент выбора способа входа
-  const LoginChoice = () => (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
-      <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 max-w-md w-full">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">🎮 Добро пожаловать!</h1>
-          <p className="text-gray-300">Выберите способ входа в игру</p>
-        </div>
-
-        <div className="space-y-4">
-          <button
-            onClick={() => setCurrentScreen("telegram login")}
-            className="w-full p-4 bg-blue-600 hover:bg-blue-700 rounded-lg text-white font-medium transition-colors flex items-center justify-center gap-3"
-          >
-            <span className="text-xl">📱</span>
-            <span>Войти через Telegram</span>
-          </button>
-
-          <button
-            onClick={() => setCurrentScreen("admin login")}
-            className="w-full p-4 bg-gray-600 hover:bg-gray-700 rounded-lg text-white font-medium transition-colors flex items-center justify-center gap-3"
-          >
-            <span className="text-xl">🔐</span>
-            <span>Войти как админ</span>
-          </button>
-        </div>
-
-        <div className="mt-6 pt-6 border-t border-white/20 text-center">
-          <p className="text-xs text-gray-400">
-            Telegram - для обычных игроков<br />
-            Админ - для администраторов
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-
   return (
     <div className="min-h-screen bg-blue-900">
       {/* Отладочная информация */}
       {process.env.NODE_ENV === 'development' && (
         <div className="fixed top-4 left-4 z-50 bg-black/80 backdrop-blur-sm rounded-lg px-4 py-2 text-white text-xs shadow-lg">
           <div>Screen: {currentScreen}</div>
+          <div>Initialized: {isInitialized ? 'true' : 'false'}</div>
           <div>AutoAuth: {isTelegramAutoAuth ? 'true' : 'false'}</div>
           <div>Completed: {autoAuthCompleted ? 'true' : 'false'}</div>
           <div>Authenticated: {isAuthenticated ? 'true' : 'false'}</div>
           <div>Admin: {isAdmin ? 'true' : 'false'}</div>
+          <div>Context: {typeof window !== 'undefined' && isLaunchedInTelegram() ? 'Telegram' : 'Browser'}</div>
+          <div>Telegram Obj: {typeof window !== 'undefined' && !!(window.Telegram?.WebApp) ? 'Yes' : 'No'}</div>
+          <div>tgWebAppData: {typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('tgWebAppData') ? 'Yes' : 'No'}</div>
         </div>
       )}
 
       {/* Статус пользователя */}
-      {(isAdmin || isAuthenticated) && currentScreen !== "login choice" && (
+      {(isAdmin || isAuthenticated) && (
         <div className="fixed top-4 right-4 z-50 bg-green-600/90 backdrop-blur-sm rounded-lg px-4 py-2 text-white text-sm shadow-lg">
           <div className="flex items-center gap-2">
             {isAdmin ? (
@@ -221,8 +283,6 @@ const HomePage: React.FC = () => {
         </div>
       )}
 
-      {currentScreen === "login choice" && <LoginChoice />}
-      
       {currentScreen === "admin login" && (
         <AdminLogin onLoginSuccess={handleAdminLoginSuccess} />
       )}

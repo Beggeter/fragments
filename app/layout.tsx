@@ -47,6 +47,7 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${figtree.variable} antialiased overflow-y-hidden overflow-x-hidden`}
+      suppressHydrationWarning={true}
     >
       <head>
         {/* Telegram Web App Script */}
