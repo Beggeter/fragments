@@ -1,0 +1,171 @@
+marat@server-qlttpx:/var/www/fragments$ PORT=3001 npm run dev
+
+> blockblast-tg@0.1.0 dev
+> next dev --turbopack
+
+   ▲ Next.js 15.3.2 (Turbopack)
+   - Local:        http://localhost:3001
+   - Network:      http://95.182.96.81:3001
+   - Environments: .env
+
+ ✓ Starting...
+ ○ Compiling middleware ...
+ ✓ Compiled middleware in 875ms
+ ✓ Ready in 3.1s
+ ○ Compiling / ...
+ ✓ Compiled / in 10s
+ GET / 200 in 10707ms
+ ⚠ Cross origin request detected from fragmentstgm.ru to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ ○ Compiling /_not-found/page ...
+ ✓ Compiled /_not-found/page in 2s
+ GET /_next/webpack-hmr 404 in 2225ms
+ ✓ Compiled /api/debug-telegram in 131ms
+🔍 DEBUG TELEGRAM API: {
+  action: 'check_telegram_webapp',
+  timestamp: '2025-06-18T01:06:34.020Z',
+  data: {
+    hasTelegram: true,
+    user: { id: 610936383, firstName: 'Marat', username: 'NegimatzhanovM' },
+    initData: 'query_id=AAE_JmokAAAAAD8maiRy-Qxc&user=%7B%22id%22%3A610936383%2C%22first_name%22%3A%22Marat%22%2C%22last_name%22%3A%22%22%2C%22username%22%3A%22NegimatzhanovM%22%2C%22language_code%22%3A%22ru%22%2C%22is_premium%22%3Atrue%2C%22allows_write_to_pm%22%3Atrue%2C%22photo_url%22%3A%22https%3A%5C%2F%5C%2Ft.me%5C%2Fi%5C%2Fuserpic%5C%2F320%5C%2FQjYSV9A9mX7eiutd78nJmXL9d1ydG1208Gzj0Gl_gWo.svg%22%7D&auth_date=1750208778&signature=bRO8U-CIpUXZ7m5DVD_A_Coe8kLpkzwt3P4R8re5Pdm7_aplHolIQvGWl832QEXMXbt7c_thPAKkbY0T7BY0CQ&hash=fbd7f181376e53e1b4c93b23921c4ab80a74b7e222bf6c7544e9a4684cdb268e',
+    telegramObject: true,
+    webAppObject: true
+  }
+}
+📱 Checking Telegram WebApp data: {
+  hasTelegram: true,
+  user: { id: 610936383, firstName: 'Marat', username: 'NegimatzhanovM' },
+  initData: 'query_id=AAE_JmokAAAAAD8maiRy-Qxc&user=%7B%22id%22%3A610936383%2C%22first_name%22%3A%22Marat%22%2C%22last_name%22%3A%22%22%2C%22username%22%3A%22NegimatzhanovM%22%2C%22language_code%22%3A%22ru%22%2C%22is_premium%22%3Atrue%2C%22allows_write_to_pm%22%3Atrue%2C%22photo_url%22%3A%22https%3A%5C%2F%5C%2Ft.me%5C%2Fi%5C%2Fuserpic%5C%2F320%5C%2FQjYSV9A9mX7eiutd78nJmXL9d1ydG1208Gzj0Gl_gWo.svg%22%7D&auth_date=1750208778&signature=bRO8U-CIpUXZ7m5DVD_A_Coe8kLpkzwt3P4R8re5Pdm7_aplHolIQvGWl832QEXMXbt7c_thPAKkbY0T7BY0CQ&hash=fbd7f181376e53e1b4c93b23921c4ab80a74b7e222bf6c7544e9a4684cdb268e',
+  telegramObject: true,
+  webAppObject: true
+}
+ POST /api/debug-telegram 200 in 97ms
+🔍 DEBUG TELEGRAM API: {
+  action: 'check_telegram_webapp',
+  timestamp: '2025-06-18T01:06:34.036Z',
+  data: {
+    hasTelegram: true,
+    user: { id: 610936383, firstName: 'Marat', username: 'NegimatzhanovM' },
+    initData: 'query_id=AAE_JmokAAAAAD8maiRy-Qxc&user=%7B%22id%22%3A610936383%2C%22first_name%22%3A%22Marat%22%2C%22last_name%22%3A%22%22%2C%22username%22%3A%22NegimatzhanovM%22%2C%22language_code%22%3A%22ru%22%2C%22is_premium%22%3Atrue%2C%22allows_write_to_pm%22%3Atrue%2C%22photo_url%22%3A%22https%3A%5C%2F%5C%2Ft.me%5C%2Fi%5C%2Fuserpic%5C%2F320%5C%2FQjYSV9A9mX7eiutd78nJmXL9d1ydG1208Gzj0Gl_gWo.svg%22%7D&auth_date=1750208778&signature=bRO8U-CIpUXZ7m5DVD_A_Coe8kLpkzwt3P4R8re5Pdm7_aplHolIQvGWl832QEXMXbt7c_thPAKkbY0T7BY0CQ&hash=fbd7f181376e53e1b4c93b23921c4ab80a74b7e222bf6c7544e9a4684cdb268e',
+    telegramObject: true,
+    webAppObject: true
+  }
+}
+📱 Checking Telegram WebApp data: {
+  hasTelegram: true,
+  user: { id: 610936383, firstName: 'Marat', username: 'NegimatzhanovM' },
+  initData: 'query_id=AAE_JmokAAAAAD8maiRy-Qxc&user=%7B%22id%22%3A610936383%2C%22first_name%22%3A%22Marat%22%2C%22last_name%22%3A%22%22%2C%22username%22%3A%22NegimatzhanovM%22%2C%22language_code%22%3A%22ru%22%2C%22is_premium%22%3Atrue%2C%22allows_write_to_pm%22%3Atrue%2C%22photo_url%22%3A%22https%3A%5C%2F%5C%2Ft.me%5C%2Fi%5C%2Fuserpic%5C%2F320%5C%2FQjYSV9A9mX7eiutd78nJmXL9d1ydG1208Gzj0Gl_gWo.svg%22%7D&auth_date=1750208778&signature=bRO8U-CIpUXZ7m5DVD_A_Coe8kLpkzwt3P4R8re5Pdm7_aplHolIQvGWl832QEXMXbt7c_thPAKkbY0T7BY0CQ&hash=fbd7f181376e53e1b4c93b23921c4ab80a74b7e222bf6c7544e9a4684cdb268e',
+  telegramObject: true,
+  webAppObject: true
+}
+ POST /api/debug-telegram 200 in 104ms
+🔍 DEBUG TELEGRAM API: {
+  action: 'auth_attempt',
+  timestamp: '2025-06-18T01:06:35.523Z',
+  data: {
+    telegramId: 610936383,
+    firstName: 'Marat',
+    hasHash: true,
+    hasAuthDate: true
+  }
+}
+🔐 Auth attempt: { telegramId: 610936383, firstName: 'Marat', hasHash: false }
+ POST /api/debug-telegram 200 in 29ms
+ ✓ Compiled /api/auth/telegram in 170ms
+🔐 TELEGRAM AUTH: Request received {
+  method: 'POST',
+  headers: {
+    host: 'fragmentstgm.ru',
+    'x-real-ip': '176.52.98.185',
+    'x-forwarded-for': '176.52.98.185',
+    'x-forwarded-proto': 'https',
+    connection: 'close',
+    'content-length': '924',
+    'sec-ch-ua-platform': '"Windows"',
+    'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36 Edg/137.0.0.0',
+    'sec-ch-ua': '"Microsoft Edge WebView2";v="137", "Microsoft Edge";v="137", "Not/A)Brand";v="24", "Chromium";v="137"',
+    'content-type': 'application/json',
+    'sec-ch-ua-mobile': '?0',
+    accept: '*/*',
+    origin: 'https://fragmentstgm.ru',
+    'sec-fetch-site': 'same-origin',
+    'sec-fetch-mode': 'cors',
+    'sec-fetch-dest': 'empty',
+    referer: 'https://fragmentstgm.ru/',
+    'accept-encoding': 'gzip, deflate, br, zstd',
+    'accept-language': 'ru,en;q=0.9,en-GB;q=0.8,en-US;q=0.7',
+    'x-forwarded-host': 'fragmentstgm.ru',
+    'x-forwarded-port': '3001'
+  },
+  body: {
+    id: 610936383,
+    first_name: 'Marat',
+    last_name: '',
+    username: 'NegimatzhanovM',
+    language_code: 'ru',
+    is_premium: true,
+    allows_write_to_pm: true,
+    photo_url: 'https://t.me/i/userpic/320/QjYSV9A9mX7eiutd78nJmXL9d1ydG1208Gzj0Gl_gWo.svg',
+    hash: 'fbd7f181376e53e1b4c93b23921c4ab80a74b7e222bf6c7544e9a4684cdb268e',
+    auth_date: 1750208778,
+    initData: 'query_id=AAE_JmokAAAAAD8maiRy-Qxc&user=%7B%22id%22%3A610936383%2C%22first_name%22%3A%22Marat%22%2C%22last_name%22%3A%22%22%2C%22username%22%3A%22NegimatzhanovM%22%2C%22language_code%22%3A%22ru%22%2C%22is_premium%22%3Atrue%2C%22allows_write_to_pm%22%3Atrue%2C%22photo_url%22%3A%22https%3A%5C%2F%5C%2Ft.me%5C%2Fi%5C%2Fuserpic%5C%2F320%5C%2FQjYSV9A9mX7eiutd78nJmXL9d1ydG1208Gzj0Gl_gWo.svg%22%7D&auth_date=1750208778&signature=bRO8U-CIpUXZ7m5DVD_A_Coe8kLpkzwt3P4R8re5Pdm7_aplHolIQvGWl832QEXMXbt7c_thPAKkbY0T7BY0CQ&hash=fbd7f181376e53e1b4c93b23921c4ab80a74b7e222bf6c7544e9a4684cdb268e'
+  },
+  timestamp: '2025-06-18T01:06:36.128Z'
+}
+📋 TELEGRAM AUTH: Processing auth data {
+  telegramId: 610936383,
+  firstName: 'Marat',
+  hasHash: true,
+  authDate: '2025-06-18T01:06:18.000Z'
+}
+🌐 TELEGRAM AUTH: Client IP 176.52.98.185
+⏰ TELEGRAM AUTH: Time validation {
+  authDate: '2025-06-18T01:06:18.000Z',
+  now: '2025-06-18T01:06:36.130Z',
+  timeDiff: 18130,
+  maxAge: 86400000,
+  isValid: true
+}
+🔑 TELEGRAM AUTH: Bot token check {
+  hasToken: true,
+  tokenLength: 46,
+  tokenStart: '7938308992...',
+  tokenEnd: '8w6I5LU5zs'
+}
+⚠️ TELEGRAM AUTH: SIGNATURE VERIFICATION TEMPORARILY DISABLED FOR TESTING
+🔐 TELEGRAM AUTH: Signature verification {
+  isValid: true,
+  telegramId: 610936383,
+  method: 'TEMPORARILY DISABLED'
+}
+🔍 TELEGRAM AUTH: Looking for user in database 610936383
+👤 TELEGRAM AUTH: Creating new user { telegramId: 610936383, firstName: 'Marat' }
+✅ TELEGRAM AUTH: New user created { telegramId: 610936383, userId: 1, firstName: 'Marat' }
+🎫 TELEGRAM AUTH: Generating JWT token { userId: 1, telegramId: '610936383' }
+✅ TELEGRAM AUTH: Success response { telegramId: '610936383', userId: 1, hasSessionToken: true }
+ POST /api/auth/telegram 200 in 438ms
+🔍 DEBUG TELEGRAM API: {
+  action: 'api_request',
+  timestamp: '2025-06-18T01:06:36.320Z',
+  data: {
+    endpoint: '/api/auth/telegram',
+    method: 'POST',
+    status: 200,
+    response: 'Success'
+  }
+}
+📡 API request: {
+  endpoint: '/api/auth/telegram',
+  method: 'POST',
+  status: 200,
+  response: 'Success'
+}
+ POST /api/debug-telegram 200 in 29ms
+🔍 DEBUG TELEGRAM API: {
+  action: 'auth_success',
+  timestamp: '2025-06-18T01:06:36.431Z',
+  data: { telegramId: 610936383, userId: 1, sessionToken: true }
+}
+✅ Auth success: { telegramId: 610936383, userId: 1, sessionToken: 'Present' }
+ POST /api/debug-telegram 200 in 23ms
+ GET /wp-admin/setup-config.php 404 in 131ms

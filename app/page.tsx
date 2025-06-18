@@ -8,18 +8,94 @@ import TelegramLogin from "@/components/TelegramLogin";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useUser } from "@/hooks/useUser";
 
-type Screen = "login choice" | "admin login" | "telegram login" | "main menu" | "classic mode" | "settings";
+type Screen = "loading" | "login choice" | "admin login" | "telegram login" | "main menu" | "classic mode" | "settings";
 
 const HomePage: React.FC = () => {
   const [score, setScore] = useState(0);
-  const [currentScreen, setCurrentScreen] = useState<Screen>("login choice");
+  const [currentScreen, setCurrentScreen] = useState<Screen>("loading");
+  const [isTelegramAutoAuth, setIsTelegramAutoAuth] = useState(false);
   
   const { isAdmin, isLoading: adminLoading, loginAsAdmin, logoutAdmin, getTimeRemaining } = useAdminAuth();
   const { user, isLoading: userLoading, isAuthenticated, loginUser, logout } = useUser();
 
+  // Автоматическое определение Telegram и скрытная авторизация
+  useEffect(() => {
+    const checkTelegramAndAutoAuth = async () => {
+      // Небольшая задержка для загрузки скрипта Telegram
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      if (window.Telegram?.WebApp) {
+        console.log('🚀 TELEGRAM AUTO AUTH: Telegram Web App detected, starting auto auth');
+        setIsTelegramAutoAuth(true);
+        
+        const tg = window.Telegram.WebApp;
+        const user = tg.initDataUnsafe?.user;
+        
+        if (user) {
+          console.log('👤 TELEGRAM AUTO AUTH: User data found, attempting auto login');
+          
+          try {
+            // Парсим initData для получения хеша и auth_date
+            const initData = tg.initData || '';
+            const urlParams = new URLSearchParams(initData);
+            const hash = urlParams.get('hash');
+            const authDate = urlParams.get('auth_date');
+            
+            if (hash) {
+              // Подготавливаем данные для авторизации
+              const authData = {
+                ...user,
+                hash: hash,
+                auth_date: authDate ? parseInt(authDate) : undefined,
+                initData: initData,
+              };
+
+              // Отправляем запрос на сервер
+              const response = await fetch('/api/auth/telegram', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(authData),
+              });
+
+              const data = await response.json();
+
+              if (response.ok) {
+                console.log('✅ TELEGRAM AUTO AUTH: Auto login successful');
+                // Сохраняем токен сессии
+                localStorage.setItem('sessionToken', data.sessionToken);
+                localStorage.setItem('userData', JSON.stringify(data.user));
+                
+                loginUser(data.user, data.sessionToken);
+                setCurrentScreen("main menu");
+                return;
+              } else {
+                console.log('❌ TELEGRAM AUTO AUTH: Auto login failed:', data.error);
+              }
+            }
+          } catch (error) {
+            console.error('💥 TELEGRAM AUTO AUTH: Error during auto login:', error);
+          }
+        }
+        
+        // Если автоматическая авторизация не удалась, показываем Telegram Login
+        console.log('⚠️ TELEGRAM AUTO AUTH: Auto login failed, showing Telegram Login');
+        setCurrentScreen("telegram login");
+        return;
+      }
+      
+      // Если не Telegram, проверяем обычную авторизацию
+      console.log('🌐 TELEGRAM AUTO AUTH: Not Telegram Web App, checking normal auth');
+      setIsTelegramAutoAuth(false);
+    };
+
+    checkTelegramAndAutoAuth();
+  }, [loginUser]);
+
   // Проверяем, какой способ входа использовать
   useEffect(() => {
-    if (!adminLoading && !userLoading) {
+    if (!adminLoading && !userLoading && !isTelegramAutoAuth) {
       if (isAdmin) {
         setCurrentScreen("main menu");
       } else if (isAuthenticated) {
@@ -28,7 +104,7 @@ const HomePage: React.FC = () => {
         setCurrentScreen("login choice");
       }
     }
-  }, [isAdmin, isAuthenticated, adminLoading, userLoading]);
+  }, [isAdmin, isAuthenticated, adminLoading, userLoading, isTelegramAutoAuth]);
 
   const handleAdminLoginSuccess = (adminToken: string, expiresAt: string) => {
     loginAsAdmin(adminToken, expiresAt);
@@ -58,10 +134,12 @@ const HomePage: React.FC = () => {
   };
 
   // Показываем загрузку пока проверяем статус авторизации
-  if (adminLoading || userLoading) {
+  if (adminLoading || userLoading || currentScreen === "loading") {
     return (
       <div className="min-h-screen bg-blue-900 flex items-center justify-center">
-        <div className="text-white text-xl">Загрузка...</div>
+        <div className="text-white text-xl">
+          {isTelegramAutoAuth ? "Подключение к Telegram..." : "Загрузка..."}
+        </div>
       </div>
     );
   }
@@ -141,7 +219,7 @@ const HomePage: React.FC = () => {
       )}
       
       {currentScreen === "telegram login" && (
-        <TelegramLogin onLoginSuccess={handleTelegramLoginSuccess} />
+        <TelegramLogin onLoginSuccess={handleTelegramLoginSuccess} seamless={isTelegramAutoAuth} />
       )}
       
       {currentScreen === "main menu" && (

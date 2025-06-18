@@ -15,6 +15,7 @@ interface TelegramUser {
 
 interface TelegramLoginProps {
   onLoginSuccess: (user: any, sessionToken: string) => void;
+  seamless?: boolean;
 }
 
 declare global {
@@ -45,7 +46,7 @@ declare global {
   }
 }
 
-const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess }) => {
+const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess, seamless = false }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null);
@@ -97,22 +98,30 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess }) => {
         // Получаем данные пользователя
         if (user) {
           setTelegramUser(user);
+          
+          // В бесшовном режиме автоматически авторизуемся
+          if (seamless) {
+            console.log('🚀 SEAMLESS MODE: Auto-authorizing user');
+            handleTelegramLogin();
+          }
         }
 
-        // Настраиваем главную кнопку
-        tg.MainButton.text = 'Войти в игру';
-        tg.MainButton.color = '#0088cc';
-        tg.MainButton.textColor = '#ffffff';
-        tg.MainButton.show();
-        tg.MainButton.enable();
+        // Настраиваем главную кнопку только если не в бесшовном режиме
+        if (!seamless) {
+          tg.MainButton.text = 'Войти в игру';
+          tg.MainButton.color = '#0088cc';
+          tg.MainButton.textColor = '#ffffff';
+          tg.MainButton.show();
+          tg.MainButton.enable();
 
-        // Обработчик нажатия на кнопку
-        tg.MainButton.onClick(handleTelegramLogin);
+          // Обработчик нажатия на кнопку
+          tg.MainButton.onClick(handleTelegramLogin);
+        }
       }
     };
 
     checkTelegramWebApp();
-  }, []);
+  }, [seamless]);
 
   const handleTelegramLogin = async () => {
     if (!telegramUser) {
@@ -210,6 +219,11 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess }) => {
 
   // Если приложение не запущено в Telegram, показываем инструкцию
   if (!window.Telegram?.WebApp) {
+    // В бесшовном режиме не показываем ничего, если не Telegram
+    if (seamless) {
+      return null;
+    }
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 max-w-md w-full text-center">
@@ -256,6 +270,11 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess }) => {
 
   // Если пользователь не авторизован в Telegram
   if (!telegramUser) {
+    // В бесшовном режиме не показываем ничего, если нет пользователя
+    if (seamless) {
+      return null;
+    }
+    
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 flex items-center justify-center p-4">
         <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-8 shadow-2xl border border-white/20 max-w-md w-full text-center">
@@ -294,6 +313,11 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess }) => {
         </div>
       </div>
     );
+  }
+
+  // В бесшовном режиме не показываем интерфейс, если авторизация прошла успешно
+  if (seamless) {
+    return null;
   }
 
   // Показываем информацию о пользователе
