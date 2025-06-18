@@ -44,3 +44,5 @@ yarn-error.log*
 next-env.d.ts
 
 gamelogs.txt
+/bot/node_modules
+/bot/package-lock.json
