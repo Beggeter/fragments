@@ -9,8 +9,8 @@ interface TelegramUser {
   last_name?: string;
   username?: string;
   photo_url?: string;
-  auth_date: number;
-  hash: string;
+  auth_date?: number;
+  hash?: string;
 }
 
 interface TelegramLoginProps {
@@ -128,25 +128,32 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess }) => {
     setError('');
 
     try {
-      await sendDebugLog('auth_attempt', {
-        telegramId: telegramUser.id,
-        firstName: telegramUser.first_name,
-        hasHash: !!telegramUser.hash
-      });
-
-      // Парсим initData для получения хеша
+      // Парсим initData для получения хеша и auth_date
       const initData = window.Telegram?.WebApp.initData || '';
       const urlParams = new URLSearchParams(initData);
       const hash = urlParams.get('hash');
+      const authDate = urlParams.get('auth_date');
+      
+      console.log('🔐 Hash from initData:', hash);
+      console.log('⏰ Auth date from initData:', authDate);
       
       if (!hash) {
+        console.error('❌ Hash not found in initData');
         throw new Error('Hash не найден в данных Telegram');
       }
+
+      await sendDebugLog('auth_attempt', {
+        telegramId: telegramUser.id,
+        firstName: telegramUser.first_name,
+        hasHash: !!hash,
+        hasAuthDate: !!authDate
+      });
 
       // Подготавливаем данные для авторизации
       const authData = {
         ...telegramUser,
         hash: hash,
+        auth_date: authDate ? parseInt(authDate) : undefined,
       };
 
       // Отправляем запрос на сервер

@@ -11,7 +11,7 @@ interface TelegramAuthData {
   last_name?: string;
   username?: string;
   photo_url?: string;
-  auth_date: number;
+  auth_date?: number;
   hash: string;
 }
 
@@ -34,15 +34,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       telegramId: authData.id,
       firstName: authData.first_name,
       hasHash: !!authData.hash,
-      authDate: new Date(authData.auth_date * 1000).toISOString()
+      authDate: authData.auth_date ? new Date(authData.auth_date * 1000).toISOString() : 'Not provided'
     });
 
     // Проверяем наличие всех необходимых полей
-    if (!authData.id || !authData.first_name || !authData.auth_date || !authData.hash) {
+    if (!authData.id || !authData.first_name || !authData.hash) {
       console.log('❌ TELEGRAM AUTH: Missing required fields', {
         hasId: !!authData.id,
         hasFirstName: !!authData.first_name,
-        hasAuthDate: !!authData.auth_date,
         hasHash: !!authData.hash
       });
       return res.status(400).json({ error: 'Missing required fields' });
@@ -57,23 +56,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(429).json({ error: 'Too many requests' });
     }
 
-    // Проверяем время (данные не должны быть старше 1 дня)
-    const authDate = new Date(authData.auth_date * 1000);
-    const now = new Date();
-    const timeDiff = now.getTime() - authDate.getTime();
-    const maxAge = 24 * 60 * 60 * 1000; // 1 день
+    // Проверяем время (если auth_date предоставлен)
+    if (authData.auth_date) {
+      const authDate = new Date(authData.auth_date * 1000);
+      const now = new Date();
+      const timeDiff = now.getTime() - authDate.getTime();
+      const maxAge = 24 * 60 * 60 * 1000; // 1 день
 
-    console.log('⏰ TELEGRAM AUTH: Time validation', {
-      authDate: authDate.toISOString(),
-      now: now.toISOString(),
-      timeDiff: timeDiff,
-      maxAge: maxAge,
-      isValid: timeDiff <= maxAge
-    });
+      console.log('⏰ TELEGRAM AUTH: Time validation', {
+        authDate: authDate.toISOString(),
+        now: now.toISOString(),
+        timeDiff: timeDiff,
+        maxAge: maxAge,
+        isValid: timeDiff <= maxAge
+      });
 
-    if (timeDiff > maxAge) {
-      console.log('❌ TELEGRAM AUTH: Authentication data is too old');
-      return res.status(401).json({ error: 'Authentication data is too old' });
+      if (timeDiff > maxAge) {
+        console.log('❌ TELEGRAM AUTH: Authentication data is too old');
+        return res.status(401).json({ error: 'Authentication data is too old' });
+      }
+    } else {
+      console.log('⚠️ TELEGRAM AUTH: No auth_date provided, skipping time validation');
     }
 
     // Проверяем подпись Telegram
@@ -197,9 +200,9 @@ function verifyTelegramSignature(authData: TelegramAuthData, botToken: string): 
   try {
     console.log('🔐 TELEGRAM AUTH: Starting signature verification');
     
-    // Создаем строку для проверки
+    // Создаем строку для проверки (исключаем поля с undefined значениями)
     const dataCheckString = Object.keys(authData)
-      .filter(key => key !== 'hash')
+      .filter(key => key !== 'hash' && authData[key as keyof TelegramAuthData] !== undefined)
       .sort()
       .map(key => `${key}=${authData[key as keyof TelegramAuthData]}`)
       .join('\n');
