@@ -22,114 +22,72 @@ const HomePage: React.FC = () => {
   // Автоматическое определение Telegram и скрытная авторизация
   useEffect(() => {
     const checkTelegramAndAutoAuth = async () => {
-      // Небольшая задержка для загрузки скрипта Telegram
       await new Promise(resolve => setTimeout(resolve, 200));
-      
       if (window.Telegram?.WebApp) {
-        console.log('🚀 TELEGRAM AUTO AUTH: Telegram Web App detected, starting auto auth');
         setIsTelegramAutoAuth(true);
-        
         const tg = window.Telegram.WebApp;
         const user = tg.initDataUnsafe?.user;
-        
         if (user) {
-          console.log('👤 TELEGRAM AUTO AUTH: User data found, attempting auto login');
-          
           try {
-            // Парсим initData для получения хеша и auth_date
             const initData = tg.initData || '';
             const urlParams = new URLSearchParams(initData);
             const hash = urlParams.get('hash');
             const authDate = urlParams.get('auth_date');
-            
             if (hash) {
-              // Подготавливаем данные для авторизации
               const authData = {
                 ...user,
                 hash: hash,
                 auth_date: authDate ? parseInt(authDate) : undefined,
                 initData: initData,
               };
-
-              // Отправляем запрос на сервер
               const response = await fetch('/api/auth/telegram', {
                 method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(authData),
               });
-
               const data = await response.json();
-
               if (response.ok) {
-                console.log('✅ TELEGRAM AUTO AUTH: Auto login successful');
-                console.log('🎯 Setting autoAuthCompleted = true');
-                console.log('🎯 Setting currentScreen = "main menu"');
-                // Сохраняем токен сессии
                 localStorage.setItem('sessionToken', data.sessionToken);
                 localStorage.setItem('userData', JSON.stringify(data.user));
-                
                 loginUser(data.user, data.sessionToken);
                 setAutoAuthCompleted(true);
-                setCurrentScreen("main menu");
                 return;
-              } else {
-                console.log('❌ TELEGRAM AUTO AUTH: Auto login failed:', data.error);
               }
             }
           } catch (error) {
             console.error('💥 TELEGRAM AUTO AUTH: Error during auto login:', error);
           }
         }
-        
-        // Если автоматическая авторизация не удалась, показываем Telegram Login
-        console.log('⚠️ TELEGRAM AUTO AUTH: Auto login failed, showing Telegram Login');
         setCurrentScreen("telegram login");
         return;
       }
-      
-      // Если не Telegram, проверяем обычную авторизацию
-      console.log('🌐 TELEGRAM AUTO AUTH: Not Telegram Web App, checking normal auth');
       setIsTelegramAutoAuth(false);
     };
-
     checkTelegramAndAutoAuth();
   }, [loginUser]);
 
-  // Проверяем, какой способ входа использовать
+  // useEffect для управления экраном на основе статуса авторизации
   useEffect(() => {
-    console.log('🔄 SCREEN LOGIC:', {
-      adminLoading,
-      userLoading,
-      isTelegramAutoAuth,
-      autoAuthCompleted,
-      isAdmin,
-      isAuthenticated,
-      currentScreen
-    });
-
-    if (!adminLoading && !userLoading && !isTelegramAutoAuth && !autoAuthCompleted) {
-      if (isAdmin) {
-        console.log('🎯 Setting screen to main menu (admin)');
-        setCurrentScreen("main menu");
-      } else if (isAuthenticated) {
-        console.log('🎯 Setting screen to main menu (authenticated)');
-        setCurrentScreen("main menu");
-      } else {
-        console.log('🎯 Setting screen to login choice');
-        setCurrentScreen("login choice");
-      }
-    }
-  }, [isAdmin, isAuthenticated, adminLoading, userLoading, isTelegramAutoAuth, autoAuthCompleted]);
-
-  // Принудительная установка экрана в главное меню для авторизованных пользователей
-  useEffect(() => {
-    if ((isAuthenticated || isAdmin) && currentScreen !== "main menu" && currentScreen !== "classic mode") {
-      console.log('🎯 FORCE: Setting screen to main menu (user authenticated)');
+    // Только если пользователь авторизован и экран не установлен
+    if (
+      (isAuthenticated || isAdmin) &&
+      currentScreen !== "main menu" &&
+      currentScreen !== "classic mode" &&
+      currentScreen !== "settings"
+    ) {
       setCurrentScreen("main menu");
     }
-  }, [isAuthenticated, isAdmin, currentScreen]);
+    // Если пользователь не авторизован, сбрасываем на выбор входа
+    if (
+      !isAuthenticated &&
+      !isAdmin &&
+      currentScreen !== "login choice" &&
+      currentScreen !== "admin login" &&
+      currentScreen !== "telegram login"
+    ) {
+      setCurrentScreen("login choice");
+    }
+  }, [isAuthenticated, isAdmin]);
 
   const handleAdminLoginSuccess = (adminToken: string, expiresAt: string) => {
     loginAsAdmin(adminToken, expiresAt);
