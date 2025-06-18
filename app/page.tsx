@@ -239,49 +239,6 @@ const HomePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-blue-900">
-      {/* Отладочная информация */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="fixed top-4 left-4 z-50 bg-black/80 backdrop-blur-sm rounded-lg px-4 py-2 text-white text-xs shadow-lg">
-          <div>Screen: {currentScreen}</div>
-          <div>Initialized: {isInitialized ? 'true' : 'false'}</div>
-          <div>AutoAuth: {isTelegramAutoAuth ? 'true' : 'false'}</div>
-          <div>Completed: {autoAuthCompleted ? 'true' : 'false'}</div>
-          <div>Authenticated: {isAuthenticated ? 'true' : 'false'}</div>
-          <div>Admin: {isAdmin ? 'true' : 'false'}</div>
-          <div>Context: {typeof window !== 'undefined' && isLaunchedInTelegram() ? 'Telegram' : 'Browser'}</div>
-          <div>Telegram Obj: {typeof window !== 'undefined' && !!(window.Telegram?.WebApp) ? 'Yes' : 'No'}</div>
-          <div>tgWebAppData: {typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('tgWebAppData') ? 'Yes' : 'No'}</div>
-        </div>
-      )}
-
-      {/* Статус пользователя */}
-      {(isAdmin || isAuthenticated) && (
-        <div className="fixed top-4 right-4 z-50 bg-green-600/90 backdrop-blur-sm rounded-lg px-4 py-2 text-white text-sm shadow-lg">
-          <div className="flex items-center gap-2">
-            {isAdmin ? (
-              <>
-                <span>👑 Админ</span>
-                <span className="text-xs opacity-75">
-                  {getTimeRemaining() ? `Осталось: ${getTimeRemaining()}` : 'Истекло'}
-                </span>
-              </>
-            ) : (
-              <>
-                <span>👤 {user?.firstName}</span>
-                <span className="text-xs opacity-75">
-                  💰 {user?.currency}
-                </span>
-              </>
-            )}
-            <button
-              onClick={handleLogout}
-              className="ml-2 px-2 py-1 bg-red-600 hover:bg-red-700 rounded text-xs transition-colors"
-            >
-              Выйти
-            </button>
-          </div>
-        </div>
-      )}
 
       {currentScreen === "admin login" && (
         <AdminLogin onLoginSuccess={handleAdminLoginSuccess} />

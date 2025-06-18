@@ -15,7 +15,29 @@ import { Piece } from "./pieces/Piece";
 import { ComboVisualizer } from "./board/ComboVisualizer";
 import { SVGPreloader } from "@/utils/SVGPreloader";
 import { DraggablePiecesSection } from "./DraggablePiecesSection";
+import { BoostersPanel } from "./BoostersPanel";
+import { BoostersPanelSimple } from "./BoostersPanelSimple";
 
+// Throttling utility
+const throttle = (func: Function, limit: number) => {
+  let inThrottle: boolean;
+  return function(this: any, ...args: any[]) {
+    if (!inThrottle) {
+      func.apply(this, args);
+      inThrottle = true;
+      setTimeout(() => inThrottle = false, limit);
+    }
+  }
+};
+
+// Debouncing utility
+const debounce = (func: Function, delay: number) => {
+  let timeoutId: NodeJS.Timeout;
+  return function(this: any, ...args: any[]) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(this, args), delay);
+  }
+};
 
 const DEFAULT_CELL_SIZE = 43.75;
 
@@ -52,6 +74,8 @@ const useBoardAndCellSizes = () => {
       }
     };
 
+    const debouncedUpdateSizes = debounce(updateSizes, 100);
+
     // Update sizes initially
     updateSizes();
 
@@ -59,7 +83,7 @@ const useBoardAndCellSizes = () => {
     const resizeObserver = new ResizeObserver((entries) => {
       // Only update if boardRef is among the observed entries
       if (entries.some((entry) => entry.target === boardRef.current)) {
-        updateSizes();
+        debouncedUpdateSizes();
       }
     });
 
@@ -69,11 +93,11 @@ const useBoardAndCellSizes = () => {
 
     // Also listen to window resize as a fallback/additional measure
     if (typeof window !== 'undefined') {
-      window.addEventListener("resize", updateSizes);
+      window.addEventListener("resize", debouncedUpdateSizes);
 
       return () => {
         resizeObserver.disconnect();
-        window.removeEventListener("resize", updateSizes);
+        window.removeEventListener("resize", debouncedUpdateSizes);
       };
     }
 
@@ -186,6 +210,40 @@ const useGridPosition = () => {
   };
 };
 
+// Memoized cell component for better performance
+const BoardCell = React.memo<{
+  cell: any;
+  x: number;
+  y: number;
+  highlight: boolean;
+  isInClearingLine: boolean;
+  isPotentiallyCleared: boolean;
+  isFirst: boolean;
+  cellRef: React.RefObject<HTMLDivElement | null>;
+}>(({ cell, x, y, highlight, isInClearingLine, isPotentiallyCleared, isFirst, cellRef }) => {
+  return (
+    <div
+      key={x}
+      ref={isFirst ? cellRef : undefined}
+      className={`rounded-[3px] ${
+        cell.value ? "bg-gray-700" : "bg-gray-900"
+      } ${highlight ? "ring-2 ring-blue-500" : ""} ${
+        isInClearingLine ? "clearing-line-horizontal" : ""
+      } ${isInClearingLine ? "clearing-line-vertical" : ""} ${
+        isPotentiallyCleared ? "potential-clear-highlight" : ""
+      }`}
+    >
+      {cell.value === 1 && cell.color && (
+        <Piece
+          color={cell.color}
+          size="100%"
+          isClearing={isInClearingLine}
+        />
+      )}
+    </div>
+  );
+});
+
 export const GameBoard: React.FC<GameBoardProps> = ({
   width = 8,
   height = 8,
@@ -225,6 +283,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     calculateDynamicOffset,
   } = useGridPosition();
 
+  // Создаем новый ref с правильным типом для BoardCell
+  const boardCellRef = useRef<HTMLDivElement>(null);
+
   const [clearingCells, setClearingCells] = useState<boolean[][]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
   const [nextBlocks, setNextBlocks] = useState<Block[]>([]);
@@ -259,6 +320,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [clearingVerticalLines, setClearingVerticalLines] = useState<number[]>(
     []
   );
+
+  // Добавляем состояние для валюты (временно захардкодим для демонстрации)
+  const [currency, setCurrency] = useState(100);
+
+  // Обработчик кликов по бустерам
+  const handleBoosterClick = useCallback((boosterId: string) => {
+    console.log(`Бустер ${boosterId} активирован!`);
+    // Здесь будет логика бустеров
+  }, []);
 
   const blockGenerator = new BlockGenerator();
   const scoreCalculator = new ScoreCalculator();
@@ -399,7 +469,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   };
 
   useEffect(() => {
-    const handleMove = (e: MouseEvent | TouchEvent) => {
+    const handleMove = throttle((e: MouseEvent | TouchEvent) => {
       if (!draggedPiece || !boardRef.current) return;
 
       if (e instanceof TouchEvent) {
@@ -425,7 +495,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       }
 
       setHoverCell(nearestPosition);
-    };
+    }, 16); // ~60fps throttling
 
     const handleStart = (e: TouchEvent) => {
       // e.preventDefault();
@@ -498,19 +568,24 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         });
       });
 
-      // Проверяем горизонтальные линии (строки)
-      const horizontalLines = tempBoard.map((row, y) => {
-        return row.every((cell) => cell.value === 1);
-      });
+      // Оптимизированная проверка линий
+      const horizontalLines = new Array(height).fill(false);
+      const verticalLines = new Array(width).fill(false);
 
-      // Проверяем вертикальные линии (столбцы)
-      const verticalLines = Array(width)
-        .fill(false)
-        .map((_, x) => {
-          return tempBoard.every((row) => row[x].value === 1);
-        });
+      // Проверяем горизонтальные линии
+      for (let y = 0; y < height; y++) {
+        horizontalLines[y] = tempBoard[y].every((cell) => cell.value === 1);
+      }
 
-      // Создаем матрицу подсветки, где true означает, что ячейка входит в линию, которая будет очищена
+      // Проверяем вертикальные линии
+      for (let x = 0; x < width; x++) {
+        verticalLines[x] = tempBoard.every((row) => row[x].value === 1);
+      }
+
+      // Создаем матрицу подсветки только если есть линии для очистки
+      const hasLinesToClear = horizontalLines.some(line => line) || verticalLines.some(line => line);
+      if (!hasLinesToClear) return [];
+
       const highlightMatrix = tempBoard.map((row, y) => {
         return row.map((_, x) => {
           return horizontalLines[y] || verticalLines[x];
@@ -556,7 +631,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   }, [onGameOver, setOnGameOver]);
 
   return (
-    <div className={`flex flex-col items-center gap-6 min-h-screen bg-[var(--game-background)] p-4 no-select`}>
+    <div className={`flex flex-col items-center gap-6 min-h-screen bg-[var(--game-background)] p-4 no-select will-change-auto`}>
       <SVGPreloader colors={allColors} />
       {/* Top section: Score and Settings (placeholder) */}
 
@@ -571,25 +646,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       <div className="flex justify-center items-center w-full -mb-6">
         <ScoreDisplay ref={scoreDisplayRef} newScore={score} moveScore={lastScoreResult} />
       </div>
-      {/* <div className="w-1/2 break-all h-[3vh] z-9999">
-        Debug: {JSON.stringify(lastScoreResult)}
-      </div> */}
-      {/* Middle section: Power-ups (placeholder) */}
-      {/* <div className="flex justify-around w-full my-4">
-        <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center text-white">⚡</div>
-        <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center text-white">↩️</div>
-        <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center text-white">💥</div>
-        <div className="w-12 h-12 bg-gray-700 rounded-full flex items-center justify-center text-white">🔄</div>
-      </div> */}
+      <BoostersPanelSimple />
       {/* Game Board Container - takes full width and maintains aspect ratio */}
 
       <div className="w-full aspect-square flex justify-center items-center p-4 md:max-w-xs md:max-h-xs">
         <div className="relative w-full h-full">
-          <ComboVisualizer speed={4} lastScore={lastScoreResult} />
+          {lastScoreResult && (
+            <ComboVisualizer speed={4} lastScore={lastScoreResult} />
+          )}
 
           <div
             ref={boardRef}
-            className="relative z-10 grid grid-cols-8 grid-rows-8 gap-0.5 w-full h-full bg-gray-800 p-1 rounded-lg"
+            className="relative z-10 grid grid-cols-8 grid-rows-8 gap-0.5 w-full h-full bg-gray-800 p-1 rounded-lg will-change-transform"
           >
             {board.map((row, y) => (
               <React.Fragment key={y}>
@@ -624,25 +692,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     clearingVerticalLines.includes(x);
 
                   return (
-                    <div
+                    <BoardCell
                       key={x}
-                      ref={isFirst ? cellRef : null}
-                      className={`rounded-[3px] ${
-                        cell.value ? "bg-gray-700" : "bg-gray-900"
-                      } ${highlight ? "ring-2 ring-blue-500" : ""} ${
-                        isInClearingLine ? "clearing-line-horizontal" : ""
-                      } ${isInClearingLine ? "clearing-line-vertical" : ""} ${
-                        isPotentiallyCleared ? "potential-clear-highlight" : ""
-                      }`}
-                    >
-                      {cell.value === 1 && cell.color && (
-                        <Piece
-                          color={cell.color}
-                          size="100%"
-                          isClearing={isInClearingLine}
-                        />
-                      )}
-                    </div>
+                      cell={cell}
+                      x={x}
+                      y={y}
+                      highlight={highlight}
+                      isInClearingLine={isInClearingLine}
+                      isPotentiallyCleared={isPotentiallyCleared}
+                      isFirst={isFirst}
+                      cellRef={boardCellRef}
+                    />
                   );
                 })}
               </React.Fragment>
