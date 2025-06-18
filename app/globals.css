@@ -466,7 +466,8 @@ body {
   /* Force hardware acceleration for SVG images */
   .falling-element img,
   .menu-button img,
-  .menu-shadow img {
+  .menu-shadow img,
+  .piece-container img {
     -webkit-transform: translate3d(0, 0, 0);
     transform: translate3d(0, 0, 0);
     -webkit-backface-visibility: hidden;
@@ -479,6 +480,14 @@ body {
   img[src*=".svg"] {
     opacity: 1 !important;
     visibility: visible !important;
+  }
+  
+  /* Specific fixes for game pieces */
+  .piece-container img {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
   }
 }
 
