@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Figtree, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,6 +24,10 @@ export const metadata: Metadata = {
   title: "Fragments",
   description: "Play Fragments game!",
   manifest: '/manifest.json',
+  other: {
+    'telegram-web-app-ready': 'true',
+    'telegram-web-app-version': '6.0',
+  },
 };
 
 export const viewport = {
@@ -43,6 +48,13 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${figtree.variable} antialiased overflow-y-hidden overflow-x-hidden`}
     >
+      <head>
+        {/* Telegram Web App Script */}
+        <Script
+          src="https://telegram.org/js/telegram-web-app.js"
+          strategy="beforeInteractive"
+        />
+      </head>
       <body>{children}</body>
     </html>
   );

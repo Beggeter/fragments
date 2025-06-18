@@ -66,6 +66,9 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess }) => {
 
   useEffect(() => {
     const checkTelegramWebApp = async () => {
+      // Добавляем небольшую задержку для загрузки скрипта
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
       const hasTelegram = !!window.Telegram?.WebApp;
       const user = window.Telegram?.WebApp?.initDataUnsafe?.user;
       
@@ -76,7 +79,9 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess }) => {
           firstName: user.first_name,
           username: user.username
         } : null,
-        initData: window.Telegram?.WebApp?.initData || 'No initData'
+        initData: window.Telegram?.WebApp?.initData || 'No initData',
+        telegramObject: !!window.Telegram,
+        webAppObject: !!window.Telegram?.WebApp
       };
 
       setDebugInfo(debugData);
@@ -210,6 +215,8 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess }) => {
             <h3 className="text-red-300 font-semibold mb-2">🔍 Отладка:</h3>
             <p className="text-red-200 text-sm">
               Telegram WebApp не найден<br/>
+              Telegram объект: {debugInfo.telegramObject ? '✅' : '❌'}<br/>
+              WebApp объект: {debugInfo.webAppObject ? '✅' : '❌'}<br/>
               hasTelegram: {debugInfo.hasTelegram ? '✅' : '❌'}<br/>
               initData: {debugInfo.initData ? '✅' : '❌'}
             </p>
@@ -250,11 +257,13 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess }) => {
           </p>
           
           {/* Отладочная информация */}
-          <div className="bg-yellow-500/20 border border-yellow-500/30 rounded-lg p-3 mb-4 text-left">
-            <h3 className="text-yellow-300 font-semibold mb-2">🔍 Отладка:</h3>
-            <p className="text-yellow-200 text-sm">
-              Telegram WebApp найден ✅<br/>
-              Данные пользователя: ❌<br/>
+          <div className="bg-red-500/20 border border-red-500/30 rounded-lg p-3 mb-4 text-left">
+            <h3 className="text-red-300 font-semibold mb-2">🔍 Отладка:</h3>
+            <p className="text-red-200 text-sm">
+              Telegram WebApp не найден<br/>
+              Telegram объект: {debugInfo.telegramObject ? '✅' : '❌'}<br/>
+              WebApp объект: {debugInfo.webAppObject ? '✅' : '❌'}<br/>
+              hasTelegram: {debugInfo.hasTelegram ? '✅' : '❌'}<br/>
               initData: {debugInfo.initData ? '✅' : '❌'}
             </p>
           </div>
