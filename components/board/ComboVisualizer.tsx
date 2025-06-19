@@ -64,7 +64,18 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   const [debugMode, setDebugMode] = useState(false);
   const [activeTheme, setActiveTheme] = useState(1);
   const [activeBlur, setActiveBlur] = useState(1);
-  const [showScorePlus, setShowScorePlus] = useState(false);
+  const [scorePluses, setScorePluses] = useState<
+    {
+      id: number;
+      x: number;
+      y: number;
+      value: number;
+      to?: { x: number; y: number };
+      color: string;
+    }[]
+  >([]);
+
+  const scorePlusId = React.useRef(0);
 
   // Handle combo level changes
   useEffect(() => {
@@ -86,15 +97,22 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
 
   useEffect(() => {
     if (lastScore?.pixelPosition) {
-      setShowScorePlus(false);
-
-      const delay = 600;
+      const { x, y } = lastScore.pixelPosition;
+      const value = lastScore.clearedLinesPoints * lastScore.comboBonus;
+      const to = scoreDisplayCoords ? { ...scoreDisplayCoords } : undefined;
+      const id = scorePlusId.current++;
+      const color = theme.background;
+      const delay = 400;
       const duration = 900;
 
       const delayTimer = setTimeout(() => {
-        setShowScorePlus(true);
-        const hideTimer = setTimeout(() => setShowScorePlus(false), duration);
-        return () => clearTimeout(hideTimer);
+        setScorePluses((prev) => [...prev, { id, x, y, value, to, color }]);
+        // Удаляем через duration
+        const removeTimer = setTimeout(() => {
+          setScorePluses((prev) => prev.filter((sp) => sp.id !== id));
+        }, duration);
+        // Очищаем removeTimer если компонент размонтируется до удаления
+        return () => clearTimeout(removeTimer);
       }, delay);
 
       return () => clearTimeout(delayTimer);
@@ -136,44 +154,51 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
     "--brightness": brightnessValue,
   } as React.CSSProperties;
 
-  const renderScorePlus = () => {
-    if (!lastScore?.pixelPosition) return null;
-    const { x, y } = lastScore.pixelPosition;
-    if (scoreDisplayCoords) {
+  const renderScorePlus = (sp: {
+    id: number;
+    x: number;
+    y: number;
+    value: number;
+    to?: { x: number; y: number };
+    color: string;
+  }) => {
+    if (sp.to) {
       return (
         <div
+          key={sp.id}
           style={
             {
-              "--scoreplus-x": `${x}px`,
-              "--scoreplus-y": `${y}px`,
-              "--scoreplus-x-to": `${scoreDisplayCoords.x}px`,
-              "--scoreplus-y-to": `${scoreDisplayCoords.y}px`,
+              "--scoreplus-x": `${sp.x}px`,
+              "--scoreplus-y": `${sp.y}px`,
+              "--scoreplus-x-to": `${sp.to.x}px`,
+              "--scoreplus-y-to": `${sp.to.y}px`,
               pointerEvents: "none",
-              color: theme.background,
+              color: sp.color,
               textShadow: "0 0 8px #000, 0 0 2px #fff",
               position: "absolute",
             } as React.CSSProperties
           }
           className="scoreplus-fly text-4xl z-2000 font-extrabold font-figtree"
         >
-          +{lastScore?.clearedLinesPoints * lastScore?.comboBonus}
+          +{sp.value}
         </div>
       );
     }
     // fallback: просто на месте
     return (
       <div
+        key={sp.id}
         style={{
-          left: x,
-          top: y,
+          left: sp.x,
+          top: sp.y,
           pointerEvents: "none",
-          color: theme.background,
+          color: sp.color,
           textShadow: "0 0 8px #000, 0 0 2px #fff",
           position: "absolute",
         }}
         className="text-4xl z-2000 font-extrabold font-figtree"
       >
-        +{lastScore?.clearedLinesPoints * lastScore?.comboBonus}
+        +{sp.value}
       </div>
     );
   };
@@ -191,7 +216,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
           className={`combo-text ${
             showComboText ? "show" : ""
           } text-amber-100 absolute flex items-center justify-center inset-0
-           z-1000 font-figtree font-extrabold italic text-4xl drop-shadow-[3px_px_10px_rgba(255,255,255,0.4)]`}
+           z-1000 font-figtree font-extrabold italic text-4xl  ]`}
         >
           {`Combo ${
             lastScore.comboLevel > 1 ? `X${lastScore.comboLevel}` : ""
@@ -199,54 +224,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
         </div>
       )}
 
-      <div className="absolute -top-10 right-0 z-[1001] flex flex-col gap-2 p-2 max-h-[50vh] overflow-y-scroll">
-        <button
-          className="px-2 py-1 text-xs bg-gray-800 text-white rounded hover:bg-gray-700"
-          onClick={() => setDebugMode(!debugMode)}
-        >
-          {debugMode ? "Hide Debug" : "Show Debug"}
-        </button>
-
-        {debugMode && (
-          <div className="flex flex-col gap-1 bg-gray-800/80 p-2 rounded">
-            <div className="text-xs text-white mb-1">Theme Level:</div>
-            {[
-              1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-              20, 21,
-            ].map((level) => (
-              <button
-                key={level}
-                className={`${
-                  level === activeTheme ? "outline" : ""
-                } px-2 py-1 text-xs bg-gray-700 text-white rounded hover:bg-gray-600`}
-                onClick={() => {
-                  setCurrentTheme(getThemeByScore(level));
-                  setActiveTheme(level);
-                }}
-              >
-                Level {level}
-              </button>
-            ))}
-
-            <div className="text-xs text-white mt-2 mb-1">Blur Level:</div>
-            {[0, 1, 2, 3].map((moves) => (
-              <button
-                key={moves}
-                className={`${
-                  moves === activeBlur ? "outline" : ""
-                } px-2 py-1 text-xs bg-gray-700 text-white rounded hover:bg-gray-600`}
-                onClick={() => {
-                  setCurrentBlur(getBlur(moves, 3));
-                  setActiveBlur(moves);
-                }}
-              >
-                Moves: {moves}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-      {showScorePlus && renderScorePlus()}
+      {scorePluses.map((sp) => renderScorePlus(sp))}
     </>
   );
 };

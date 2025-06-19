@@ -8,11 +8,14 @@ const boosterIcons = [
 ];
 
 export const BoostersPanelSimple: React.FC = () => (
-  <div className="flex justify-center gap-3 mb-1">
+  <div className="z-3000 min-w-fit min-h-fit items-center justify-center
+   flex bg-gray-800 w-40 h-14 rounded-4xl -mt-6  outline-[#1F5EFF] outline-2 shadow-xl">
+  <div className="flex justify-between gap-2  ">
     {boosterIcons.map((icon) => (
       <button
         key={icon.alt}
-        className="w-11 h-11 rounded-full aspect-square bg-white/90 shadow-md flex items-center justify-center overflow-hidden border border-gray-200 hover:scale-110 transition-transform"
+        className="w-11 h-11 rounded-full aspect-square shadow-md flex
+         items-center justify-center overflow-hidden  hover:scale-110 transition-transform"
         tabIndex={-1}
         type="button"
         style={{ padding: 0 }}
@@ -25,5 +28,6 @@ export const BoostersPanelSimple: React.FC = () => (
         />
       </button>
     ))}
+  </div>
   </div>
 );

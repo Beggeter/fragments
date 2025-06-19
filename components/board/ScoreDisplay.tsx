@@ -21,7 +21,15 @@ export const ScoreDisplay = forwardRef<HTMLDivElement, ScoreDisplayProps>(
       }
 
       setIsAnimating(true);
-      const animationDuration = 500; // ms
+      // Базовое время анимации
+      const baseDuration = 2000; // 2 секунды
+      // Вычисляем разницу между значениями
+      const scoreDifference = Math.abs(endScore - startScore);
+      // Увеличиваем время анимации в зависимости от разницы
+      // Например, каждые 1000 очков добавляем 1 секунду
+      const additionalDuration = Math.floor(scoreDifference / 50) * 500;
+      const animationDuration = baseDuration + additionalDuration;
+      
       const startTime = performance.now();
 
       const animate = (currentTime: number) => {
@@ -63,9 +71,9 @@ export const ScoreDisplay = forwardRef<HTMLDivElement, ScoreDisplayProps>(
 
     return (
       <div ref={ref} className={`flex flex-col items-center ${className}`}>
-        <div className="relative">
+        <div className="relative h-[7rem] flex items-center justify-center">
           <div
-            className={`text-[4rem] font-extrabold font-figtree text-white transition-all duration-300 relative ${
+            className={`text-[3.5rem] font-extrabold font-figtree text-white transition-all duration-300 relative ${
               isAnimating ? "scale-110" : "scale-100"
             }`}
           >

@@ -27,27 +27,35 @@ const MenuButton: FC<MenuButtonProps> = ({
 }) => {
   // Функция для определения, является ли иконка SVG
   const isSvg = (icon: StaticImageData | string) => {
-    if (typeof icon === 'string') {
-      return icon.includes('.svg');
+    if (typeof icon === "string") {
+      return icon.includes(".svg");
     }
-    return icon.src.includes('.svg');
+    return icon.src.includes(".svg");
   };
 
   // Компонент для отображения изображения с поддержкой iOS
-  const ImageComponent = ({ icon, alt, className }: { icon: StaticImageData | string, alt: string, className?: string }) => {
+  const ImageComponent = ({
+    icon,
+    alt,
+    className,
+  }: {
+    icon: StaticImageData | string;
+    alt: string;
+    className?: string;
+  }) => {
     if (isSvg(icon)) {
       // Для SVG используем обычный img тег на iOS
-      const src = typeof icon === 'string' ? icon : icon.src;
+      const src = typeof icon === "string" ? icon : icon.src;
       return (
         <img
           src={src}
           alt={alt}
           className={className || "w-auto h-full object-contain max-h-[6vh]"}
           style={{
-            WebkitTransform: 'translateZ(0)',
-            transform: 'translateZ(0)',
-            WebkitBackfaceVisibility: 'hidden',
-            backfaceVisibility: 'hidden',
+            WebkitTransform: "translateZ(0)",
+            transform: "translateZ(0)",
+            WebkitBackfaceVisibility: "hidden",
+            backfaceVisibility: "hidden",
           }}
         />
       );
@@ -101,7 +109,7 @@ const MenuButton: FC<MenuButtonProps> = ({
       {notificationCount !== undefined && notificationCount > 0 && (
         <span
           className="absolute -top-4 -right-4 notif-gradient text-white text-md w-8 h-8
-         flex items-center justify-center rounded-full font-figtree font-bold text-[1.5rem]"
+         flex items-center justify-center rounded-full font-figtree font-bold text-[1.5rem] z-20"
         >
           {notificationCount}
         </span>

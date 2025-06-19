@@ -1,19 +1,20 @@
 @import "tailwindcss";
 
-/* @font-face {
-  font-family: "figtree";
-  src: url("/fonts/fig.ttf") format("truetype");
-  font-weight: 400;
-  font-style: normal;
-  font-display: swap;
+/* Отключить выделение текста по всему приложению */
+* {
+  user-select: none;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  -moz-user-select: none;
 }
-@font-face {
-  font-family: "figtree";
-  src: url("/fonts/figi.ttf") format("truetype");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-} */
+
+img {
+  pointer-events: none;
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+}
 
 @layer base {
   html {
@@ -56,27 +57,6 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
-}
-
-.shake-animation {
-  animation: tilt-n-move-shaking 0.35s infinite;
-}
-@keyframes tilt-n-move-shaking {
-  0% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(2px);
-  }
-  50% {
-    transform: translateX(-2px);
-  }
-  75% {
-    transform: translateX(2px);
-  }
-  100% {
-    transform: translateX(0);
-  }
 }
 
 @keyframes fadeIn {
@@ -211,8 +191,25 @@ body {
 }
 
 .menu-button {
+  position: relative;
   filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.4));
   @apply relative min-w-fit px-3 py-2 flex items-center gap-2 min-h-[7vh];
+}
+
+.menu-button::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  border-radius: inherit;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.menu-button:hover::after {
+  opacity: 1;
 }
 
 @keyframes fall {
@@ -292,26 +289,6 @@ body {
   }
 }
 
-/* @keyframes combo-explosion {
-  0% {
-    filter: drop-shadow(1px 1px 10px var(--border-end))
-      drop-shadow(0 0 10px var(--border-start)) brightness(1);
-  }
-  50% {
-    filter: drop-shadow(1px 1px 15px var(--border-end))
-      drop-shadow(0 0  15px var(--border-start))
-      brightness(1.2);
-  }
-  100% {
-    filter: drop-shadow(1px 1px 10px var(--border-end))
-      drop-shadow(0 0 10px var(--border-start)) brightness(1);
-  }
-}
-
-.combo-explosion {
-  animation: combo-explosion 0.7s ease-out;
-} */
-
 .combo-text {
   opacity: 0;
   transform: translateX(-10vh);
@@ -321,6 +298,8 @@ body {
 }
 
 .combo-text.show {
+  text-shadow: 3px 0px 10px rgba(255, 255, 255, 0.5),
+    3px 0px 5px rgba(0, 0, 0, 0.8);
   animation: combo-text-show 0.8s ease-in-out;
 }
 
@@ -410,46 +389,36 @@ body {
 
 @keyframes scoreplus-fly {
   0% {
-    left: var(--scoreplus-x);
-    top: var(--scoreplus-y);
+    transform: translate(var(--scoreplus-x), var(--scoreplus-y)) scale(0);
     opacity: 1;
-    transform: scale(0);
   }
   30% {
-    left: var(--scoreplus-x);
-    top: var(--scoreplus-y);
+    transform: translate(var(--scoreplus-x), var(--scoreplus-y)) scale(1.2);
     opacity: 1;
-    transform: scale(1.2);
   }
   60% {
-    left: var(--scoreplus-x);
-    top: var(--scoreplus-y);
+    transform: translate(var(--scoreplus-x), var(--scoreplus-y)) scale(1.2);
     opacity: 1;
-    transform: scale(1.2);
   }
   75% {
-    left: var(--scoreplus-x-to);
-    top: var(--scoreplus-y-to);
+    transform: translate(var(--scoreplus-x-to), var(--scoreplus-y-to)) scale(1);
     opacity: 0.5;
-    transform: scale(1);
   }
   80% {
-    left: var(--scoreplus-x-to);
-    top: var(--scoreplus-y-to);
+    transform: translate(var(--scoreplus-x-to), var(--scoreplus-y-to))
+      scale(0.7);
     opacity: 0.3;
-    transform: scale(0.7);
   }
   100% {
-    left: var(--scoreplus-x-to);
-    top: var(--scoreplus-y-to);
+    transform: translate(var(--scoreplus-x-to), var(--scoreplus-y-to))
+      scale(0.5);
     opacity: 0;
-    transform: scale(0.5);
   }
 }
 
 .scoreplus-fly {
   animation: scoreplus-fly 0.9s ease-in-out forwards;
-  will-change: left, top, opacity, transform;
+  will-change: left, opacity, transform;
   filter: brightness(4);
 }
 
@@ -462,7 +431,7 @@ body {
     -webkit-backface-visibility: hidden;
     backface-visibility: hidden;
   }
-  
+
   /* Force hardware acceleration for SVG images */
   .falling-element img,
   .menu-button img,
@@ -475,13 +444,13 @@ body {
     -webkit-perspective: 1000;
     perspective: 1000;
   }
-  
+
   /* Ensure SVG images are visible on iOS */
   img[src*=".svg"] {
     opacity: 1 !important;
     visibility: visible !important;
   }
-  
+
   /* Specific fixes for game pieces */
   .piece-container img {
     image-rendering: -webkit-optimize-contrast;

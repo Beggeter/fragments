@@ -39,7 +39,7 @@ export const DraggablePiecesSection: React.FC<DraggablePiecesProps> = ({
   };
 
   return (
-    <div className="flex flex-row gap-2 w-[100%] md:max-w-xs justify-between h-[30%] max-h-[30%] min-h-[30%] relative">
+    <div className="flex flex-row gap-2 w-[100%] sm:max-w-xs justify-between h-[30%] max-h-[30%] min-h-[30%] relative">
       {[0, 1, 2].map((containerIndex) => {
         const activePiece = piecesWithPositions[containerIndex];
         return (
