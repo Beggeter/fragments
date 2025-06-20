@@ -34,3 +34,9 @@ export const debounce = (func: Function, delay: number) => {
     timeoutId = setTimeout(() => func.apply(this, args), delay);
   };
 };
+
+export const vibrate = (time: number | number[]) => {
+  if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+    navigator.vibrate(time);
+  }
+};

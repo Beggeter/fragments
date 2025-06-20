@@ -26,6 +26,9 @@ import useDnDLogic from "@/hooks/useDnDLogic";
 import { getCellEffects } from "./board/getCellEffects";
 import { calculatePotentialClearLines } from "./board/boardUtils";
 import { handlePiecePlacement } from "./board/boardUtils";
+import SettingsModal from "@/components/UI/SettingsModal";
+import settings from "@/public/settings.svg";
+import { playPlacePiece  } from "@/lib/utils/sound";
 
 const DEFAULT_CELL_SIZE = 43.75;
 const GAP_SIZE_PX = 2; // Исходя из gap-0.5 в TailwindCSS (0.125rem * 16px)
@@ -117,6 +120,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   // Добавляем состояние для валюты (временно захардкодим для демонстрации)
   const [currency, setCurrency] = useState(100);
+
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // Обработчик кликов по бустерам
   const handleBoosterClick = useCallback((boosterId: string) => {
@@ -240,7 +245,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     const handleEnd = (e: MouseEvent | TouchEvent) => {
       if (draggedPiece) {
+        
         if (hoverCell) {
+          playPlacePiece()
+
           handlePiecePlacement({
             x: hoverCell.x,
             y: hoverCell.y,
@@ -310,11 +318,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
   }, [draggedPiece, hoverCell, board, width, height]);
 
-  useEffect(() => {
-    if (lastScoreResult) {
-      console.log("lastScoreResult after move:", JSON.stringify(lastScoreResult));
-    }
-  }, [lastScoreResult]);
+  // useEffect(() => {
+  //   if (lastScoreResult) {
+  //     if (lastScoreResult.clearedLines && lastScoreResult.clearedLines > 0) {
+  //       playLineClear();
+  //     } else {
+  //       playPlacePiece();
+  //     }
+  //   }
+  // }, [lastScoreResult]);
+
+  // useEffect(() => {
+  //   if (gameOver) {
+  //     playGameOver();
+  //   }
+  // }, [gameOver]);
 
   // Устанавливаем onGameOver callback в store
   useEffect(() => {
@@ -328,83 +346,98 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   }, [onGameOver, setOnGameOver]);
 
   return (
-    <div
-      className={`flex flex-col items-center gap-5 min-h-screen bg-[var(--game-background)] p-4 no-select will-change-auto`}
-    >
-      <div className="flex justify-between w-full -mb-5 items-center sm:max-w-xs sm:max-h-xs">
-        <div className="text-2xl font-figtree font-bold text-white">
-          500 {/* Placeholder for trophy */}
-        </div>
-        <div className="text-2xl font-bold text-white" onClick={onExitGame}>
-          ⚙️ {/* Placeholder for settings icon */}
-        </div>
-      </div>
-
-      <div className="flex justify-center items-center w-full -mt-8 ">
-        <ScoreDisplay
-          ref={scoreDisplayRef}
-          newScore={score}
-          moveScore={lastScoreResult}
-        />
-      </div>
-
-      <BoostersPanelSimple />
-
-      {/* Game Board Container - takes full width and maintains aspect ratio */}
-
-      <div className="w-full aspect-square flex justify-center items-center p-4 sm:max-w-xs sm:max-h-xs">
-        <div className="relative w-full h-full">
-          <ComboVisualizer speed={4} lastScore={lastScoreResult} />
-
-          <div
-            ref={boardRef}
-            className="relative z-10 grid grid-cols-8 grid-rows-8 gap-0.5 w-full h-full bg-gray-800 p-1 rounded-lg will-change-transform"
-          >
-            {board.map((row, y) => (
-              <React.Fragment key={y}>
-                {row.map((cell, x) => {
-                  const isFirst = y === 0 && x === 0;
-                  const { highlight, isInClearingLine, isPotentiallyCleared } =
-                    getCellEffects({
-                      x,
-                      y,
-                      draggedPiece,
-                      hoverCell,
-                      potentialClearHighlight,
-                      clearingHorizontalLines,
-                      clearingVerticalLines,
-                    });
-
-                  return (
-                    <BoardCell
-                      key={x}
-                      cell={cell}
-                      x={x}
-                      y={y}
-                      highlight={highlight}
-                      isInClearingLine={isInClearingLine}
-                      isPotentiallyCleared={isPotentiallyCleared}
-                      isFirst={isFirst}
-                      cellRef={cellRef}
-                    />
-                  );
-                })}
-              </React.Fragment>
-            ))}
+    <>
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        onRestart={() => {
+          resetGame();
+          setIsSettingsOpen(false);
+        }}
+      />
+      <div
+        className={`flex flex-col items-center gap-5 min-h-screen bg-[var(--game-background)] p-4 no-select will-change-auto`}
+      >
+        <div className="flex justify-between w-full -mb-5 items-center sm:max-w-xs sm:max-h-xs">
+          <div className="text-2xl font-figtree font-bold text-white">
+            500 {/* Placeholder for trophy */}
+          </div>
+          <div className="cursor-pointer flex items-center justify-center " onClick={() => setIsSettingsOpen(true)}>
+            <img
+              src={settings.src || settings}
+              alt="settings"
+              className="w-10 h-10 drop-shadow-lg clickable"
+              style={{ zIndex: 30, WebkitTransform: 'translateZ(0)', transform: 'translateZ(0)', WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' }}
+            />
           </div>
         </div>
-      </div>
 
-      {/* Draggable Pieces */}
-      <DraggablePiecesSection
-        currentPieces={currentPieces}
-        draggedPiece={draggedPiece}
-        dragPosition={dragPosition}
-        dynamicCellSize={dynamicCellSize}
-        calculateDynamicOffset={calculateDynamicOffset}
-        onPieceStart={handlePieceStart}
-      />
-    </div>
+        <div className="flex justify-center items-center w-full -mt-8 ">
+          <ScoreDisplay
+            ref={scoreDisplayRef}
+            newScore={score}
+            moveScore={lastScoreResult}
+          />
+        </div>
+
+        <BoostersPanelSimple />
+
+        {/* Game Board Container - takes full width and maintains aspect ratio */}
+
+        <div className="w-full aspect-square flex justify-center items-center p-4 sm:max-w-xs sm:max-h-xs">
+          <div className="relative w-full h-full">
+            <ComboVisualizer speed={4} lastScore={lastScoreResult} />
+
+            <div
+              ref={boardRef}
+              className="relative z-10 grid grid-cols-8 grid-rows-8 gap-0.5 w-full h-full bg-gray-800 p-1 rounded-lg will-change-transform"
+            >
+              {board.map((row, y) => (
+                <React.Fragment key={y}>
+                  {row.map((cell, x) => {
+                    const isFirst = y === 0 && x === 0;
+                    const { highlight, isInClearingLine, isPotentiallyCleared } =
+                      getCellEffects({
+                        x,
+                        y,
+                        draggedPiece,
+                        hoverCell,
+                        potentialClearHighlight,
+                        clearingHorizontalLines,
+                        clearingVerticalLines,
+                      });
+
+                    return (
+                      <BoardCell
+                        key={x}
+                        cell={cell}
+                        x={x}
+                        y={y}
+                        highlight={highlight}
+                        isInClearingLine={isInClearingLine}
+                        isPotentiallyCleared={isPotentiallyCleared}
+                        isFirst={isFirst}
+                        cellRef={cellRef}
+                      />
+                    );
+                  })}
+                </React.Fragment>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Draggable Pieces */}
+        <DraggablePiecesSection
+          currentPieces={currentPieces}
+          draggedPiece={draggedPiece}
+          dragPosition={dragPosition}
+          dynamicCellSize={dynamicCellSize}
+          calculateDynamicOffset={calculateDynamicOffset}
+          onPieceStart={handlePieceStart}
+        />
+      </div>
+    </>
   );
 };
 

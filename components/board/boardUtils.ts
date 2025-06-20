@@ -114,7 +114,6 @@ export function handlePiecePlacement({
 
       // Сначала размещаем фигуру
       placePiece(x, y);
-
       // Затем запускаем анимацию
       requestAnimationFrame(() => {
         setClearingHorizontalLines(horizontalLines);

@@ -337,7 +337,7 @@ const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-blue-900">
       {/* Dev-панель для ручного переключения экрана */}
-      {isDev && (
+      {/* {isDev && (
         <div
           style={{
             position: "fixed",
@@ -367,7 +367,7 @@ const HomePage: React.FC = () => {
             </select>
           </label>
         </div>
-      )}
+      )} */}
 
       {currentScreen === "admin login" && (
         <AdminLogin onLoginSuccess={handleAdminLoginSuccess} />

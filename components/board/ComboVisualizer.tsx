@@ -1,8 +1,12 @@
+'use client';
+
 import { ScoreResult } from "@/lib/data/types";
 import { ColorTheme, colorThemes } from "../UI/colorThemes";
 import React, { useState, useEffect } from "react";
 import { animate, useMotionValue, motion } from "framer-motion";
-import { useGameStore } from "../../lib/state/store";
+import { useGameStore } from "@/lib/state/store";
+import { vibrate } from "@/utils/helpers";
+import { useSettingsStore } from "@/lib/state/settings";
 
 interface ComboVisualizerProps {
   speed?: number;
@@ -52,6 +56,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   const borderEnd = useMotionValue(theme.borderEnd);
   const blurValue = useMotionValue(`${blur[0]}px`);
   const brightnessValue = useMotionValue(1);
+  const vibration = useSettingsStore((state) => state.vibrationValue);
 
   const scoreDisplayCoords = useGameStore((s) => s.scoreDisplayCoords);
 
@@ -120,9 +125,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   }, [lastScore?.pixelPosition]);
 
   const handleVibrate = () => {
-    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-      navigator.vibrate([20]);
-    }
+    vibrate(vibration)
   };
 
   useEffect(() => {

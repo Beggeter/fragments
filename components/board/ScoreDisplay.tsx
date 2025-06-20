@@ -1,4 +1,10 @@
-import React, { useEffect, useState, forwardRef, useCallback, useRef } from "react";
+import React, {
+  useEffect,
+  useState,
+  forwardRef,
+  useCallback,
+  useRef,
+} from "react";
 import { ScoreResult } from "../../lib/data/types";
 
 interface ScoreDisplayProps {
@@ -10,7 +16,8 @@ interface ScoreDisplayProps {
 export const ScoreDisplay = forwardRef<HTMLDivElement, ScoreDisplayProps>(
   ({ newScore, moveScore, className = "" }, ref) => {
     // Ensure newScore is a valid number
-    const validNewScore = isNaN(newScore) || newScore === undefined ? 0 : newScore;
+    const validNewScore =
+      isNaN(newScore) || newScore === undefined ? 0 : newScore;
     const [displayScore, setDisplayScore] = useState(validNewScore);
     const [isAnimating, setIsAnimating] = useState(false);
     const animationRef = useRef<number | undefined>(undefined);
@@ -21,15 +28,20 @@ export const ScoreDisplay = forwardRef<HTMLDivElement, ScoreDisplayProps>(
       }
 
       setIsAnimating(true);
-      // Базовое время анимации
-      const baseDuration = 2000; // 2 секунды
-      // Вычисляем разницу между значениями
-      const scoreDifference = Math.abs(endScore - startScore);
-      // Увеличиваем время анимации в зависимости от разницы
-      // Например, каждые 1000 очков добавляем 1 секунду
-      const additionalDuration = Math.floor(scoreDifference / 50) * 500;
-      const animationDuration = baseDuration + additionalDuration;
-      
+      let animationDuration: number;
+      if (endScore === 0) {
+        animationDuration = 300;
+      } else {
+        // Базовое время анимации
+        const baseDuration = 2000; // 2 секунды
+        // Вычисляем разницу между значениями
+        const scoreDifference = Math.abs(endScore - startScore);
+        // Увеличиваем время анимации в зависимости от разницы
+        // Например, каждые 1000 очков добавляем 1 секунду
+        const additionalDuration = Math.floor(scoreDifference / 50) * 500;
+        animationDuration = baseDuration + additionalDuration;
+      }
+
       const startTime = performance.now();
 
       const animate = (currentTime: number) => {

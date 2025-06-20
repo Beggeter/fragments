@@ -14,6 +14,40 @@ interface LoadingProgress {
   percentage: number;
 }
 
+// --- Audio Pool ---
+const AUDIO_FILES = [
+  '/audio/place2.wav',
+];
+const AUDIO_POOL_SIZE = 4;
+
+function createAudioPool() {
+  const pool: Record<string, HTMLAudioElement[]> = {};
+  AUDIO_FILES.forEach((src) => {
+    pool[src] = [];
+    for (let i = 0; i < AUDIO_POOL_SIZE; i++) {
+      const audio = new window.Audio(src);
+      audio.preload = 'auto';
+      pool[src].push(audio);
+    }
+  });
+  // @ts-ignore
+  window.__audioPool = pool;
+}
+
+// --- Web Audio API ---
+let audioContext: AudioContext | null = null;
+async function loadAndDecodeAudio(src: string): Promise<AudioBuffer | null> {
+  if (!audioContext) audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+  try {
+    const response = await fetch(src);
+    const arrayBuffer = await response.arrayBuffer();
+    return await audioContext.decodeAudioData(arrayBuffer);
+  } catch (e) {
+    console.warn('Failed to load/decode audio', src, e);
+    return null;
+  }
+}
+
 export const ResourceLoader: React.FC<ResourceLoaderProps> = ({
   colors,
   onLoadingComplete,
@@ -131,6 +165,18 @@ export const ResourceLoader: React.FC<ResourceLoaderProps> = ({
 
       try {
         await Promise.all(loadPromises);
+
+        // После загрузки картинок и прочего, создаём аудиопул
+        createAudioPool();
+
+        // --- Web Audio API: загружаем и декодируем звуки ---
+        const buffers: Record<string, AudioBuffer> = {};
+        for (const src of AUDIO_FILES) {
+          const buf = await loadAndDecodeAudio(src);
+          if (buf) buffers[src] = buf;
+        }
+        // @ts-ignore
+        window.__audioBuffers = buffers;
 
         // Ждем минимальное время показа загрузки
         const elapsedTime = Date.now() - startTime;
