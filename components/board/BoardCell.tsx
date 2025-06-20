@@ -26,7 +26,7 @@ const BoardCell = React.memo<{
         key={x}
         ref={isFirst ? cellRef : undefined}
         className={`rounded-[3px] ${
-          cell.value ? "bg-gray-700" : "bg-gray-900"
+          cell.value ? "bg-gray-900" : "bg-gray-900"
         } ${highlight ? "ring-2 ring-blue-500" : ""} ${
           isInClearingLine ? "clearing-line-horizontal" : ""
         } ${isInClearingLine ? "clearing-line-vertical" : ""} ${

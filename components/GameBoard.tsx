@@ -28,7 +28,7 @@ import { calculatePotentialClearLines } from "./board/boardUtils";
 import { handlePiecePlacement } from "./board/boardUtils";
 import SettingsModal from "@/components/UI/SettingsModal";
 import settings from "@/public/settings.svg";
-import { playPlacePiece  } from "@/lib/utils/sound";
+import { playGameOver, playPlacePiece } from "@/lib/utils/sound";
 
 const DEFAULT_CELL_SIZE = 43.75;
 const GAP_SIZE_PX = 2; // Исходя из gap-0.5 в TailwindCSS (0.125rem * 16px)
@@ -245,9 +245,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     const handleEnd = (e: MouseEvent | TouchEvent) => {
       if (draggedPiece) {
-        
         if (hoverCell) {
-          playPlacePiece()
+          playPlacePiece();
 
           handlePiecePlacement({
             x: hoverCell.x,
@@ -318,25 +317,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
   }, [draggedPiece, hoverCell, board, width, height]);
 
-  // useEffect(() => {
-  //   if (lastScoreResult) {
-  //     if (lastScoreResult.clearedLines && lastScoreResult.clearedLines > 0) {
-  //       playLineClear();
-  //     } else {
-  //       playPlacePiece();
-  //     }
-  //   }
-  // }, [lastScoreResult]);
-
-  // useEffect(() => {
-  //   if (gameOver) {
-  //     playGameOver();
-  //   }
-  // }, [gameOver]);
-
   // Устанавливаем onGameOver callback в store
   useEffect(() => {
     setOnGameOver(() => {
+      playGameOver();
       onGameOver();
     });
 
@@ -362,12 +346,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           <div className="text-2xl font-figtree font-bold text-white">
             500 {/* Placeholder for trophy */}
           </div>
-          <div className="cursor-pointer flex items-center justify-center " onClick={() => setIsSettingsOpen(true)}>
+          <div
+            className="cursor-pointer flex items-center justify-center "
+            onClick={() => setIsSettingsOpen(true)}
+          >
             <img
               src={settings.src || settings}
               alt="settings"
               className="w-10 h-10 drop-shadow-lg clickable"
-              style={{ zIndex: 30, WebkitTransform: 'translateZ(0)', transform: 'translateZ(0)', WebkitBackfaceVisibility: 'hidden', backfaceVisibility: 'hidden' }}
+              style={{
+                zIndex: 30,
+                WebkitTransform: "translateZ(0)",
+                transform: "translateZ(0)",
+                WebkitBackfaceVisibility: "hidden",
+                backfaceVisibility: "hidden",
+              }}
             />
           </div>
         </div>
@@ -396,16 +389,19 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 <React.Fragment key={y}>
                   {row.map((cell, x) => {
                     const isFirst = y === 0 && x === 0;
-                    const { highlight, isInClearingLine, isPotentiallyCleared } =
-                      getCellEffects({
-                        x,
-                        y,
-                        draggedPiece,
-                        hoverCell,
-                        potentialClearHighlight,
-                        clearingHorizontalLines,
-                        clearingVerticalLines,
-                      });
+                    const {
+                      highlight,
+                      isInClearingLine,
+                      isPotentiallyCleared,
+                    } = getCellEffects({
+                      x,
+                      y,
+                      draggedPiece,
+                      hoverCell,
+                      potentialClearHighlight,
+                      clearingHorizontalLines,
+                      clearingVerticalLines,
+                    });
 
                     return (
                       <BoardCell

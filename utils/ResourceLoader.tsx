@@ -17,6 +17,7 @@ interface LoadingProgress {
 // --- Audio Pool ---
 const AUDIO_FILES = [
   '/audio/place2.wav',
+  '/audio/gameover.wav',
 ];
 const AUDIO_POOL_SIZE = 4;
 
