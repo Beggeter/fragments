@@ -17,6 +17,8 @@ import { SVGPreloader } from "@/utils/SVGPreloader";
 import { DraggablePiecesSection } from "./DraggablePiecesSection";
 import { BoostersPanel } from "./BoostersPanel";
 import { BoostersPanelSimple } from "./BoostersPanelSimple";
+import { LaserMode } from "./BoostersPanelSimple";
+import Particles from "@tsparticles/react";
 
 // Throttling utility
 const throttle = (func: Function, limit: number) => {
@@ -220,7 +222,9 @@ const BoardCell = React.memo<{
   isPotentiallyCleared: boolean;
   isFirst: boolean;
   cellRef: React.RefObject<HTMLDivElement | null>;
-}>(({ cell, x, y, highlight, isInClearingLine, isPotentiallyCleared, isFirst, cellRef }) => {
+  onClick?: () => void;
+  style?: React.CSSProperties;
+}>(({ cell, x, y, highlight, isInClearingLine, isPotentiallyCleared, isFirst, cellRef, onClick, style }) => {
   return (
     <div
       key={x}
@@ -232,6 +236,8 @@ const BoardCell = React.memo<{
       } ${isInClearingLine ? "clearing-line-vertical" : ""} ${
         isPotentiallyCleared ? "potential-clear-highlight" : ""
       }`}
+      onClick={onClick}
+      style={style}
     >
       {cell.value === 1 && cell.color && (
         <Piece
@@ -243,6 +249,56 @@ const BoardCell = React.memo<{
     </div>
   );
 });
+
+// Компонент для партиклов в клетке
+const CellParticles = ({ x, y, trigger }: { x: number; y: number; trigger: boolean }) => {
+  if (!trigger) return null;
+  return (
+    <div style={{ position: "absolute", left: x, top: y, pointerEvents: "none", width: 40, height: 40, zIndex: 20 }}>
+      <Particles
+        id={`cell-particles-${x}-${y}`}
+        options={{
+          particles: {
+            color: { value: ["#fff", "#fbbf24", "#38bdf8", "#f472b6"] },
+            number: { value: 18 },
+            shape: { type: "circle" },
+            size: { value: { min: 2, max: 6 } },
+            move: { enable: true, speed: 7, direction: "none", outModes: { default: "destroy" } },
+            opacity: { value: 0.8 },
+          },
+          detectRetina: true,
+          fullScreen: { enable: false },
+        }}
+        style={{ width: 40, height: 40 }}
+      />
+    </div>
+  );
+};
+
+const spiralOrder = (n: number, m: number) => {
+  // Возвращает массив координат [y, x] в порядке спирали из центра
+  const res: [number, number][] = [];
+  const visited = Array.from({ length: n }, () => Array(m).fill(false));
+  // 4 центральные клетки для старта
+  const centers: [number, number][] = [
+    [Math.floor((n-1)/2), Math.floor((m-1)/2)],
+    [Math.floor((n-1)/2), Math.ceil((m-1)/2)],
+    [Math.ceil((n-1)/2), Math.floor((m-1)/2)],
+    [Math.ceil((n-1)/2), Math.ceil((m-1)/2)],
+  ];
+  let q = [...centers];
+  let idx = 0;
+  while (q.length) {
+    const [y, x] = q.shift()!;
+    if (y < 0 || y >= n || x < 0 || x >= m || visited[y][x]) continue;
+    visited[y][x] = true;
+    res.push([y, x]);
+    // Добавляем соседей по часовой стрелке
+    q.push([y, x+1], [y+1, x], [y, x-1], [y-1, x]);
+  }
+  // Убираем дубли
+  return res.filter(([y, x], i) => res.findIndex(([yy, xx]) => yy===y&&xx===x)===i);
+};
 
 export const GameBoard: React.FC<GameBoardProps> = ({
   width = 8,
@@ -321,14 +377,65 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     []
   );
 
-  // Добавляем состояние для валюты (временно захардкодим для демонстрации)
-  const [currency, setCurrency] = useState(100);
+  // Добавляем состояние laserMode, реализую обработку кликов по лазеру с переключением режимов, передаю laserMode в доску, реализую очистку линии по клику и сброс режима после применения.
+  const [laserMode, setLaserMode] = useState<LaserMode>("off");
+  const [laserActiveLine, setLaserActiveLine] = useState<number | null>(null);
+  const [isLaserTouching, setIsLaserTouching] = useState(false);
 
   // Обработчик кликов по бустерам
-  const handleBoosterClick = useCallback((boosterId: string) => {
-    console.log(`Бустер ${boosterId} активирован!`);
-    // Здесь будет логика бустеров
-  }, []);
+  const handleBoosterClick = (idx: number) => {
+    if (idx === 0) {
+      useGameStore.getState().undo();
+    } else if (idx === 1) {
+      setLaserMode((prev) => {
+        if (prev === "off") return "vertical";
+        if (prev === "vertical") return "horizontal";
+        return "off";
+      });
+    } else if (idx === 2) {
+      // Спиннер: спиральная анимация очистки с ускорением
+      const n = board.length;
+      const m = board[0].length;
+      const spiral = spiralOrder(n, m);
+      let step = 0;
+      setSpiralClearing({});
+      setSpiralParticles({});
+      setIsAnimating(true);
+      let currentBoard = board.map(row => row.map(cell => ({ ...cell })));
+      const N = 120; // начальная задержка (медленно)
+      const minN = 40; // конечная задержка (быстро)
+      const total = spiral.length;
+      const clearNext = () => {
+        if (step >= total) {
+          setTimeout(() => {
+            useGameStore.setState({
+              lastScoreResult: null,
+            });
+            setSpiralClearing({});
+            setSpiralParticles({});
+            setIsAnimating(false);
+          }, 400);
+          return;
+        }
+        const [y, x] = spiral[step];
+        setSpiralClearing((prev) => ({ ...prev, [`${y},${x}`]: true }));
+        if (currentBoard[y][x].value !== 0) {
+          setSpiralParticles((prev) => ({ ...prev, [`${y},${x}`]: Date.now() }));
+          setTimeout(() => {
+            setSpiralParticles((prev) => ({ ...prev, [`${y},${x}`]: 0 }));
+          }, 400);
+        }
+        // Очищаем клетку сразу
+        currentBoard[y][x] = { ...currentBoard[y][x], value: 0 };
+        useGameStore.setState({ board: currentBoard });
+        step++;
+        // Линейное ускорение: задержка уменьшается от N до minN
+        const delay = Math.round(N - (N - minN) * (step / total));
+        setTimeout(clearNext, delay);
+      };
+      clearNext();
+    }
+  };
 
   const blockGenerator = new BlockGenerator();
   const scoreCalculator = new ScoreCalculator();
@@ -630,6 +737,165 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     };
   }, [onGameOver, setOnGameOver]);
 
+  // Pointer events for laser
+  const handlePointerDown = (e: React.PointerEvent) => {
+    if (laserMode === "off" || !boardRef.current) return;
+    setIsLaserTouching(true);
+    const rect = boardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    if (laserMode === "vertical") {
+      const col = Math.floor((x / rect.width) * width);
+      setLaserActiveLine(col >= 0 && col < width ? col : null);
+    } else if (laserMode === "horizontal") {
+      const row = Math.floor((y / rect.height) * height);
+      setLaserActiveLine(row >= 0 && row < height ? row : null);
+    }
+  };
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!isLaserTouching || laserMode === "off" || !boardRef.current) return;
+    const rect = boardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    if (laserMode === "vertical") {
+      const col = Math.floor((x / rect.width) * width);
+      setLaserActiveLine(col >= 0 && col < width ? col : null);
+    } else if (laserMode === "horizontal") {
+      const row = Math.floor((y / rect.height) * height);
+      setLaserActiveLine(row >= 0 && row < height ? row : null);
+    }
+  };
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!isLaserTouching || laserMode === "off" || !boardRef.current) return;
+    setIsLaserTouching(false);
+    const rect = boardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    let idx: number | null = null;
+    let canClear = false;
+    if (laserMode === "vertical") {
+      idx = Math.floor((x / rect.width) * width);
+      canClear = idx !== null && idx >= 0 && idx < width && board.some((row) => row[idx].value !== 0);
+    } else if (laserMode === "horizontal") {
+      idx = Math.floor((y / rect.height) * height);
+      if (idx !== null && idx >= 0 && idx < height) {
+        canClear = board[idx].some((cell) => cell.value !== 0);
+      } else {
+        canClear = false;
+      }
+    }
+    if (typeof idx === 'number' && canClear) {
+      handleLaserLineClick(idx);
+    }
+    setLaserActiveLine(null);
+  };
+
+  // Обработка клика по линии для лазера
+  const handleLaserLineClick = (lineIdx: number) => {
+    if (laserMode === "vertical") {
+      // Очищаем вертикальную линию (столбец)
+      clearVerticalLine(lineIdx);
+      setLaserMode("off");
+      setIsLaserTouching(false);
+    } else if (laserMode === "horizontal") {
+      // Очищаем горизонтальную линию (строку)
+      clearHorizontalLine(lineIdx);
+      setLaserMode("off");
+      setIsLaserTouching(false);
+    }
+  };
+
+  // Функции очистки линий и увеличения комбо
+  const clearVerticalLine = (colIdx: number) => {
+    const currentBoard = useGameStore.getState().board;
+    const newBoard = currentBoard.map((row) => row.map((cell, x) => (x === colIdx ? { ...cell, value: 0 } : cell)));
+    useGameStore.setState({ board: newBoard });
+    setClearingVerticalLines([colIdx]);
+    setIsAnimating(true);
+
+    // --- Score calculation for laser ---
+    // Виртуальный блок-столбец
+    const virtualBlock: Block = {
+      id: "laser-vertical",
+      uniqueId: "laser-vertical",
+      name: "Laser Vertical",
+      matrix: Array(currentBoard.length).fill(0).map(() => [{ value: 1, color: "blue" }]),
+      difficulty: "easy",
+      color: "blue",
+    };
+    const scoreCalculator = new (require("../lib/core/score").ScoreCalculator)();
+    const clearedLines = 1;
+    const cellsPlaced = 0;
+    const cellsInLines = currentBoard.length;
+    const scoreResult = scoreCalculator.calculateScore(
+      newBoard,
+      clearedLines,
+      cellsPlaced,
+      cellsInLines,
+      virtualBlock
+    );
+    useGameStore.setState((state: any) => ({
+      score: state.score + scoreResult.totalPoints,
+      lastScoreResult: scoreResult,
+    }));
+    // --- End score calculation ---
+
+    setTimeout(() => {
+      setClearingVerticalLines([]);
+      setIsAnimating(false);
+    }, 300);
+  };
+  const clearHorizontalLine = (rowIdx: number) => {
+    const currentBoard = useGameStore.getState().board;
+    const newBoard = currentBoard.map((row, y) => (y === rowIdx ? row.map((cell) => ({ ...cell, value: 0 })) : row));
+    useGameStore.setState({ board: newBoard });
+    setClearingHorizontalLines([rowIdx]);
+    setIsAnimating(true);
+
+    // --- Score calculation for laser ---
+    // Виртуальный блок-строка
+    const virtualBlock: Block = {
+      id: "laser-horizontal",
+      uniqueId: "laser-horizontal",
+      name: "Laser Horizontal",
+      matrix: [Array(currentBoard[0].length).fill({ value: 1, color: "blue" })],
+      difficulty: "easy",
+      color: "blue",
+    };
+    const scoreCalculator = new (require("../lib/core/score").ScoreCalculator)();
+    const clearedLines = 1;
+    const cellsPlaced = 0;
+    const cellsInLines = currentBoard[0].length;
+    const scoreResult = scoreCalculator.calculateScore(
+      newBoard,
+      clearedLines,
+      cellsPlaced,
+      cellsInLines,
+      virtualBlock
+    );
+    useGameStore.setState((state: any) => ({
+      score: state.score + scoreResult.totalPoints,
+      lastScoreResult: scoreResult,
+    }));
+    // --- End score calculation ---
+
+    setTimeout(() => {
+      setClearingHorizontalLines([]);
+      setIsAnimating(false);
+    }, 300);
+  };
+  const incrementCombo = () => {
+    useGameStore.setState((state: any) => ({
+      lastScoreResult: {
+        ...state.lastScoreResult,
+        comboLevel: (state.lastScoreResult?.comboLevel || 0) + 1,
+      },
+    }));
+  };
+
+  const [spiralClearing, setSpiralClearing] = useState<{[key:string]:boolean}>({});
+  const [spiralParticles, setSpiralParticles] = useState<{[key:string]:number}>({}); // number = timestamp
+
   return (
     <div className={`flex flex-col items-center gap-6 min-h-screen bg-[var(--game-background)] p-4 no-select will-change-auto`}>
       <SVGPreloader colors={allColors} />
@@ -646,7 +912,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       <div className="flex justify-center items-center w-full -mb-6">
         <ScoreDisplay ref={scoreDisplayRef} newScore={score} moveScore={lastScoreResult} />
       </div>
-      <BoostersPanelSimple />
+      <BoostersPanelSimple onBoosterClick={handleBoosterClick} laserMode={laserMode} />
       {/* Game Board Container - takes full width and maintains aspect ratio */}
 
       <div className="w-full aspect-square flex justify-center items-center p-4 md:max-w-xs md:max-h-xs">
@@ -658,6 +924,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           <div
             ref={boardRef}
             className="relative z-10 grid grid-cols-8 grid-rows-8 gap-0.5 w-full h-full bg-gray-800 p-1 rounded-lg will-change-transform"
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            style={{ touchAction: "none" }}
           >
             {board.map((row, y) => (
               <React.Fragment key={y}>
@@ -691,18 +961,63 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     clearingHorizontalLines.includes(y) ||
                     clearingVerticalLines.includes(x);
 
+                  // Добавляем обработку клика по линии для лазера
+                  let laserClickable = false;
+                  let isLaserActive = false;
+                  let canClear = true;
+                  let laserHighlightColor: string | undefined = undefined;
+                  if (laserMode === "vertical") {
+                    laserClickable = true;
+                    isLaserActive = laserActiveLine === x && isLaserTouching;
+                    canClear = board.some((row) => row[x].value !== 0);
+                    if (isLaserActive) {
+                      laserHighlightColor = canClear ? "#7fdfff" : "#ff4d4d";
+                    }
+                  }
+                  if (laserMode === "horizontal") {
+                    laserClickable = true;
+                    isLaserActive = laserActiveLine === y && isLaserTouching;
+                    canClear = board[y].some((cell) => cell.value !== 0);
+                    if (isLaserActive) {
+                      laserHighlightColor = canClear ? "#7fdfff" : "#ff4d4d";
+                    }
+                  }
+
+                  const spiralKey = `${y},${x}`;
+                  const isSpiral = spiralClearing[spiralKey];
+                  const particleKey = spiralParticles[spiralKey] || 0;
+
                   return (
-                    <BoardCell
+                    <div
                       key={x}
-                      cell={cell}
-                      x={x}
-                      y={y}
-                      highlight={highlight}
-                      isInClearingLine={isInClearingLine}
-                      isPotentiallyCleared={isPotentiallyCleared}
-                      isFirst={isFirst}
-                      cellRef={boardCellRef}
-                    />
+                      ref={isFirst ? cellRef : undefined}
+                      className={`rounded-[3px] ${
+                        cell.value ? "bg-gray-700" : "bg-gray-900"
+                      } ${highlight ? "ring-2 ring-blue-500" : ""} ${
+                        isInClearingLine ? "clearing-line-horizontal" : ""
+                      } ${isInClearingLine ? "clearing-line-vertical" : ""} ${
+                        isPotentiallyCleared ? "potential-clear-highlight" : ""
+                      } ${isSpiral ? "clearing-highlight" : ""}`}
+                      onClick={() => {
+                        if (laserClickable) {
+                          handleLaserLineClick(y);
+                        } else if (canClear) {
+                          handlePiecePlacement(x, y);
+                        }
+                      }}
+                      style={{ position: "relative", zIndex: isSpiral ? 10 : undefined }}
+                    >
+                      {cell.value === 1 && cell.color && (
+                        <Piece
+                          color={cell.color}
+                          size="100%"
+                          isClearing={isInClearingLine}
+                        />
+                      )}
+                      {particleKey > 0 && (
+                        <CellParticles x={x*dynamicCellSize} y={y*dynamicCellSize} trigger={true} key={`cell-particles-${x}-${y}-${particleKey}`} />
+                      )}
+                    </div>
                   );
                 })}
               </React.Fragment>
