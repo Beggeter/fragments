@@ -10,6 +10,7 @@ const BoardCell = React.memo<{
   isPotentiallyCleared: boolean;
   isFirst: boolean;
   cellRef: React.RefObject<HTMLDivElement | null>;
+  onClick?: () => void;
 }>(
   ({
     cell,
@@ -20,6 +21,7 @@ const BoardCell = React.memo<{
     isPotentiallyCleared,
     isFirst,
     cellRef,
+    onClick,
   }) => {
     return (
       <div
@@ -32,6 +34,7 @@ const BoardCell = React.memo<{
         } ${isInClearingLine ? "clearing-line-vertical" : ""} ${
           isPotentiallyCleared ? "potential-clear-highlight" : ""
         }`}
+        onClick={onClick}
       >
         {cell.value === 1 && cell.color && (
           <Piece color={cell.color} size="100%" isClearing={isInClearingLine} />

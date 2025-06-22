@@ -74,6 +74,7 @@ export function handlePiecePlacement({
   dynamicCellSize,
   GAP_SIZE_PX,
   useGameStore,
+  onAfterPlacement,
 }: {
   x: number;
   y: number;
@@ -89,6 +90,7 @@ export function handlePiecePlacement({
   dynamicCellSize: number;
   GAP_SIZE_PX: number;
   useGameStore: any;
+  onAfterPlacement?: () => void;
 }) {
   if (draggedPiece && hoverCell) {
     const getCellsToClear = require("@/lib/core/engine").getCellsToClear;
@@ -125,6 +127,7 @@ export function handlePiecePlacement({
           setClearingHorizontalLines([]);
           setClearingVerticalLines([]);
           setIsAnimating(false);
+          if (onAfterPlacement) onAfterPlacement();
         }, 300);
       });
 
@@ -139,6 +142,7 @@ export function handlePiecePlacement({
       }, 0);
     } else {
       placePiece(x, y);
+      if (onAfterPlacement) onAfterPlacement();
     }
   }
 } 
