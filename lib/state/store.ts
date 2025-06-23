@@ -325,11 +325,11 @@ export const useGameStore = create<
         board: Array(8)
           .fill(0)
           .map(() => Array(8).fill({ value: 0 })),
-        currentPieces: [],
+        // currentPieces: [],
         score: 0,
         gameOver: false,
-        round: 1,
-        piecesPlaced: 0,
+        // round: 1,
+        // piecesPlaced: 0,
         validPositions: [],
         draggedPiece: null,
         dragPosition: null,
@@ -338,6 +338,7 @@ export const useGameStore = create<
         blockEvaluations: [],
       });
       scoreCalculator.resetCombo();
+      get().initializeGame();
     },
 
     hoverCell: null,

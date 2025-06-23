@@ -36,6 +36,8 @@ import SettingsModal from "@/components/UI/SettingsModal";
 import settings from "@/public/settings.svg";
 import { playPlacePiece } from "@/lib/utils/sound";
 import { useGameOver } from "@/hooks/useGameOver";
+import Particles from "@tsparticles/react";
+
 
 const DEFAULT_CELL_SIZE = 43.75;
 const GAP_SIZE_PX = 2; // Исходя из gap-0.5 в TailwindCSS (0.125rem * 16px)
