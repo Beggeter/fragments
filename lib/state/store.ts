@@ -345,4 +345,40 @@ export const useGameStore = create<
   setOnGameOver: (callback: (() => void) | null) =>
     set({ onGameOver: callback }),
 
+  pushHistory: () => {
+    const state = get();
+    const snapshot: GameSnapshot = {
+      board: state.board.map(row => row.map(cell => ({ ...cell }))),
+      currentPieces: [...state.currentPieces],
+      score: state.score,
+      round: state.round,
+      piecesPlaced: state.piecesPlaced,
+      lastScoreResult: state.lastScoreResult,
+      previewBlock: state.previewBlock,
+    };
+    set({ history: [...state.history, snapshot] });
+  },
+
+  undo: () => {
+    const state = get();
+    if (state.history.length === 0) return;
+    
+    const lastSnapshot = state.history[state.history.length - 1];
+    const newHistory = state.history.slice(0, -1);
+    
+    set({
+      board: lastSnapshot.board,
+      currentPieces: lastSnapshot.currentPieces,
+      score: lastSnapshot.score,
+      round: lastSnapshot.round,
+      piecesPlaced: lastSnapshot.piecesPlaced,
+      lastScoreResult: lastSnapshot.lastScoreResult,
+      previewBlock: lastSnapshot.previewBlock,
+      history: newHistory,
+      draggedPiece: null,
+      dragPosition: null,
+      hoverCell: null,
+    });
+  },
+
 }));

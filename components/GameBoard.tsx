@@ -187,7 +187,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   );
 
   // Добавляем состояние laserMode, реализую обработку кликов по лазеру с переключением режимов, передаю laserMode в доску, реализую очистку линии по клику и сброс режима после применения.
-  const [laserMode, setLaserMode] = useState<LaserMode>("off");
+  // const [laserMode, setLaserMode] = useState<LaserMode>("off");
   const [laserActiveLine, setLaserActiveLine] = useState<number | null>(null);
   const [isLaserTouching, setIsLaserTouching] = useState(false);
 
