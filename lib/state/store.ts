@@ -33,6 +33,17 @@ export interface ExtendedGameState extends GameState {
   setOnGameOver: (callback: (() => void) | null) => void;
 }
 
+export interface GameSnapshot {
+  board: Matrix;
+  currentPieces: Block[];
+  score: number;
+  round: number;
+  piecesPlaced: number;
+  lastScoreResult: ScoreResult | null;
+  previewBlock: Block | null;
+  // можно добавить combo, draggedPiece и др. если нужно
+}
+
 const scoreCalculator = new ScoreCalculator();
 const blockGenerator = new BlockGenerator();
 const difficultyEvaluator = new DifficultyEvaluator();
@@ -159,6 +170,10 @@ export const useGameStore = create<
     hoverCell: { x: number; y: number } | null;
     setHoverCell: (cell: { x: number; y: number } | null) => void;
     initializeGame: () => void;
+    history: GameSnapshot[];
+    pushHistory: () => void;
+    undo: () => void;
+    isAdmin: boolean;
   }
 >((set, get) => ({
   draggedPiece: null,
@@ -166,6 +181,8 @@ export const useGameStore = create<
   lastScoreResult: null,
   previewBlock: null,
   blockEvaluations: [],
+  history: [],
+  isAdmin: true,
 
   startDrag: (block) => {
     const { board } = get();
@@ -203,9 +220,11 @@ export const useGameStore = create<
   },
 
   placePiece: (x: number, y: number) => {
-    const { board, currentPieces, draggedPiece, round, piecesPlaced } = get();
+    const state = get();
+    if (!state.draggedPiece) return;
+    if (state.isAdmin) get().pushHistory();
 
-    if (!draggedPiece) return;
+    const { board, currentPieces, draggedPiece, round, piecesPlaced } = state;
 
     // First, place the piece on the board without clearing lines
     const newBoard = placePieceOnBoard(board, draggedPiece, { x, y });
@@ -240,7 +259,7 @@ export const useGameStore = create<
       hoverCell: null,
       round: newRound,
       piecesPlaced: newPiecesPlaced,
-      score: get().score + scoreResult.totalPoints,
+      score: state.score + scoreResult.totalPoints,
       lastScoreResult: scoreResult,
       isAnimating: hasCellsToClear, // Set animation state if there are lines to clear
     });
@@ -252,6 +271,7 @@ export const useGameStore = create<
       setTimeout(() => {
         set({ gameOver: true });
         const { onGameOver } = get();
+
         if (onGameOver) {
           onGameOver();
         }
@@ -282,6 +302,7 @@ export const useGameStore = create<
         setTimeout(() => {
           set({ gameOver: true });
           const { onGameOver } = get();
+
           if (onGameOver) {
             onGameOver();
           }
@@ -323,4 +344,5 @@ export const useGameStore = create<
   onGameOver: null,
   setOnGameOver: (callback: (() => void) | null) =>
     set({ onGameOver: callback }),
+
 }));

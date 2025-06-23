@@ -59,6 +59,56 @@ type HandlePiecePlacementArgs = {
   useGameStore: any;
 };
 
+// Компонент для партиклов в клетке
+const CellParticles = ({ x, y, trigger }: { x: number; y: number; trigger: boolean }) => {
+  if (!trigger) return null;
+  return (
+    <div style={{ position: "absolute", left: x, top: y, pointerEvents: "none", width: 40, height: 40, zIndex: 20 }}>
+      <Particles
+        id={`cell-particles-${x}-${y}`}
+        options={{
+          particles: {
+            color: { value: ["#fff", "#fbbf24", "#38bdf8", "#f472b6"] },
+            number: { value: 18 },
+            shape: { type: "circle" },
+            size: { value: { min: 2, max: 6 } },
+            move: { enable: true, speed: 7, direction: "none", outModes: { default: "destroy" } },
+            opacity: { value: 0.8 },
+          },
+          detectRetina: true,
+          fullScreen: { enable: false },
+        }}
+        style={{ width: 40, height: 40 }}
+      />
+    </div>
+  );
+};
+
+const spiralOrder = (n: number, m: number) => {
+  // Возвращает массив координат [y, x] в порядке спирали из центра
+  const res: [number, number][] = [];
+  const visited = Array.from({ length: n }, () => Array(m).fill(false));
+  // 4 центральные клетки для старта
+  const centers: [number, number][] = [
+    [Math.floor((n-1)/2), Math.floor((m-1)/2)],
+    [Math.floor((n-1)/2), Math.ceil((m-1)/2)],
+    [Math.ceil((n-1)/2), Math.floor((m-1)/2)],
+    [Math.ceil((n-1)/2), Math.ceil((m-1)/2)],
+  ];
+  let q = [...centers];
+  let idx = 0;
+  while (q.length) {
+    const [y, x] = q.shift()!;
+    if (y < 0 || y >= n || x < 0 || x >= m || visited[y][x]) continue;
+    visited[y][x] = true;
+    res.push([y, x]);
+    // Добавляем соседей по часовой стрелке
+    q.push([y, x+1], [y+1, x], [y, x-1], [y-1, x]);
+  }
+  // Убираем дубли
+  return res.filter(([y, x], i) => res.findIndex(([yy, xx]) => yy===y&&xx===x)===i);
+};
+
 export const GameBoard: React.FC<GameBoardProps> = ({
   width = 8,
   height = 8,
@@ -136,8 +186,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     []
   );
 
-  // Добавляем состояние для валюты (временно захардкодим для демонстрации)
-  const [currency, setCurrency] = useState(100);
+  // Добавляем состояние laserMode, реализую обработку кликов по лазеру с переключением режимов, передаю laserMode в доску, реализую очистку линии по клику и сброс режима после применения.
+  const [laserMode, setLaserMode] = useState<LaserMode>("off");
+  const [laserActiveLine, setLaserActiveLine] = useState<number | null>(null);
+  const [isLaserTouching, setIsLaserTouching] = useState(false);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -345,7 +397,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       setOnGameOver(null);
     };
   }, [onGameOver, setOnGameOver]);
-
   // Функция для удаления строки или столбца
   const handleLaserCellClick = (row: number, col: number) => {
     console.log('Laser click', row, col);
