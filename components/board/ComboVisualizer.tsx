@@ -86,17 +86,16 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   useEffect(() => {
     if (lastScore?.comboLevel) {
       setIsExploding(true);
-      handleVibrate();
-      const timer = setTimeout(() => setIsExploding(false), 400);
-      return () => clearTimeout(timer);
-    }
-  }, [lastScore?.comboLevel]);
-
-  useEffect(() => {
-    if (lastScore?.comboLevel) {
       setShowComboText(true);
-      const timer = setTimeout(() => setShowComboText(false), 800);
-      return () => clearTimeout(timer);
+      handleVibrate();
+      
+      const explodeTimer = setTimeout(() => setIsExploding(false), 400);
+      const textTimer = setTimeout(() => setShowComboText(false), 800);
+      
+      return () => {
+        clearTimeout(explodeTimer);
+        clearTimeout(textTimer);
+      };
     }
   }, [lastScore?.comboLevel]);
 

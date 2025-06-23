@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Block } from "../lib/data/types";
 import { DraggablePiece } from "./DraggablePiece";
 import { Position } from "../lib/data/types";
@@ -21,13 +21,14 @@ export const DraggablePiecesSection: React.FC<DraggablePiecesProps> = ({
   calculateDynamicOffset,
   onPieceStart,
 }) => {
-  // Создаем массив с фиксированными позициями
-  const piecesWithPositions = [0, 1, 2].map((index) => {
-    const piece = currentPieces.find(
-      (p) => p.uniqueId.split("_")[2] === String(index)
-    );
-    return piece;
-  });
+  const piecesWithPositions = useMemo(() => {
+    return [0, 1, 2].map((index) => {
+      const piece = currentPieces.find(
+        (p) => p.uniqueId.split("_")[2] === String(index)
+      );
+      return piece;
+    });
+  }, [currentPieces]);
 
   const handleStart = (
     e: React.MouseEvent | React.TouchEvent,

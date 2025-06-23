@@ -160,167 +160,173 @@ export const useGameStore = create<
     setHoverCell: (cell: { x: number; y: number } | null) => void;
     initializeGame: () => void;
   }
->((set, get) => ({
-  draggedPiece: null,
-  dragPosition: null,
-  lastScoreResult: null,
-  previewBlock: null,
-  blockEvaluations: [],
+>((set, get) => {
+  // Вспомогательная функция для обработки завершения игры
+  const handleGameOver = (delay: number = 1500) => {
+    setTimeout(() => {
+      set({ gameOver: true });
+      const { onGameOver } = get();
+      if (onGameOver) {
+        onGameOver();
+      }
+    }, delay);
+  };
 
-  startDrag: (block) => {
-    const { board } = get();
-    const validPositions = calculateValidPositions(board, block);
-    set({ draggedPiece: block, validPositions });
-  },
-  updateDrag: (position) => set({ dragPosition: position }),
-  endDrag: () => set({ draggedPiece: null, dragPosition: null }),
+  return {
+    draggedPiece: null,
+    dragPosition: null,
+    lastScoreResult: null,
+    previewBlock: null,
+    blockEvaluations: [],
 
-  board: Array(8)
-    .fill(0)
-    .map(() => Array(8).fill({ value: 0 })),
-  currentPieces: [],
-  score: 0,
-  gameOver: false,
-  round: 1,
-  piecesPlaced: 0,
-  validPositions: [],
-  isAnimating: false,
-  setAnimating: (isAnimating) => set({ isAnimating }),
+    startDrag: (block) => {
+      const { board } = get();
+      const validPositions = calculateValidPositions(board, block);
+      set({ draggedPiece: block, validPositions });
+    },
+    updateDrag: (position) => set({ dragPosition: position }),
+    endDrag: () => set({ draggedPiece: null, dragPosition: null }),
 
-  setCurrentPieces: (pieces) => set({ currentPieces: pieces }),
-  setPreviewBlock: (block) => set({ previewBlock: block }),
+    board: Array(8)
+      .fill(0)
+      .map(() => Array(8).fill({ value: 0 })),
+    currentPieces: [],
+    score: 0,
+    gameOver: false,
+    round: 1,
+    piecesPlaced: 0,
+    validPositions: [],
+    isAnimating: false,
+    setAnimating: (isAnimating) => set({ isAnimating }),
 
-  initializeGame: () => {
-    const blocksWithInitialIndex = blockGenerator.generateNextBlocks(
-      get().board
-    );
-    set({
-      currentPieces: blocksWithInitialIndex,
-      previewBlock: blockGenerator.getPreviewBlock(),
-      round: 1,
-      piecesPlaced: 0,
-    });
-  },
+    setCurrentPieces: (pieces) => set({ currentPieces: pieces }),
+    setPreviewBlock: (block) => set({ previewBlock: block }),
 
-  placePiece: (x: number, y: number) => {
-    const { board, currentPieces, draggedPiece, round, piecesPlaced } = get();
+    initializeGame: () => {
+      const blocksWithInitialIndex = blockGenerator.generateNextBlocks(
+        get().board
+      );
+      set({
+        currentPieces: blocksWithInitialIndex,
+        previewBlock: blockGenerator.getPreviewBlock(),
+        round: 1,
+        piecesPlaced: 0,
+      });
+    },
 
-    if (!draggedPiece) return;
+    placePiece: (x: number, y: number) => {
+      const { board, currentPieces, draggedPiece, round, piecesPlaced } = get();
 
-    // First, place the piece on the board without clearing lines
-    const newBoard = placePieceOnBoard(board, draggedPiece, { x, y });
-    const cellsToClear = getCellsToClear(newBoard, draggedPiece, { x, y });
-    const hasCellsToClear = cellsToClear.some((row) =>
-      row.some((cell) => cell)
-    );
+      if (!draggedPiece) return;
 
-    // Calculate score and prepare for line clearing
-    const scoreResult = calculateScore(
-      newBoard,
-      board,
-      draggedPiece,
-      cellsToClear,
-      { x, y }
-    );
-    const { newBoard: boardAfterClearing } = clearLines(newBoard);
+      // Размещаем фигуру на доске без очистки линий
+      const newBoard = placePieceOnBoard(board, draggedPiece, { x, y });
+      const cellsToClear = getCellsToClear(newBoard, draggedPiece, { x, y });
+      const hasCellsToClear = cellsToClear.some((row) =>
+        row.some((cell) => cell)
+      );
 
-    const newRound = piecesPlaced + 1 >= 3 ? round + 1 : round;
-    const newPiecesPlaced = piecesPlaced + 1 >= 3 ? 0 : piecesPlaced + 1;
+      // Вычисляем очки и подготавливаем очистку линий
+      const scoreResult = calculateScore(
+        newBoard,
+        board,
+        draggedPiece,
+        cellsToClear,
+        { x, y }
+      );
+      const { newBoard: boardAfterClearing } = clearLines(newBoard);
 
-    const newCurrentPieces = currentPieces.filter(
-      (p) => p.uniqueId !== draggedPiece.uniqueId
-    );
+      const newRound = piecesPlaced + 1 >= 3 ? round + 1 : round;
+      const newPiecesPlaced = piecesPlaced + 1 >= 3 ? 0 : piecesPlaced + 1;
 
-    // First update with the piece placed but not cleared
-    set({
-      board: newBoard, // Use newBoard instead of boardAfterClearing
-      currentPieces: newCurrentPieces,
-      draggedPiece: null,
-      dragPosition: null,
-      hoverCell: null,
-      round: newRound,
-      piecesPlaced: newPiecesPlaced,
-      score: get().score + scoreResult.totalPoints,
-      lastScoreResult: scoreResult,
-      isAnimating: hasCellsToClear, // Set animation state if there are lines to clear
-    });
+      const newCurrentPieces = currentPieces.filter(
+        (p) => p.uniqueId !== draggedPiece.uniqueId
+      );
 
-    // Проверяем завершение игры после размещения фигуры
-    const finalBoard = hasCellsToClear ? boardAfterClearing : newBoard;
-    if (checkGameOver(finalBoard, newCurrentPieces)) {
-      // Игра завершена
-      setTimeout(() => {
-        set({ gameOver: true });
-        const { onGameOver } = get();
-        if (onGameOver) {
-          onGameOver();
+      // Первое обновление с размещенной фигурой, но без очистки линий
+      set({
+        board: newBoard, // Используем newBoard вместо boardAfterClearing
+        currentPieces: newCurrentPieces,
+        draggedPiece: null,
+        dragPosition: null,
+        hoverCell: null,
+        round: newRound,
+        piecesPlaced: newPiecesPlaced,
+        score: get().score + scoreResult.totalPoints,
+        lastScoreResult: scoreResult,
+        isAnimating: hasCellsToClear, // Устанавливаем состояние анимации если есть линии для очистки
+      });
+
+      // Если есть линии для очистки, обновляем доску после анимации
+      if (hasCellsToClear) {
+        setTimeout(() => {
+          set({
+            board: boardAfterClearing,
+            isAnimating: false,
+          });
+
+          // Проверяем завершение игры ПОСЛЕ очистки линий
+          if (checkGameOver(boardAfterClearing, newCurrentPieces)) {
+            handleGameOver();
+            return;
+          }
+        }, 300); // Соответствует длительности анимации из CSS
+      } else {
+        // Если нет линий для очистки, проверяем Game Over сразу
+        if (checkGameOver(newBoard, newCurrentPieces)) {
+          handleGameOver();
+          return;
         }
-      }, 2000);
-      return;
-    }
+      }
 
-    // If there are lines to clear, update the board after animation
-    if (hasCellsToClear) {
-      setTimeout(() => {
-        set({
-          board: boardAfterClearing,
-          isAnimating: false,
-        });
-      }, 300); // Match the animation duration from CSS
-    }
+      // Генерируем новые фигуры СРАЗУ, если разместили все 3
+      if (newPiecesPlaced === 0) {
+        const finalBoard = hasCellsToClear ? boardAfterClearing : newBoard;
+        const newBlocks = blockGenerator.generateNextBlocks(finalBoard);
 
-    // Handle new blocks if needed
-    if (newPiecesPlaced === 0) {
-      const newBlocks = blockGenerator.generateNextBlocks(boardAfterClearing);
+        // Проверяем завершение игры после генерации новых фигур
+        if (checkGameOver(finalBoard, newBlocks)) {
+          set({
+            currentPieces: newBlocks,
+            previewBlock: blockGenerator.getPreviewBlock(),
+          });
+          handleGameOver();
+          return;
+        }
 
-      // Проверяем завершение игры после генерации новых фигур
-      if (checkGameOver(boardAfterClearing, newBlocks)) {
         set({
           currentPieces: newBlocks,
           previewBlock: blockGenerator.getPreviewBlock(),
         });
-        setTimeout(() => {
-          set({ gameOver: true });
-          const { onGameOver } = get();
-          if (onGameOver) {
-            onGameOver();
-          }
-        }, 2000);
-        return;
       }
+    },
 
+    resetGame: () => {
       set({
-        currentPieces: newBlocks,
-        previewBlock: blockGenerator.getPreviewBlock(),
+        board: Array(8)
+          .fill(0)
+          .map(() => Array(8).fill({ value: 0 })),
+        currentPieces: [],
+        score: 0,
+        gameOver: false,
+        round: 1,
+        piecesPlaced: 0,
+        validPositions: [],
+        draggedPiece: null,
+        dragPosition: null,
+        lastScoreResult: null,
+        previewBlock: null,
+        blockEvaluations: [],
       });
-    }
-  },
+      scoreCalculator.resetCombo();
+    },
 
-  resetGame: () => {
-    set({
-      board: Array(8)
-        .fill(0)
-        .map(() => Array(8).fill({ value: 0 })),
-      currentPieces: [],
-      score: 0,
-      gameOver: false,
-      round: 1,
-      piecesPlaced: 0,
-      validPositions: [],
-      draggedPiece: null,
-      dragPosition: null,
-      lastScoreResult: null,
-      previewBlock: null,
-      blockEvaluations: [],
-    });
-    scoreCalculator.resetCombo();
-  },
+    hoverCell: null,
+    setHoverCell: (cell: { x: number; y: number } | null) =>
+      set({ hoverCell: cell }),
 
-  hoverCell: null,
-  setHoverCell: (cell: { x: number; y: number } | null) =>
-    set({ hoverCell: cell }),
-
-  onGameOver: null,
-  setOnGameOver: (callback: (() => void) | null) =>
-    set({ onGameOver: callback }),
-}));
+    onGameOver: null,
+    setOnGameOver: (callback: (() => void) | null) =>
+      set({ onGameOver: callback }),
+  };
+});

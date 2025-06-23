@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Block } from "../lib/data/types";
 import { Piece } from "./pieces/Piece";
 
@@ -24,12 +24,18 @@ export const DraggablePiece: React.FC<DraggablePieceProps> = ({
     return null;
   }
 
-  const baseClasses = `grid gap-0.5  ${
-    isGhost ? "pointer-events-none " : "cursor-pointer drop-shadow-[5px_5px_2px_rgba(0,0,0,0.2)]"
-  }`;
-  const containerClasses = isGhost
-    ? "fixed z-[1000] opacity-70 transition-transform duration-200"
-    : `rounded-lg transition-all opacity-in-animation cursor-pointer touch-manipulation`;
+  const baseClasses = useMemo(() => 
+    `grid gap-0.5  ${
+      isGhost ? "pointer-events-none " : "cursor-pointer drop-shadow-[5px_5px_2px_rgba(0,0,0,0.2)]"
+    }`, [isGhost]
+  );
+
+  const containerClasses = useMemo(() => 
+    isGhost
+      ? "fixed z-[1000] opacity-70 transition-transform duration-200"
+      : `rounded-lg transition-all opacity-in-animation cursor-pointer touch-manipulation`,
+    [isGhost]
+  );
 
   return (
     <div

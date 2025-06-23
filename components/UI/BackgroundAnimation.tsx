@@ -2,7 +2,6 @@
 
 import React, { FC, useEffect, useMemo, useState } from "react";
 import star from "@/public/romn.svg";
-import Image from "next/image";
 import { createArray, getRandomItem } from "@/utils/helpers";
 
 interface BackgroundAnimationProps {
@@ -36,7 +35,7 @@ const generateRandomElements = () => {
 };
 
 const BackgroundAnimation: FC<BackgroundAnimationProps> = ({ className }) => {
-  const [animatedElements, setAnimatedElements] = useState<any[]>([]); // Use useState to manage elements
+  const [animatedElements, setAnimatedElements] = useState<any[]>([]);
 
   useEffect(() => {
     setAnimatedElements(generateRandomElements());
@@ -54,7 +53,6 @@ const BackgroundAnimation: FC<BackgroundAnimationProps> = ({ className }) => {
                 width: `${element.size}px`,
                 height: `${element.size}px`,
                 left: `${element.initialLeft}%`,
-                // Применяем рандомную длительность и задержку через CSS переменные
                 "--animation-duration": `${element.duration}s`,
                 "--animation-delay": `${element.delay}s`,
               } as React.CSSProperties
@@ -73,10 +71,10 @@ const BackgroundAnimation: FC<BackgroundAnimationProps> = ({ className }) => {
                 left: `${element.initialLeft}%`,
                 "--animation-duration": `${element.duration}s`,
                 "--animation-delay": `${element.delay}s`,
-                WebkitTransform: 'translateZ(0)',
-                transform: 'translateZ(0)',
-                WebkitBackfaceVisibility: 'hidden',
-                backfaceVisibility: 'hidden',
+                WebkitTransform: "translateZ(0)",
+                transform: "translateZ(0)",
+                WebkitBackfaceVisibility: "hidden",
+                backfaceVisibility: "hidden",
               } as React.CSSProperties
             }
           />

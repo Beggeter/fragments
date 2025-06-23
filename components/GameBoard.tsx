@@ -6,11 +6,17 @@ import React, {
   useState,
   useCallback,
   useLayoutEffect,
+  useMemo,
 } from "react";
 import { useGameStore } from "../lib/state/store";
 import { getCellsToClear } from "@/lib/core/engine";
 import { findNearestValidPosition } from "../lib/core/positions";
-import { Block, BlockColor, Matrix, Position } from "../lib/data/types";
+import {
+  Block,
+  BlockColor,
+  Matrix,
+  Position,
+} from "../lib/data/types";
 import { getEventCoordinates } from "@/utils/events";
 import { ScoreDisplay } from "./board/ScoreDisplay";
 import { BlockGenerator } from "../lib/core/blockGenerator";
@@ -28,7 +34,8 @@ import { calculatePotentialClearLines } from "./board/boardUtils";
 import { handlePiecePlacement } from "./board/boardUtils";
 import SettingsModal from "@/components/UI/SettingsModal";
 import settings from "@/public/settings.svg";
-import { playGameOver, playPlacePiece } from "@/lib/utils/sound";
+import { playPlacePiece } from "@/lib/utils/sound";
+import { useGameOver } from "@/hooks/useGameOver";
 
 const DEFAULT_CELL_SIZE = 43.75;
 const GAP_SIZE_PX = 2; // Исходя из gap-0.5 в TailwindCSS (0.125rem * 16px)
@@ -100,9 +107,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       scorePotential: number;
     }>
   >([]);
-  const [potentialClearHighlight, setPotentialClearHighlight] = useState<
-    boolean[][]
-  >([]);
   const [placedPiecesCount, setPlacedPiecesCount] = useState(0);
   const [isGeneratingNewSet, setIsGeneratingNewSet] = useState(false);
   const [currentSetNumber, setCurrentSetNumber] = useState(1);
@@ -167,11 +171,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
   }, [isAnimating]);
 
+  // Инициализируем игру только один раз при монтировании компонента
   useEffect(() => {
     if (currentPieces.length === 0) {
       initializeGame();
     }
-  }, [currentPieces.length, initializeGame]);
+  }, []); // Убираем зависимости, чтобы useEffect сработал только один раз
 
   useEffect(() => {
     if (currentPieces.length > 0) {
@@ -302,32 +307,22 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     lastHighlightedPosition,
   ]);
 
-  useEffect(() => {
-    if (draggedPiece && hoverCell) {
-      const potentialLines = calculatePotentialClearLines(
-        board,
-        draggedPiece,
-        hoverCell,
-        width,
-        height
-      );
-      setPotentialClearHighlight(potentialLines);
-    } else {
-      setPotentialClearHighlight([]);
-    }
+  const potentialClearHighlight = useMemo(() => {
+    if (!draggedPiece || !hoverCell) return [];
+    return calculatePotentialClearLines(
+      board,
+      draggedPiece,
+      hoverCell,
+      width,
+      height
+    );
   }, [draggedPiece, hoverCell, board, width, height]);
-
-  // Устанавливаем onGameOver callback в store
-  useEffect(() => {
-    setOnGameOver(() => {
-      playGameOver();
-      onGameOver();
-    });
-
-    return () => {
-      setOnGameOver(null);
-    };
-  }, [onGameOver, setOnGameOver]);
+  // Используем хук для анимации Game Over
+  useGameOver({
+    onGameOver,
+    width,
+    height,
+  });
 
   return (
     <>

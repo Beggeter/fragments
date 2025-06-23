@@ -1,4 +1,4 @@
-import { debounce } from "@/utils/helpers";
+import { debounce, throttle } from "@/utils/helpers";
 import { useRef, useState, useEffect, useCallback } from "react";
 import { useGameStore } from "../lib/state/store";
 import { findNearestValidPosition } from "../lib/core/positions";
@@ -20,20 +20,16 @@ const useBoardAndCellSizes = () => {
   const [boardRect, setBoardRect] = useState<DOMRect | null>(null);
   const [dynamicCellSize, setDynamicCellSize] = useState(DEFAULT_CELL_SIZE);
 
-  useEffect(() => {
-    const updateSizes = () => {
-      if (boardRef.current) {
-        setBoardRect(boardRef.current.getBoundingClientRect());
-      }
-      if (cellRef.current) {
-        setDynamicCellSize(cellRef.current.getBoundingClientRect().width);
-        console.log(
-          "Updated dynamicCellSize:",
-          cellRef.current.getBoundingClientRect().width
-        );
-      }
-    };
+  const updateSizes = useCallback(throttle(() => {
+    if (boardRef.current) {
+      setBoardRect(boardRef.current.getBoundingClientRect());
+    }
+    if (cellRef.current) {
+      setDynamicCellSize(cellRef.current.getBoundingClientRect().width);
+    }
+  }, 16), []); // 60fps throttling
 
+  useEffect(() => {
     const debouncedUpdateSizes = debounce(updateSizes, 100);
 
     // Update sizes initially
@@ -63,7 +59,7 @@ const useBoardAndCellSizes = () => {
     return () => {
       resizeObserver.disconnect();
     };
-  }, [boardRef, cellRef]);
+  }, [boardRef, cellRef, updateSizes]);
 
   return { boardRef, cellRef, boardRect, dynamicCellSize };
 };
