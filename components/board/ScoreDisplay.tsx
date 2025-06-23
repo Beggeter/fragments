@@ -1,4 +1,10 @@
-import React, { useEffect, useState, forwardRef, useCallback, useRef } from "react";
+import React, {
+  useEffect,
+  useState,
+  forwardRef,
+  useCallback,
+  useRef,
+} from "react";
 import { ScoreResult } from "../../lib/data/types";
 
 interface ScoreDisplayProps {
@@ -10,7 +16,8 @@ interface ScoreDisplayProps {
 export const ScoreDisplay = forwardRef<HTMLDivElement, ScoreDisplayProps>(
   ({ newScore, moveScore, className = "" }, ref) => {
     // Ensure newScore is a valid number
-    const validNewScore = isNaN(newScore) || newScore === undefined ? 0 : newScore;
+    const validNewScore =
+      isNaN(newScore) || newScore === undefined ? 0 : newScore;
     const [displayScore, setDisplayScore] = useState(validNewScore);
     const [isAnimating, setIsAnimating] = useState(false);
     const animationRef = useRef<number | undefined>(undefined);
@@ -21,7 +28,20 @@ export const ScoreDisplay = forwardRef<HTMLDivElement, ScoreDisplayProps>(
       }
 
       setIsAnimating(true);
-      const animationDuration = 500; // ms
+      let animationDuration: number;
+      if (endScore === 0) {
+        animationDuration = 300;
+      } else {
+        // Базовое время анимации
+        const baseDuration = 2000; // 2 секунды
+        // Вычисляем разницу между значениями
+        const scoreDifference = Math.abs(endScore - startScore);
+        // Увеличиваем время анимации в зависимости от разницы
+        // Например, каждые 1000 очков добавляем 1 секунду
+        const additionalDuration = Math.floor(scoreDifference / 50) * 500;
+        animationDuration = baseDuration + additionalDuration;
+      }
+
       const startTime = performance.now();
 
       const animate = (currentTime: number) => {
@@ -63,9 +83,9 @@ export const ScoreDisplay = forwardRef<HTMLDivElement, ScoreDisplayProps>(
 
     return (
       <div ref={ref} className={`flex flex-col items-center ${className}`}>
-        <div className="relative">
+        <div className="relative h-[7rem] flex items-center justify-center">
           <div
-            className={`text-[4rem] font-extrabold font-figtree text-white transition-all duration-300 relative ${
+            className={`text-[3.5rem] font-extrabold font-figtree text-white transition-all duration-300 relative ${
               isAnimating ? "scale-110" : "scale-100"
             }`}
           >

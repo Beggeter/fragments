@@ -7,47 +7,27 @@ const boosterIcons = [
   { src: "/boosters/spinner.png", alt: "Spinner" },
 ];
 
-export type LaserMode = "off" | "vertical" | "horizontal";
-
-interface BoostersPanelSimpleProps {
-  onBoosterClick: (idx: number) => void;
-  laserMode: LaserMode;
-}
-
-export const BoostersPanelSimple: React.FC<BoostersPanelSimpleProps> = ({ onBoosterClick, laserMode }) => (
-  <div className="flex justify-center gap-3 mb-1">
-    {boosterIcons.map((icon, idx) => {
-      let src = icon.src;
-      let style: React.CSSProperties = {};
-      let extraClass = "";
-      if (idx === 1) { // Laser
-        if (laserMode === "vertical") {
-          style.transform = "rotate(90deg)";
-        } else if (laserMode === "horizontal") {
-          src = "/boosters/close.png";
-        }
-        if (laserMode !== "off") {
-          extraClass = "ring-4 ring-blue-400 shadow-blue-400/50 animate-pulse";
-        }
-      }
-      return (
-        <button
-          key={icon.alt}
-          className={`w-11 h-11 rounded-full aspect-square bg-white/90 shadow-md flex items-center justify-center overflow-hidden border border-gray-200 hover:scale-110 transition-transform ${extraClass}`}
-          tabIndex={-1}
-          type="button"
-          style={{ padding: 0, ...style }}
-          onClick={() => onBoosterClick(idx)}
-        >
-          <img
-            src={src}
-            alt={icon.alt}
-            className="w-9 h-9"
-            style={style}
-            draggable={false}
-          />
-        </button>
-      );
-    })}
+export const BoostersPanelSimple: React.FC = () => (
+  <div className="z-3000 min-w-fit min-h-fit items-center justify-center
+   flex bg-gray-800 w-40 h-14 rounded-4xl -mt-6  outline-[#1F5EFF] outline-2 shadow-xl">
+  <div className="flex justify-between gap-2  ">
+    {boosterIcons.map((icon) => (
+      <button
+        key={icon.alt}
+        className="w-11 h-11 rounded-full aspect-square shadow-md flex
+         items-center justify-center overflow-hidden  hover:scale-110 transition-transform"
+        tabIndex={-1}
+        type="button"
+        style={{ padding: 0 }}
+      >
+        <img
+          src={icon.src}
+          alt={icon.alt}
+          className="w-9 h-9"
+          draggable={false}
+        />
+      </button>
+    ))}
+  </div>
   </div>
 );

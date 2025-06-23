@@ -131,7 +131,7 @@ const canPlaceBlock = (board: Matrix, block: Block): boolean => {
           return true;
         });
       });
-      
+
       if (canPlace) {
         return true;
       }
@@ -146,17 +146,18 @@ const checkGameOver = (board: Matrix, currentPieces: Block[]): boolean => {
   if (currentPieces.length === 0) {
     return false;
   }
-  
+
   // Проверяем, можно ли разместить хотя бы одну из оставшихся фигур
   for (const piece of currentPieces) {
     if (canPlaceBlock(board, piece)) {
       return false; // Игра может продолжаться
     }
   }
-  
+
   return true; // Ни одну фигуру нельзя разместить
 };
 
+// --- Zustand Store ---
 export const useGameStore = create<
   ExtendedGameState & {
     placePiece: (x: number, y: number) => void;
@@ -267,13 +268,14 @@ export const useGameStore = create<
     const finalBoard = hasCellsToClear ? boardAfterClearing : newBoard;
     if (checkGameOver(finalBoard, newCurrentPieces)) {
       // Игра завершена
-      set({ gameOver: true });
       setTimeout(() => {
-        const { onGameOver } = state;
+        set({ gameOver: true });
+        const { onGameOver } = get();
+
         if (onGameOver) {
           onGameOver();
         }
-      }, 100);
+      }, 2000);
       return;
     }
 
@@ -290,23 +292,24 @@ export const useGameStore = create<
     // Handle new blocks if needed
     if (newPiecesPlaced === 0) {
       const newBlocks = blockGenerator.generateNextBlocks(boardAfterClearing);
-      
+
       // Проверяем завершение игры после генерации новых фигур
       if (checkGameOver(boardAfterClearing, newBlocks)) {
         set({
           currentPieces: newBlocks,
           previewBlock: blockGenerator.getPreviewBlock(),
-          gameOver: true,
         });
         setTimeout(() => {
-          const { onGameOver } = state;
+          set({ gameOver: true });
+          const { onGameOver } = get();
+
           if (onGameOver) {
             onGameOver();
           }
-        }, 100);
+        }, 2000);
         return;
       }
-      
+
       set({
         currentPieces: newBlocks,
         previewBlock: blockGenerator.getPreviewBlock(),
@@ -337,31 +340,9 @@ export const useGameStore = create<
   hoverCell: null,
   setHoverCell: (cell: { x: number; y: number } | null) =>
     set({ hoverCell: cell }),
-    
+
   onGameOver: null,
-  setOnGameOver: (callback: (() => void) | null) => set({ onGameOver: callback }),
+  setOnGameOver: (callback: (() => void) | null) =>
+    set({ onGameOver: callback }),
 
-  pushHistory: () => {
-    const state = get();
-    const snapshot: GameSnapshot = {
-      board: JSON.parse(JSON.stringify(state.board)),
-      currentPieces: JSON.parse(JSON.stringify(state.currentPieces)),
-      score: state.score,
-      round: state.round,
-      piecesPlaced: state.piecesPlaced,
-      lastScoreResult: state.lastScoreResult ? { ...state.lastScoreResult } : null,
-      previewBlock: state.previewBlock ? JSON.parse(JSON.stringify(state.previewBlock)) : null,
-    };
-    set((s) => ({ history: [...s.history, snapshot] }));
-  },
-
-  undo: () => {
-    const { history } = get();
-    if (history.length === 0) return;
-    const prev = history[history.length - 1];
-    set((s) => ({
-      ...prev,
-      history: s.history.slice(0, -1),
-    }));
-  },
 }));

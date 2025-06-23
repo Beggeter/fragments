@@ -2,7 +2,7 @@ import { Block, Matrix, Position } from "../data/types";
 import { canPlaceBlock } from "./engine";
 
 const DISTANCE_THRESHOLD = 0.5; // Порог для поиска новой позиции
-const STICKY_THRESHOLD = 2.0; // Порог для "залипания" на текущей позиции
+const STICKY_THRESHOLD = 1.5; // Порог для "залипания" на текущей позиции
 
 export function calculateValidPositions(
   board: Matrix,

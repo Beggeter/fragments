@@ -153,7 +153,7 @@ export const useGameStore = create<GameStore>((set, get) => {
         if (onGameOver) {
           onGameOver();
         }
-      }, 100); // Небольшая задержка для завершения анимаций
+      }, 2000); // Небольшая задержка для завершения анимаций
       return;
     }
 
