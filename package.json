@@ -17,6 +17,7 @@
     "db:safe-clean": "tsx scripts/safe-clean.ts"
   },
   "dependencies": {
+    "@tsparticles/react": "^3.0.0",
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.44.2",
     "framer-motion": "^12.16.0",

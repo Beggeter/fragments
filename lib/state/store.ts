@@ -33,6 +33,17 @@ export interface ExtendedGameState extends GameState {
   setOnGameOver: (callback: (() => void) | null) => void;
 }
 
+export interface GameSnapshot {
+  board: Matrix;
+  currentPieces: Block[];
+  score: number;
+  round: number;
+  piecesPlaced: number;
+  lastScoreResult: ScoreResult | null;
+  previewBlock: Block | null;
+  // можно добавить combo, draggedPiece и др. если нужно
+}
+
 const scoreCalculator = new ScoreCalculator();
 const blockGenerator = new BlockGenerator();
 const difficultyEvaluator = new DifficultyEvaluator();
@@ -159,6 +170,10 @@ export const useGameStore = create<
     hoverCell: { x: number; y: number } | null;
     setHoverCell: (cell: { x: number; y: number } | null) => void;
     initializeGame: () => void;
+    history: GameSnapshot[];
+    pushHistory: () => void;
+    undo: () => void;
+    isAdmin: boolean;
   }
 >((set, get) => {
   // Вспомогательная функция для обработки завершения игры
@@ -178,6 +193,8 @@ export const useGameStore = create<
     lastScoreResult: null,
     previewBlock: null,
     blockEvaluations: [],
+    history: [],
+    isAdmin: true,
 
     startDrag: (block) => {
       const { board } = get();
@@ -214,10 +231,12 @@ export const useGameStore = create<
       });
     },
 
-    placePiece: (x: number, y: number) => {
-      const { board, currentPieces, draggedPiece, round, piecesPlaced } = get();
+  placePiece: (x: number, y: number) => {
+    const state = get();
+    if (!state.draggedPiece) return;
+    if (state.isAdmin) get().pushHistory();
 
-      if (!draggedPiece) return;
+    const { board, currentPieces, draggedPiece, round, piecesPlaced } = state;
 
       // Размещаем фигуру на доске без очистки линий
       const newBoard = placePieceOnBoard(board, draggedPiece, { x, y });
@@ -252,7 +271,7 @@ export const useGameStore = create<
         hoverCell: null,
         round: newRound,
         piecesPlaced: newPiecesPlaced,
-        score: get().score + scoreResult.totalPoints,
+        score: state.score + scoreResult.totalPoints,
         lastScoreResult: scoreResult,
         isAnimating: hasCellsToClear, // Устанавливаем состояние анимации если есть линии для очистки
       });
@@ -325,8 +344,44 @@ export const useGameStore = create<
     setHoverCell: (cell: { x: number; y: number } | null) =>
       set({ hoverCell: cell }),
 
-    onGameOver: null,
-    setOnGameOver: (callback: (() => void) | null) =>
-      set({ onGameOver: callback }),
-  };
-});
+  onGameOver: null,
+  setOnGameOver: (callback: (() => void) | null) =>
+    set({ onGameOver: callback }),
+
+  pushHistory: () => {
+    const state = get();
+    const snapshot: GameSnapshot = {
+      board: state.board.map(row => row.map(cell => ({ ...cell }))),
+      currentPieces: [...state.currentPieces],
+      score: state.score,
+      round: state.round,
+      piecesPlaced: state.piecesPlaced,
+      lastScoreResult: state.lastScoreResult,
+      previewBlock: state.previewBlock,
+    };
+    set({ history: [...state.history, snapshot] });
+  },
+
+  undo: () => {
+    const state = get();
+    if (state.history.length === 0) return;
+    
+    const lastSnapshot = state.history[state.history.length - 1];
+    const newHistory = state.history.slice(0, -1);
+    
+    set({
+      board: lastSnapshot.board,
+      currentPieces: lastSnapshot.currentPieces,
+      score: lastSnapshot.score,
+      round: lastSnapshot.round,
+      piecesPlaced: lastSnapshot.piecesPlaced,
+      lastScoreResult: lastSnapshot.lastScoreResult,
+      previewBlock: lastSnapshot.previewBlock,
+      history: newHistory,
+      draggedPiece: null,
+      dragPosition: null,
+      hoverCell: null,
+    });
+  },
+
+}});
