@@ -32,6 +32,8 @@ import { playGameOver, playPlacePiece } from "@/lib/utils/sound";
 import { useUser } from "@/hooks/useUser";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import trophyImg from "@/public/record.png";
+import { LoadingSpinner } from './LoadingSpinner';
+import Particles from "@tsparticles/react";
 
 const DEFAULT_CELL_SIZE = 43.75;
 const GAP_SIZE_PX = 2; // Исходя из gap-0.5 в TailwindCSS (0.125rem * 16px)
@@ -42,6 +44,7 @@ interface GameBoardProps {
   onScoreUpdate: (score: number) => void;
   onGameOver: () => void;
   onExitGame: () => void;
+  onShowSpinner?: () => void;
 }
 
 // Тип для аргументов handlePiecePlacement
@@ -137,12 +140,13 @@ const spiralOrder = (n: number, m: number) => {
   );
 };
 
-export const GameBoard: React.FC<GameBoardProps> = ({
+export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }> = ({
   width = 8,
   height = 8,
   onScoreUpdate,
   onGameOver,
   onExitGame,
+  onShowSpinner,
 }) => {
   const {
     board,
@@ -503,6 +507,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       } else if (boosterId === "undo") {
         handleUndo();
       } else if (boosterId === "spinner") {
+        if (onShowSpinner) onShowSpinner();
         const emptyBoard = board.map((row) => row.map(() => ({ value: 0 })));
         useGameStore.setState({ board: emptyBoard, score: score + 300 });
         setHistory((prev) => [
@@ -518,7 +523,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         alert(`Бустер ${boosterId} пока не реализован`);
       }
     },
-    [board, score, currentPieces, handleUndo]
+    [board, score, currentPieces, handleUndo, onShowSpinner]
   );
 
   // Функция-обёртка для размещения фигуры с сохранением истории и рекорда
@@ -566,7 +571,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   );
 
   return (
-    <>
+    <div className="relative">
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
@@ -621,14 +626,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
         <BoostersPanel onBoosterClick={handleBoosterClick} />
 
-        {/* Game Board Container - takes full width and maintains aspect ratio */}
-
-        <div className="w-full aspect-square flex justify-center items-center p-4 sm:max-w-xs sm:max-h-xs">
+        <div className="w-full aspect-square flex justify-center items-center p-4 sm:max-w-xs sm:max-h-xs relative">
           <div className="relative w-full h-full">
             <ComboVisualizer speed={4} lastScore={lastScoreResult} />
-
             <div
               ref={boardRef}
+              id="game-board-grid"
               className="relative z-10 grid grid-cols-8 grid-rows-8 gap-0.5 w-full h-full bg-gray-800 p-1 rounded-lg will-change-transform"
             >
               {board.map((row, y) => (
@@ -686,7 +689,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           onPieceStart={handlePieceStart}
         />
       </div>
-    </>
+    </div>
   );
 };
 
