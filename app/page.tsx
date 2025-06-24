@@ -12,6 +12,7 @@ import { useGameStore } from "../lib/state/store";
 import { ResourceLoader } from "@/utils/ResourceLoader";
 import { BlockColor } from "@/lib/data/types";
 import { LoadingScreen } from "@/components/LoadingScreen";
+import LoadingSpinner from "../components/LoadingSpinner";
 
 type Screen =
   | "admin login"
@@ -88,6 +89,7 @@ const HomePage: React.FC = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [devScreen, setDevScreen] = useState<Screen | "">("");
   const [resourcesLoaded, setResourcesLoaded] = useState(false);
+  const [showSpinnerAnimation, setShowSpinnerAnimation] = useState(false);
 
   const {
     isAdmin,
@@ -334,8 +336,20 @@ const HomePage: React.FC = () => {
     );
   }
 
+  // функция для запуска спиннера
+  const handleShowSpinnerAnimation = () => {
+    setShowSpinnerAnimation(true);
+  };
+
   return (
     <div className="min-h-screen bg-blue-900">
+      {/* Overlay spinner */}
+      {showSpinnerAnimation && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
+          <LoadingSpinner onFinish={() => setShowSpinnerAnimation(false)} />
+        </div>
+      )}
+
       {/* Dev-панель для ручного переключения экрана */}
       {/* {isDev && (
         <div
@@ -394,6 +408,7 @@ const HomePage: React.FC = () => {
           onExitGame={handleGoToMenu}
           onScoreUpdate={(newScore) => setScore(newScore)}
           onGameOver={handleGameOver}
+          onShowSpinner={handleShowSpinnerAnimation}
         />
       )}
 
