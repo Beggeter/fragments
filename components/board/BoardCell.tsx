@@ -41,9 +41,7 @@ const BoardCell = React.memo<{
           cell.value ? "bg-gray-900" : "bg-gray-900"
         } ${highlight ? "ring-2 ring-blue-500" : ""} ${
           isInClearingLine ? "clearing-line-horizontal" : ""
-        } ${isInClearingLine ? "clearing-line-vertical" : ""} ${
-          isPotentiallyCleared ? "potential-clear-highlight" : ""
-        }`}
+        } ${isInClearingLine ? "clearing-line-vertical" : ""}`}
         onClick={onClick}
       >
         {cell.value === 1 && displayColor && (

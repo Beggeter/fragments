@@ -90,6 +90,7 @@ const HomePage: React.FC = () => {
   const [devScreen, setDevScreen] = useState<Screen | "">("");
   const [resourcesLoaded, setResourcesLoaded] = useState(false);
   const [showSpinnerAnimation, setShowSpinnerAnimation] = useState(false);
+  const [boardRect, setBoardRect] = useState<DOMRect | null>(null);
 
   const {
     isAdmin,
@@ -344,9 +345,28 @@ const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-blue-900">
       {/* Overlay spinner */}
-      {showSpinnerAnimation && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
-          <LoadingSpinner onFinish={() => setShowSpinnerAnimation(false)} />
+      {showSpinnerAnimation && boardRect && (
+        <div
+          style={{
+            position: "fixed",
+            left: boardRect.left,
+            top: boardRect.top,
+            width: boardRect.width,
+            height: boardRect.height,
+            zIndex: 9999,
+            pointerEvents: "none",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <LoadingSpinner
+            width={boardRect.width}
+            height={boardRect.height}
+            left={boardRect.left}
+            top={boardRect.top}
+            onFinish={() => setShowSpinnerAnimation(false)}
+          />
         </div>
       )}
 
@@ -409,6 +429,7 @@ const HomePage: React.FC = () => {
           onScoreUpdate={(newScore) => setScore(newScore)}
           onGameOver={handleGameOver}
           onShowSpinner={handleShowSpinnerAnimation}
+          onBoardRectChange={setBoardRect}
         />
       )}
 

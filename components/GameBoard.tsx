@@ -45,6 +45,7 @@ interface GameBoardProps {
   onGameOver: () => void;
   onExitGame: () => void;
   onShowSpinner?: () => void;
+  onBoardRectChange?: (rect: DOMRect | null) => void;
 }
 
 // Тип для аргументов handlePiecePlacement
@@ -147,6 +148,7 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
   onGameOver,
   onExitGame,
   onShowSpinner,
+  onBoardRectChange,
 }) => {
   const {
     board,
@@ -570,6 +572,78 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
     [user, adminRecord, isAdmin]
   );
 
+  useEffect(() => {
+    if (onBoardRectChange) {
+      onBoardRectChange(boardRect);
+    }
+  }, [boardRect, onBoardRectChange]);
+
+  // Получаем цвет фигуры для подсветки
+  const potentialLineColor = draggedPiece?.color ? draggedPiece.color : '#fff';
+
+  // Функция для генерации партиклов
+  function renderParticles(lineType: 'row' | 'col', idx: number, color: string) {
+    const count = 7 + Math.floor(Math.random() * 4); // 7-10 партиклов
+    const particles = [];
+    for (let i = 0; i < count; i++) {
+      const size = 6 + Math.random() * 8;
+      const anim = Math.random() > 0.5 ? 'star-fade' : 'star-scale';
+      const delay = Math.random() * 1.5;
+      let style: React.CSSProperties = {
+        position: 'absolute',
+        width: size,
+        height: size,
+        borderRadius: '50%',
+        background: `radial-gradient(circle, #fff 60%, ${color} 100%)`,
+        opacity: 0.7 + Math.random() * 0.3,
+        filter: 'blur(0.5px)',
+        animation: `${anim} 1.5s ${delay}s infinite`,
+        zIndex: 30,
+        pointerEvents: 'none',
+      };
+      if (lineType === 'row') {
+        style.left = `${(i + 0.5) * (100 / (count + 1))}%`;
+        style.top = `${50 + (Math.random() - 0.5) * 60}%`;
+        style.transform = `translate(-50%, -50%)`;
+      } else {
+        style.top = `${(i + 0.5) * (100 / (count + 1))}%`;
+        style.left = `${50 + (Math.random() - 0.5) * 60}%`;
+        style.transform = `translate(-50%, -50%)`;
+      }
+      particles.push(<div key={i} className="star-particle" style={style} />);
+    }
+    return particles;
+  }
+
+  // Простая логика определения потенциальных линий
+  const potentialRows: number[] = [];
+  const potentialCols: number[] = [];
+  
+  if (potentialClearHighlight && potentialClearHighlight.length > 0) {
+    // Проверяем горизонтальные линии
+    for (let y = 0; y < potentialClearHighlight.length; y++) {
+      const row = potentialClearHighlight[y];
+      if (row && row.some((cell: any) => typeof cell === 'string' && cell === 'row')) {
+        potentialRows.push(y);
+      }
+    }
+    
+    // Проверяем вертикальные линии
+    for (let x = 0; x < (potentialClearHighlight[0]?.length || 0); x++) {
+      let hasCol = false;
+      for (let y = 0; y < potentialClearHighlight.length; y++) {
+        const cell = potentialClearHighlight[y]?.[x];
+        if (typeof cell === 'string' && cell === 'col') {
+          hasCol = true;
+          break;
+        }
+      }
+      if (hasCol) {
+        potentialCols.push(x);
+      }
+    }
+  }
+
   return (
     <div className="relative">
       <SettingsModal
@@ -629,6 +703,48 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
         <div className="w-full aspect-square flex justify-center items-center p-4 sm:max-w-xs sm:max-h-xs relative">
           <div className="relative w-full h-full">
             <ComboVisualizer speed={4} lastScore={lastScoreResult} />
+            {/* Glow-оверлеи для потенциальных линий */}
+            {potentialRows.map((y) => (
+              <div
+                key={`glow-row-${y}`}
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: `calc(${y} * 12.5% + 0.5px * ${y})`,
+                  width: '100%',
+                  height: '12.5%',
+                  pointerEvents: 'none',
+                  zIndex: 200,
+                  boxShadow: '0 0 32px 16px #ff0, 0 0 64px 32px #f00',
+                  borderRadius: 8,
+                  background: 'rgba(255,0,0,0.5)',
+                  opacity: 1,
+                }}
+                className="find-me"
+              >
+                {renderParticles('row', y, potentialLineColor)}
+              </div>
+            ))}
+            {potentialCols.map((x) => (
+              <div
+                key={`glow-col-${x}`}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: `calc(${x} * 12.5% + 0.5px * ${x})`,
+                  width: '12.5%',
+                  height: '100%',
+                  pointerEvents: 'none',
+                  zIndex: 200,
+                  boxShadow: '0 0 32px 16px #ff0, 0 0 64px 32px #f00',
+                  borderRadius: 8,
+                  background: 'rgba(255,0,0,0.5)',
+                  opacity: 1,
+                }}
+              >
+                {renderParticles('col', x, potentialLineColor)}
+              </div>
+            ))}
             <div
               ref={boardRef}
               id="game-board-grid"

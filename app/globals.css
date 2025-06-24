@@ -583,3 +583,18 @@ input[type="range"].custom-range {
   filter: drop-shadow(0 2px 4px #0008) drop-shadow(0 0px 8px #fff8);
   /* Можно добавить inner shadow через box-shadow, но это не всегда работает для текста */
 }
+
+/* Анимации для партиклов-звездочек */
+.star-particle {
+  box-shadow: 0 0 8px 2px #fff, 0 0 16px 4px currentColor;
+}
+
+@keyframes star-fade {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 0.1; }
+}
+
+@keyframes star-scale {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.5); opacity: 0.5; }
+}
