@@ -2,6 +2,11 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
+  // Разрешаем всё в dev-режиме
+  if (process.env.NODE_ENV !== 'production') {
+    return NextResponse.next();
+  }
+
   // Защищенные API endpoints
   const protectedPaths = [
     '/api/users',

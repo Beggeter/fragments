@@ -29,6 +29,9 @@ import { handlePiecePlacement } from "./board/boardUtils";
 import SettingsModal from "@/components/UI/SettingsModal";
 import settings from "@/public/settings.svg";
 import { playGameOver, playPlacePiece } from "@/lib/utils/sound";
+import { useUser } from "@/hooks/useUser";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
+import trophyImg from "@/public/record.png";
 
 const DEFAULT_CELL_SIZE = 43.75;
 const GAP_SIZE_PX = 2; // Исходя из gap-0.5 в TailwindCSS (0.125rem * 16px)
@@ -60,10 +63,28 @@ type HandlePiecePlacementArgs = {
 };
 
 // Компонент для партиклов в клетке
-const CellParticles = ({ x, y, trigger }: { x: number; y: number; trigger: boolean }) => {
+const CellParticles = ({
+  x,
+  y,
+  trigger,
+}: {
+  x: number;
+  y: number;
+  trigger: boolean;
+}) => {
   if (!trigger) return null;
   return (
-    <div style={{ position: "absolute", left: x, top: y, pointerEvents: "none", width: 40, height: 40, zIndex: 20 }}>
+    <div
+      style={{
+        position: "absolute",
+        left: x,
+        top: y,
+        pointerEvents: "none",
+        width: 40,
+        height: 40,
+        zIndex: 20,
+      }}
+    >
       <Particles
         id={`cell-particles-${x}-${y}`}
         options={{
@@ -72,7 +93,12 @@ const CellParticles = ({ x, y, trigger }: { x: number; y: number; trigger: boole
             number: { value: 18 },
             shape: { type: "circle" },
             size: { value: { min: 2, max: 6 } },
-            move: { enable: true, speed: 7, direction: "none", outModes: { default: "destroy" } },
+            move: {
+              enable: true,
+              speed: 7,
+              direction: "none",
+              outModes: { default: "destroy" },
+            },
             opacity: { value: 0.8 },
           },
           detectRetina: true,
@@ -90,10 +116,10 @@ const spiralOrder = (n: number, m: number) => {
   const visited = Array.from({ length: n }, () => Array(m).fill(false));
   // 4 центральные клетки для старта
   const centers: [number, number][] = [
-    [Math.floor((n-1)/2), Math.floor((m-1)/2)],
-    [Math.floor((n-1)/2), Math.ceil((m-1)/2)],
-    [Math.ceil((n-1)/2), Math.floor((m-1)/2)],
-    [Math.ceil((n-1)/2), Math.ceil((m-1)/2)],
+    [Math.floor((n - 1) / 2), Math.floor((m - 1) / 2)],
+    [Math.floor((n - 1) / 2), Math.ceil((m - 1) / 2)],
+    [Math.ceil((n - 1) / 2), Math.floor((m - 1) / 2)],
+    [Math.ceil((n - 1) / 2), Math.ceil((m - 1) / 2)],
   ];
   let q = [...centers];
   let idx = 0;
@@ -103,10 +129,12 @@ const spiralOrder = (n: number, m: number) => {
     visited[y][x] = true;
     res.push([y, x]);
     // Добавляем соседей по часовой стрелке
-    q.push([y, x+1], [y+1, x], [y, x-1], [y-1, x]);
+    q.push([y, x + 1], [y + 1, x], [y, x - 1], [y - 1, x]);
   }
   // Убираем дубли
-  return res.filter(([y, x], i) => res.findIndex(([yy, xx]) => yy===y&&xx===x)===i);
+  return res.filter(
+    ([y, x], i) => res.findIndex(([yy, xx]) => yy === y && xx === x) === i
+  );
 };
 
 export const GameBoard: React.FC<GameBoardProps> = ({
@@ -137,6 +165,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     resetGame,
     gameOver,
     setOnGameOver,
+    piecesPlaced,
   } = useGameStore();
 
   const {
@@ -171,7 +200,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [potentialClearHighlight, setPotentialClearHighlight] = useState<
     boolean[][]
   >([]);
-  const [placedPiecesCount, setPlacedPiecesCount] = useState(0);
   const [isGeneratingNewSet, setIsGeneratingNewSet] = useState(false);
   const [currentSetNumber, setCurrentSetNumber] = useState(1);
 
@@ -195,14 +223,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const [laserMode, setLaserMode] = useState(false);
 
-  // История ходов для undo (board, score, currentPieces)
-  const [history, setHistory] = useState<{ board: Matrix; score: number; currentPieces: Block[] }[]>([]);
+  // История ходов для undo (board, score, currentPieces, piecesPlaced)
+  const [history, setHistory] = useState<
+    { board: Matrix; score: number; currentPieces: Block[]; piecesPlaced: number }[]
+  >([]);
 
   const blockGenerator = new BlockGenerator();
   const scoreCalculator = new ScoreCalculator();
   const difficultyEvaluator = new DifficultyEvaluator();
 
   const scoreDisplayRef = useRef<HTMLDivElement>(null);
+
+  const { user } = useUser();
+  const { isAdmin } = useAdminAuth();
+
+  const [adminRecord, setAdminRecord] = useState<number | null>(null);
 
   useLayoutEffect(() => {
     function updateCoords() {
@@ -258,7 +293,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const newBlocks = blockGenerator.generateNextBlocks(board);
       setCurrentPieces(newBlocks);
       setPreviewBlock(blockGenerator.getPreviewBlock());
-      setPlacedPiecesCount(0);
       setIsGeneratingNewSet(false);
     }
   }, [
@@ -397,16 +431,33 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       setOnGameOver(null);
     };
   }, [onGameOver, setOnGameOver]);
+
+  // Получаем рекорд для админа при монтировании/смене статуса
+  useEffect(() => {
+    if (isAdmin) {
+      fetch("/api/users/610936383")
+        .then((res) => res.json())
+        .then((data) =>
+          setAdminRecord(typeof data.record === "number" ? data.record : 0)
+        )
+        .catch(() => setAdminRecord(0));
+    } else {
+      setAdminRecord(null);
+    }
+  }, [isAdmin]);
+
   // Функция для удаления строки или столбца
   const handleLaserCellClick = (row: number, col: number) => {
-    console.log('Laser click', row, col);
+    console.log("Laser click", row, col);
     if (!board) return;
     const isRow = true; // TODO: добавить определение по координате клика
-    let newBoard = board.map(rowArr => rowArr.map(cell => ({ ...cell })));
+    let newBoard = board.map((rowArr) => rowArr.map((cell) => ({ ...cell })));
     if (isRow) {
       newBoard[row] = newBoard[row].map(() => ({ value: 0 }));
     } else {
-      newBoard = newBoard.map(r => r.map((cell, idx) => idx === col ? { value: 0 } : cell));
+      newBoard = newBoard.map((r) =>
+        r.map((cell, idx) => (idx === col ? { value: 0 } : cell))
+      );
     }
     useGameStore.setState({ board: newBoard });
     setLaserMode(false);
@@ -414,16 +465,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     setHistory((prev) => [
       ...prev,
       {
-        board: newBoard.map(row => row.map(cell => ({ ...cell }))),
+        board: newBoard.map((row) => row.map((cell) => ({ ...cell }))),
         score,
-        currentPieces: currentPieces.map(piece => ({ ...piece })),
+        currentPieces: currentPieces.map((piece) => ({ ...piece })),
+        piecesPlaced: piecesPlaced,
       },
     ]);
   };
 
   // Новый обработчик undo
   const handleUndo = useCallback(() => {
-    let last: typeof history[number] | undefined;
+    let last: (typeof history)[number] | undefined;
     setHistory((prev) => {
       if (prev.length < 2) return prev;
       const newHistory = prev.slice(0, -1);
@@ -434,53 +486,84 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     setTimeout(() => {
       if (last) {
         useGameStore.setState({
-          board: last.board.map(row => row.map(cell => ({ ...cell }))),
+          board: last.board.map((row) => row.map((cell) => ({ ...cell }))),
           score: last.score,
-          currentPieces: last.currentPieces.map(piece => ({ ...piece })),
+          currentPieces: last.currentPieces.map((piece) => ({ ...piece })),
+          piecesPlaced: last.piecesPlaced,
         });
       }
     }, 0);
   }, [history]);
 
   // Обработчик кликов по бустерам
-  const handleBoosterClick = useCallback((boosterId: string) => {
-    if (boosterId === 'laser') {
-      setLaserMode(true);
-    } else if (boosterId === 'undo') {
-      handleUndo();
-    } else if (boosterId === 'spinner') {
-      const emptyBoard = board.map(row => row.map(() => ({ value: 0 })));
-      useGameStore.setState({ board: emptyBoard, score: score + 300 });
-      setHistory((prev) => [
-        ...prev,
-        {
-          board: emptyBoard.map(row => row.map(cell => ({ ...cell }))),
-          score: score + 300,
-          currentPieces: currentPieces.map(piece => ({ ...piece })),
-        },
-      ]);
-    } else {
-      alert(`Бустер ${boosterId} пока не реализован`);
-    }
-  }, [board, score, currentPieces, handleUndo]);
-
-  // Функция-обёртка для размещения фигуры с сохранением истории
-  const onPiecePlaced = useCallback((args: HandlePiecePlacementArgs) => {
-    handlePiecePlacement({
-      ...args,
-      onAfterPlacement: () => {
-        const { board, score, currentPieces } = useGameStore.getState();
+  const handleBoosterClick = useCallback(
+    (boosterId: string) => {
+      if (boosterId === "laser") {
+        setLaserMode(true);
+      } else if (boosterId === "undo") {
+        handleUndo();
+      } else if (boosterId === "spinner") {
+        const emptyBoard = board.map((row) => row.map(() => ({ value: 0 })));
+        useGameStore.setState({ board: emptyBoard, score: score + 300 });
         setHistory((prev) => [
           ...prev,
           {
-            board: board.map(row => row.map(cell => ({ ...cell }))),
-            score,
-            currentPieces: currentPieces.map(piece => ({ ...piece })),
+            board: emptyBoard.map((row) => row.map((cell) => ({ ...cell }))),
+            score: score + 300,
+            currentPieces: currentPieces.map((piece) => ({ ...piece })),
+            piecesPlaced: 0,
           },
         ]);
-      },
-    });
-  }, []);
+      } else {
+        alert(`Бустер ${boosterId} пока не реализован`);
+      }
+    },
+    [board, score, currentPieces, handleUndo]
+  );
+
+  // Функция-обёртка для размещения фигуры с сохранением истории и рекорда
+  const onPiecePlaced = useCallback(
+    (args: HandlePiecePlacementArgs) => {
+      handlePiecePlacement({
+        ...args,
+        onAfterPlacement: async () => {
+          const { board, score, currentPieces, piecesPlaced } = useGameStore.getState();
+          
+          // Сохраняем в историю
+          setHistory((prev) => [
+            ...prev,
+            {
+              board: board.map((row) => row.map((cell) => ({ ...cell }))),
+              score,
+              currentPieces: currentPieces.map((piece) => ({ ...piece })),
+              piecesPlaced,
+            },
+          ]);
+          
+          // --- Сохранение рекорда ---
+          const targetTelegramId = isAdmin ? "610936383" : user?.telegramId;
+          const currentRecord = isAdmin ? adminRecord : user?.record;
+          if (
+            targetTelegramId &&
+            typeof currentRecord === "number" &&
+            score > currentRecord
+          ) {
+            try {
+              await fetch(`/api/users/${targetTelegramId}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ record: score }),
+              });
+              if (isAdmin) setAdminRecord(score);
+            } catch (e) {
+              /* ignore */
+            }
+          }
+        },
+      });
+    },
+    [user, adminRecord, isAdmin]
+  );
 
   return (
     <>
@@ -496,8 +579,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         className={`flex flex-col items-center gap-5 min-h-screen bg-[var(--game-background)] p-4 no-select will-change-auto`}
       >
         <div className="flex justify-between w-full -mb-5 items-center sm:max-w-xs sm:max-h-xs">
-          <div className="text-2xl font-figtree font-bold text-white">
-            500 {/* Placeholder for trophy */}
+          {/* <div className="text-2xl font-figtree font-bold text-white">
+            500 
+          </div> */}
+          <div className="flex flex-col items-center">
+            <span className="record-trophy">
+              {isAdmin ? adminRecord ?? 0 : user?.record ?? 0}
+            </span>
+            <img
+              src={trophyImg.src}
+              alt="Трофей"
+              style={{ width: 40, height: 40, marginTop: 8 }}
+            />
           </div>
           <div
             className="cursor-pointer flex items-center justify-center "
@@ -546,6 +639,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                       highlight,
                       isInClearingLine,
                       isPotentiallyCleared,
+                      potentialClearColor,
                     } = getCellEffects({
                       x,
                       y,
@@ -565,9 +659,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                         highlight={highlight}
                         isInClearingLine={isInClearingLine}
                         isPotentiallyCleared={isPotentiallyCleared}
+                        potentialClearColor={potentialClearColor}
                         isFirst={isFirst}
                         cellRef={cellRef}
-                        onClick={laserMode ? () => handleLaserCellClick(y, x) : undefined}
+                        onClick={
+                          laserMode
+                            ? () => handleLaserCellClick(y, x)
+                            : undefined
+                        }
                       />
                     );
                   })}

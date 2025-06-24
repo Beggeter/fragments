@@ -51,6 +51,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return res.status(404).json({ error: 'User not found' });
         }
 
+        // Проверка: не понижать рекорд
+        if (updates.record !== undefined && updates.record < userToUpdate.record) {
+          delete updates.record;
+        }
+
         const updatedUser = await UserService.updateUser(userToUpdate.id, updates);
         return res.status(200).json(updatedUser);
 

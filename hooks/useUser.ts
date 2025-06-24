@@ -13,6 +13,7 @@ interface User {
   currency: number;
   createdAt: string;
   lastLoginAt: string;
+  record: number;
 }
 
 interface UserState {

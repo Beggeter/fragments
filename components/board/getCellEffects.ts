@@ -18,10 +18,12 @@ export function getCellEffects({
   highlight: boolean;
   isInClearingLine: boolean;
   isPotentiallyCleared: boolean;
+  potentialClearColor: string | null;
 } {
   let highlight = false;
   let isInClearingLine = false;
   let isPotentiallyCleared = false;
+  let potentialClearColor: string | null = null;
 
   if (draggedPiece && hoverCell) {
     const pieceMatrix = draggedPiece.matrix;
@@ -40,10 +42,11 @@ export function getCellEffects({
 
   if (potentialClearHighlight[y]?.[x]) {
     isPotentiallyCleared = true;
+    potentialClearColor = draggedPiece?.color || null;
   }
   isInClearingLine =
     clearingHorizontalLines.includes(y) ||
     clearingVerticalLines.includes(x);
 
-  return { highlight, isInClearingLine, isPotentiallyCleared };
+  return { highlight, isInClearingLine, isPotentiallyCleared, potentialClearColor };
 } 

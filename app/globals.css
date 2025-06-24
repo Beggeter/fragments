@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: 'Holtwood One SC';
+  src: url('/fonts/HoltwoodOneSC-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Отключить выделение текста по всему приложению */
 * {
   user-select: none;
@@ -141,7 +149,7 @@ body {
 
 /* Add styles for the potential clear highlight */
 .potential-clear-highlight {
-  animation: potential-clear-pulse 1s infinite;
+  animation: potential-clear-pulse 2s infinite;
   background-color: rgba(
     59,
     130,
@@ -561,4 +569,17 @@ input[type="range"].custom-range:focus {
 /* Для плавности */
 input[type="range"].custom-range {
   transition: background 0.3s;
+}
+
+.record-trophy {
+  font-family: 'Holtwood One SC', serif;
+  font-size: 20px;
+  letter-spacing: 0;
+  line-height: 1;
+  text-align: center;
+  background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 2px 4px #0008) drop-shadow(0 0px 8px #fff8);
+  /* Можно добавить inner shadow через box-shadow, но это не всегда работает для текста */
 }

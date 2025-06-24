@@ -378,8 +378,29 @@ export class BlockGenerator {
   }
 
   private getRandomColor(): BlockColor {
-    const randomIndex = Math.floor(Math.random() * BLOCK_COLORS.length);
-    return BLOCK_COLORS[randomIndex];
+    // Вес для каждого цвета: pink — абсурдно маленький, остальные — одинаковые
+    const colorWeights: Record<BlockColor, number> = {
+      red: 1,
+      blue: 1,
+      green: 1,
+      yellow: 1,
+      purple: 1,
+      orange: 1,
+      pink: 1 / (Number.MAX_SAFE_INTEGER - 1), // абсурдно маленький шанс
+      cyan: 1,
+    };
+    const colors = BLOCK_COLORS;
+    const weights = colors.map((color) => colorWeights[color]);
+    const totalWeight = weights.reduce((sum, w) => sum + w, 0);
+    let rnd = Math.random() * totalWeight;
+    for (let i = 0; i < colors.length; i++) {
+      if (rnd < weights[i]) {
+        return colors[i];
+      }
+      rnd -= weights[i];
+    }
+    // fallback (не должен сработать)
+    return colors[0];
   }
 
   private fillBlockBag() {
