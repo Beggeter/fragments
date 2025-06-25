@@ -1,12 +1,10 @@
-import { motion } from 'framer-motion';
-import { useRef, useState } from 'react';
+import { motion } from "framer-motion";
+import { useRef, useState } from "react";
 
-const COLORS = [
-  'red', 'blue', 'green', 'yellow', 'purple', 'orange',
-];
+const COLORS = ["red", "blue", "green", "yellow", "purple", "orange"];
 
 const CELL_SIZE = 43;
-const GAP_PX = 0;
+const GAP_PX = 2;
 const BOARD_SIZE = 8;
 
 const getCellParams = () => {
@@ -21,7 +19,10 @@ const getCellParams = () => {
 };
 
 const getLineCells = () =>
-  Array.from({ length: 8 }).map(() => ({ color: COLORS[Math.floor(Math.random() * COLORS.length)], ...getCellParams() }));
+  Array.from({ length: 8 }).map(() => ({
+    color: COLORS[Math.floor(Math.random() * COLORS.length)],
+    ...getCellParams(),
+  }));
 
 const getAllLines = () => Array.from({ length: 8 }).map(() => getLineCells());
 
@@ -36,6 +37,10 @@ type SpinnerCell = {
   scaleFinal: number;
 };
 
+// Вынесем параметры скорости и длительности наверх, чтобы использовать их в обоих компонентах
+const FLY_SPEED = 900; // px/sec (можно подстроить)
+const BOUNCE_DURATION = 0.35; // сек, длительность взрыва
+
 type LineProps = {
   lineIdx: number;
   cells: SpinnerCell[];
@@ -46,7 +51,8 @@ type LineProps = {
   bounce2: number;
   finalY: number;
   boardWidth: number;
-  delay: number;
+  flyDuration: number; // индивидуальная длительность полёта
+  totalDuration: number; // индивидуальная общая длительность
 };
 
 const Line = ({
@@ -59,9 +65,12 @@ const Line = ({
   bounce2,
   finalY,
   boardWidth,
-  delay,
+  flyDuration,
+  totalDuration,
 }: LineProps) => {
-  // Ключевые кадры для линии (y одинаковый для всех блоков)
+  // Временные точки анимации
+  const frac = flyDuration / totalDuration;
+  const times = [0, frac, frac + 0.25 * (1 - frac), frac + 0.6 * (1 - frac), 1];
   const yKeyframes = [
     startY, // старт
     topBounce, // долетели до верха
@@ -69,18 +78,19 @@ const Line = ({
     topBounce - bounce2, // второй прыжок
     topBounce - finalY, // улёт
   ];
-  const yTimes = [0, 0.55, 0.7, 0.85, 1];
 
   return (
     <motion.div
       style={{
-        position: 'absolute',
+        position: "absolute",
         left: 0,
         width: boardWidth,
-        display: 'flex',
-        justifyContent: 'center',
+        display: "flex",
+        justifyContent: "center",
         top: 0,
       }}
+      initial={{ y: 0 }}
+      animate={{ y: 0 }}
     >
       {cells.map((cell, i) => (
         <motion.img
@@ -104,15 +114,15 @@ const Line = ({
             opacity: [0.85, 1, 1, 0.7, 0],
           }}
           transition={{
-            duration: 1,
-            times: yTimes,
-            ease: ['easeIn', 'linear', 'easeOut', 'easeInOut', 'easeIn'],
-            delay,
+            duration: totalDuration,
+            times,
+            ease: ["easeIn", "linear", "easeOut", "easeInOut", "easeIn"],
+            delay: 0, // все линии стартуют одновременно
           }}
           style={{
             width: CELL_SIZE,
             height: CELL_SIZE,
-            display: 'block',
+            display: "block",
             opacity: 0.85,
           }}
           onAnimationComplete={i === 0 ? onFinish : undefined}
@@ -129,7 +139,12 @@ type LoadingSpinnerProps = {
   onFinish?: () => void;
 };
 
-export const LoadingSpinner = ({ width, height, startYOffset = 0, onFinish }: LoadingSpinnerProps) => {
+export const LoadingSpinner = ({
+  width,
+  height,
+  startYOffset = 0,
+  onFinish,
+}: LoadingSpinnerProps) => {
   const [finishedCount, setFinishedCount] = useState(0);
   const boardHeight = height ?? 0;
   const boardWidth = width ?? 0;
@@ -137,15 +152,28 @@ export const LoadingSpinner = ({ width, height, startYOffset = 0, onFinish }: Lo
 
   // Генерируем линии и параметры только один раз
   const linesRef = useRef(getAllLines());
-  const bounceParamsRef = useRef(Array.from({ length: 8 }).map(() => {
-    const bounce1 = 40 + Math.random() * 30;
-    const bounce2 = bounce1 + 30 + Math.random() * 20;
-    const finalY = bounce2 + 60 + Math.random() * 30;
-    return { bounce1, bounce2, finalY };
-  }));
+  const bounceParamsRef = useRef(
+    Array.from({ length: 8 }).map(() => {
+      const bounce1 = 40 + Math.random() * 30;
+      const bounce2 = bounce1 + 30 + Math.random() * 20;
+      const finalY = bounce2 + 60 + Math.random() * 30;
+      return { bounce1, bounce2, finalY };
+    })
+  );
 
   const START_Y = boardHeight - CELL_SIZE + startYOffset;
   const END_Y = -CELL_SIZE + GAP_PX;
+
+  // Все линии летят до одной и той же верхней границы (EXTRA)
+  const COMMON_TOP = EXTRA;
+  const lineTimings = Array.from({ length: 8 }).map((_, lineIdx) => {
+    const startY = START_Y + lineIdx * CELL_SIZE + EXTRA;
+    const topBounce = COMMON_TOP;
+    const flyDistance = Math.abs(startY - topBounce);
+    const flyDuration = flyDistance / FLY_SPEED;
+    const totalDuration = flyDuration + BOUNCE_DURATION;
+    return { flyDuration, totalDuration, startY, topBounce };
+  });
 
   const handleLineFinish = () => {
     setFinishedCount((prev) => {
@@ -161,28 +189,32 @@ export const LoadingSpinner = ({ width, height, startYOffset = 0, onFinish }: Lo
       style={{
         width: boardWidth,
         height: boardHeight + EXTRA,
-        position: 'absolute',
+        position: "absolute",
         left: 0,
         top: -EXTRA,
-        overflowY: 'hidden',
-        pointerEvents: 'none',
+        overflowY: "hidden",
+        pointerEvents: "none",
       }}
     >
-      {Array.from({ length: 8 }).map((_, lineIdx) => (
-        <Line
-          key={lineIdx}
-          lineIdx={lineIdx}
-          cells={linesRef.current[lineIdx]}
-          onFinish={handleLineFinish}
-          startY={START_Y + lineIdx * (CELL_SIZE + GAP_PX) + EXTRA}
-          topBounce={END_Y + lineIdx * (CELL_SIZE + GAP_PX) + EXTRA}
-          {...bounceParamsRef.current[lineIdx]}
-          boardWidth={boardWidth}
-          delay={lineIdx * 0.08}
-        />
-      ))}
+      {Array.from({ length: 8 }).map((_, lineIdx) => {
+        const { flyDuration, totalDuration, startY, topBounce } = lineTimings[lineIdx];
+        return (
+          <Line
+            key={lineIdx}
+            lineIdx={lineIdx}
+            cells={linesRef.current[lineIdx]}
+            onFinish={handleLineFinish}
+            startY={startY}
+            topBounce={topBounce}
+            {...bounceParamsRef.current[lineIdx]}
+            boardWidth={boardWidth}
+            flyDuration={flyDuration}
+            totalDuration={totalDuration}
+          />
+        );
+      })}
     </div>
   );
 };
 
-export default LoadingSpinner; 
+export default LoadingSpinner;
