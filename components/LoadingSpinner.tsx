@@ -1,5 +1,5 @@
-import { motion } from "framer-motion";
-import { useRef, useState } from "react";
+import { motion, useMotionValue, useTransform, animate } from "framer-motion";
+import { useRef, useState, useEffect } from "react";
 
 const COLORS = ["red", "blue", "green", "yellow", "purple", "orange"];
 
@@ -38,8 +38,9 @@ type SpinnerCell = {
 };
 
 // Вынесем параметры скорости и длительности наверх, чтобы использовать их в обоих компонентах
-const FLY_SPEED = 900; // px/sec (можно подстроить)
+const FLY_SPEED = 400; // px/sec (можно подстроить)
 const BOUNCE_DURATION = 0.35; // сек, длительность взрыва
+const EXPLOSION_OFFSET = 40; // px, насколько выше поля будет взрыв
 
 type LineProps = {
   lineIdx: number;
@@ -67,7 +68,10 @@ const Line = ({
   boardWidth,
   flyDuration,
   totalDuration,
-}: LineProps) => {
+  onLineBreakpoint,
+}: LineProps & {
+  onLineBreakpoint?: (lineIdx: number, rowIdx: number) => void;
+}) => {
   // Временные точки анимации
   const frac = flyDuration / totalDuration;
   const times = [0, frac, frac + 0.25 * (1 - frac), frac + 0.6 * (1 - frac), 1];
@@ -76,8 +80,76 @@ const Line = ({
     topBounce, // долетели до верха
     topBounce - bounce1, // первый прыжок
     topBounce - bounce2, // второй прыжок
-    topBounce - finalY, // улёт
+    topBounce - EXPLOSION_OFFSET, // взрыв чуть выше поля
   ];
+
+  // --- scaleX: брейкпоинты на строках поля с учётом EXTRA ---
+  const y = useMotionValue(startY);
+  // Получаем те же y3, y5, y7, что и в родителе
+  const EXTRA = 200;
+  const getRowY = (rowIdx: number) =>
+    EXTRA + rowIdx * CELL_SIZE + rowIdx * GAP_PX;
+  const y3 = getRowY(2);
+  const y5 = getRowY(4);
+  const y7 = getRowY(6);
+  // breakpoints теперь от нижней к верхней
+  const breakpoints = [y7, y5, y3];
+  // scaleXKeyframes соответствуют новым брейкпоинтам
+  const scaleXKeyframes = [1, 0.92, 1.08, 0.95, 1.12];
+  const flyDistance = startY - topBounce;
+  // times для scaleX:
+  const scaleXTimes = [
+    0,
+    ...breakpoints.map((yN) => {
+      const progress = (startY - yN) / flyDistance;
+      const tN = progress * flyDuration;
+      return tN / totalDuration;
+    }),
+    1,
+  ].sort((a, b) => a - b);
+
+  // Логирование для отладки анимации
+  // console.log(`Line ${lineIdx}:`);
+  // console.log('  startY:', startY);
+  // console.log('  topBounce:', topBounce);
+  // console.log('  finalY:', finalY);
+  // console.log('  topBounce - finalY:', topBounce - finalY);
+  // console.log('  breakpoints:', breakpoints);
+  // console.log('  scaleXTimes:', scaleXTimes);
+
+  const scaleX = useTransform(
+    y,
+    [startY, ...breakpoints, topBounce - EXPLOSION_OFFSET],
+    scaleXKeyframes
+  );
+
+  // --- добавляю вызов onLineBreakpoint для всех 8 строк ---
+  const triggeredRowsRef = useRef(Array(8).fill(false));
+  const rowYs = Array.from({ length: 8 }).map(
+    (_, rowIdx) => EXTRA + rowIdx * CELL_SIZE + rowIdx * GAP_PX
+  );
+
+  useEffect(() => {
+    const controls = animate(y, yKeyframes[yKeyframes.length - 1], {
+      duration: totalDuration,
+      ease: "linear",
+      onUpdate: (latestY) => {
+        rowYs.forEach((rowY, rowIdx) => {
+          if (!triggeredRowsRef.current[rowIdx] && latestY <= rowY) {
+            triggeredRowsRef.current[rowIdx] = true;
+            if (onLineBreakpoint) {
+              onLineBreakpoint(lineIdx, rowIdx);
+            }
+          }
+        });
+      },
+      onComplete: () => {
+        if (onFinish) onFinish();
+      },
+    });
+    return controls.stop;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <motion.div
@@ -88,9 +160,12 @@ const Line = ({
         display: "flex",
         justifyContent: "center",
         top: 0,
+        y,
+        scaleX,
       }}
-      initial={{ y: 0 }}
-      animate={{ y: 0 }}
+      initial={false}
+      animate={false}
+      onAnimationComplete={onFinish}
     >
       {cells.map((cell, i) => (
         <motion.img
@@ -100,14 +175,13 @@ const Line = ({
           width={CELL_SIZE}
           height={CELL_SIZE}
           initial={{
-            y: startY,
+            y: 0,
             x: 0,
             scale: 1,
             rotate: 0,
             opacity: 0.85,
           }}
           animate={{
-            y: yKeyframes,
             x: [0, 0, cell.xSpread * 0.5, cell.xSpread, cell.xSpread],
             scale: [1, 1, cell.scale2, cell.scale3, cell.scaleFinal],
             rotate: [0, 0, cell.rot1, cell.rot2, cell.rotFinal],
@@ -125,7 +199,6 @@ const Line = ({
             display: "block",
             opacity: 0.85,
           }}
-          onAnimationComplete={i === 0 ? onFinish : undefined}
         />
       ))}
     </motion.div>
@@ -137,13 +210,18 @@ type LoadingSpinnerProps = {
   height?: number;
   startYOffset?: number;
   onFinish?: () => void;
+  onLineBreakpoint?: (lineIdx: number, rowIdx: number) => void;
 };
+
+// Для отладки: показывать ли горизонтальные линии на брейкпоинтах
+const SHOW_DEBUG_LINES = false;
 
 export const LoadingSpinner = ({
   width,
   height,
   startYOffset = 0,
   onFinish,
+  onLineBreakpoint,
 }: LoadingSpinnerProps) => {
   const [finishedCount, setFinishedCount] = useState(0);
   const boardHeight = height ?? 0;
@@ -175,10 +253,19 @@ export const LoadingSpinner = ({
     return { flyDuration, totalDuration, startY, topBounce };
   });
 
+  // --- DEBUG LINES ---
+  const getRowY = (rowIdx: number) =>
+    EXTRA + rowIdx * CELL_SIZE + rowIdx * GAP_PX;
+  const y3 = getRowY(2);
+  const y5 = getRowY(4);
+  const y7 = getRowY(6);
+
   const handleLineFinish = () => {
     setFinishedCount((prev) => {
       const next = prev + 1;
-      if (next === 8 && onFinish) onFinish();
+      if (next === 8 && onFinish) {
+        onFinish();
+      }
       return next;
     });
   };
@@ -196,8 +283,53 @@ export const LoadingSpinner = ({
         pointerEvents: "none",
       }}
     >
+      {/* DEBUG: горизонтальные линии на брейкпоинтах */}
+      {SHOW_DEBUG_LINES && (
+        <>
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              width: "100%",
+              height: 2,
+              background: "red",
+              top: y3,
+              zIndex: 9999,
+              pointerEvents: "none",
+              opacity: 0.7,
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              width: "100%",
+              height: 2,
+              background: "lime",
+              top: y5,
+              zIndex: 9999,
+              pointerEvents: "none",
+              opacity: 0.7,
+            }}
+          />
+          <div
+            style={{
+              position: "absolute",
+              left: 0,
+              width: "100%",
+              height: 2,
+              background: "blue",
+              top: y7,
+              zIndex: 9999,
+              pointerEvents: "none",
+              opacity: 0.7,
+            }}
+          />
+        </>
+      )}
       {Array.from({ length: 8 }).map((_, lineIdx) => {
-        const { flyDuration, totalDuration, startY, topBounce } = lineTimings[lineIdx];
+        const { flyDuration, totalDuration, startY, topBounce } =
+          lineTimings[lineIdx];
         return (
           <Line
             key={lineIdx}
@@ -210,6 +342,7 @@ export const LoadingSpinner = ({
             boardWidth={boardWidth}
             flyDuration={flyDuration}
             totalDuration={totalDuration}
+            onLineBreakpoint={onLineBreakpoint}
           />
         );
       })}

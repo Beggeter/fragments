@@ -32,7 +32,7 @@ import { playGameOver, playPlacePiece } from "@/lib/utils/sound";
 import { useUser } from "@/hooks/useUser";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import trophyImg from "@/public/record.png";
-import { LoadingSpinner } from './LoadingSpinner';
+import { LoadingSpinner } from "./LoadingSpinner";
 import Particles from "@tsparticles/react";
 
 const DEFAULT_CELL_SIZE = 43.75;
@@ -46,6 +46,7 @@ interface GameBoardProps {
   onExitGame: () => void;
   onShowSpinner?: () => void;
   onBoardRectChange?: (rect: DOMRect | null) => void;
+  clearedLine?: number | null;
 }
 
 // Тип для аргументов handlePiecePlacement
@@ -141,7 +142,9 @@ const spiralOrder = (n: number, m: number) => {
   );
 };
 
-export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }> = ({
+export const GameBoard: React.FC<
+  GameBoardProps & { onShowSpinner?: () => void }
+> = ({
   width = 8,
   height = 8,
   onScoreUpdate,
@@ -149,6 +152,7 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
   onExitGame,
   onShowSpinner,
   onBoardRectChange,
+  clearedLine,
 }) => {
   const {
     board,
@@ -182,9 +186,6 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
     boardRect,
     calculateDynamicOffset,
   } = useDnDLogic();
-
-  // Создаем новый ref с правильным типом для BoardCell
-  const boardCellRef = useRef<HTMLDivElement>(null);
 
   const [clearingCells, setClearingCells] = useState<boolean[][]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -231,7 +232,12 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
 
   // История ходов для undo (board, score, currentPieces, piecesPlaced)
   const [history, setHistory] = useState<
-    { board: Matrix; score: number; currentPieces: Block[]; piecesPlaced: number }[]
+    {
+      board: Matrix;
+      score: number;
+      currentPieces: Block[];
+      piecesPlaced: number;
+    }[]
   >([]);
 
   const blockGenerator = new BlockGenerator();
@@ -510,17 +516,18 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
         handleUndo();
       } else if (boosterId === "spinner") {
         if (onShowSpinner) onShowSpinner();
-        const emptyBoard = board.map((row) => row.map(() => ({ value: 0 })));
-        useGameStore.setState({ board: emptyBoard, score: score + 300 });
-        setHistory((prev) => [
-          ...prev,
-          {
-            board: emptyBoard.map((row) => row.map((cell) => ({ ...cell }))),
-            score: score + 300,
-            currentPieces: currentPieces.map((piece) => ({ ...piece })),
-            piecesPlaced: 0,
-          },
-        ]);
+        // const emptyBoard = board.map((row) => row.map(() => ({ value: 0 })));
+        // useGameStore.setState({ board: emptyBoard, score: score + 300 });
+        useGameStore.setState({ score: score + 300 });
+        // setHistory((prev) => [
+        //   ...prev,
+        //   {
+        //     board: emptyBoard.map((row) => row.map((cell) => ({ ...cell }))),
+        //     score: score + 300,
+        //     currentPieces: currentPieces.map((piece) => ({ ...piece })),
+        //     piecesPlaced: 0,
+        //   },
+        // ]);
       } else {
         alert(`Бустер ${boosterId} пока не реализован`);
       }
@@ -534,8 +541,9 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
       handlePiecePlacement({
         ...args,
         onAfterPlacement: async () => {
-          const { board, score, currentPieces, piecesPlaced } = useGameStore.getState();
-          
+          const { board, score, currentPieces, piecesPlaced } =
+            useGameStore.getState();
+
           // Сохраняем в историю
           setHistory((prev) => [
             ...prev,
@@ -546,7 +554,7 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
               piecesPlaced,
             },
           ]);
-          
+
           // --- Сохранение рекорда ---
           const targetTelegramId = isAdmin ? "610936383" : user?.telegramId;
           const currentRecord = isAdmin ? adminRecord : user?.record;
@@ -579,29 +587,33 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
   }, [boardRect, onBoardRectChange]);
 
   // Получаем цвет фигуры для подсветки
-  const potentialLineColor = draggedPiece?.color ? draggedPiece.color : '#fff';
+  const potentialLineColor = draggedPiece?.color ? draggedPiece.color : "#fff";
 
   // Функция для генерации партиклов
-  function renderParticles(lineType: 'row' | 'col', idx: number, color: string) {
+  function renderParticles(
+    lineType: "row" | "col",
+    idx: number,
+    color: string
+  ) {
     const count = 7 + Math.floor(Math.random() * 4); // 7-10 партиклов
     const particles = [];
     for (let i = 0; i < count; i++) {
       const size = 6 + Math.random() * 8;
-      const anim = Math.random() > 0.5 ? 'star-fade' : 'star-scale';
+      const anim = Math.random() > 0.5 ? "star-fade" : "star-scale";
       const delay = Math.random() * 1.5;
       let style: React.CSSProperties = {
-        position: 'absolute',
+        position: "absolute",
         width: size,
         height: size,
-        borderRadius: '50%',
+        borderRadius: "50%",
         background: `radial-gradient(circle, #fff 60%, ${color} 100%)`,
         opacity: 0.7 + Math.random() * 0.3,
-        filter: 'blur(0.5px)',
+        filter: "blur(0.5px)",
         animation: `${anim} 1.5s ${delay}s infinite`,
         zIndex: 30,
-        pointerEvents: 'none',
+        pointerEvents: "none",
       };
-      if (lineType === 'row') {
+      if (lineType === "row") {
         style.left = `${(i + 0.5) * (100 / (count + 1))}%`;
         style.top = `${50 + (Math.random() - 0.5) * 60}%`;
         style.transform = `translate(-50%, -50%)`;
@@ -618,22 +630,25 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
   // Простая логика определения потенциальных линий
   const potentialRows: number[] = [];
   const potentialCols: number[] = [];
-  
+
   if (potentialClearHighlight && potentialClearHighlight.length > 0) {
     // Проверяем горизонтальные линии
     for (let y = 0; y < potentialClearHighlight.length; y++) {
       const row = potentialClearHighlight[y];
-      if (row && row.some((cell: any) => typeof cell === 'string' && cell === 'row')) {
+      if (
+        row &&
+        row.some((cell: any) => typeof cell === "string" && cell === "row")
+      ) {
         potentialRows.push(y);
       }
     }
-    
+
     // Проверяем вертикальные линии
     for (let x = 0; x < (potentialClearHighlight[0]?.length || 0); x++) {
       let hasCol = false;
       for (let y = 0; y < potentialClearHighlight.length; y++) {
         const cell = potentialClearHighlight[y]?.[x];
-        if (typeof cell === 'string' && cell === 'col') {
+        if (typeof cell === "string" && cell === "col") {
           hasCol = true;
           break;
         }
@@ -643,6 +658,32 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
       }
     }
   }
+
+  useEffect(() => {
+    if (!clearedLine || clearedLine === null) return;
+    let updated = false;
+    let newBoard = board;
+    if (clearedLine !== null && !newBoard[clearedLine].every(cell => cell.value === 0)) {
+      newBoard = newBoard.map((row, y) =>
+        y === clearedLine ? row.map(() => ({ value: 0 })) : row
+      );
+      updated = true;
+    }
+    if (updated) {
+      Promise.resolve().then(() => {
+        useGameStore.setState({ board: newBoard });
+        setHistory((prev) => [
+          ...prev,
+          {
+            board: newBoard.map((row) => row.map((cell) => ({ ...cell }))),
+            score,
+            currentPieces: currentPieces.map((piece) => ({ ...piece })),
+            piecesPlaced: piecesPlaced,
+          },
+        ]);
+      });
+    }
+  }, [clearedLine]);
 
   return (
     <div className="relative">
@@ -708,41 +749,41 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
               <div
                 key={`glow-row-${y}`}
                 style={{
-                  position: 'absolute',
+                  position: "absolute",
                   left: 0,
                   top: `calc(${y} * 12.5% + 0.5px * ${y})`,
-                  width: '100%',
-                  height: '12.5%',
-                  pointerEvents: 'none',
+                  width: "100%",
+                  height: "12.5%",
+                  pointerEvents: "none",
                   zIndex: 200,
-                  boxShadow: '0 0 32px 16px #ff0, 0 0 64px 32px #f00',
+                  boxShadow: "0 0 32px 16px #ff0, 0 0 64px 32px #f00",
                   borderRadius: 8,
-                  background: 'rgba(255,0,0,0.5)',
+                  background: "rgba(255,0,0,0.5)",
                   opacity: 1,
                 }}
                 className="find-me"
               >
-                {renderParticles('row', y, potentialLineColor)}
+                {renderParticles("row", y, potentialLineColor)}
               </div>
             ))}
             {potentialCols.map((x) => (
               <div
                 key={`glow-col-${x}`}
                 style={{
-                  position: 'absolute',
+                  position: "absolute",
                   top: 0,
                   left: `calc(${x} * 12.5% + 0.5px * ${x})`,
-                  width: '12.5%',
-                  height: '100%',
-                  pointerEvents: 'none',
+                  width: "12.5%",
+                  height: "100%",
+                  pointerEvents: "none",
                   zIndex: 200,
-                  boxShadow: '0 0 32px 16px #ff0, 0 0 64px 32px #f00',
+                  boxShadow: "0 0 32px 16px #ff0, 0 0 64px 32px #f00",
                   borderRadius: 8,
-                  background: 'rgba(255,0,0,0.5)',
+                  background: "rgba(255,0,0,0.5)",
                   opacity: 1,
                 }}
               >
-                {renderParticles('col', x, potentialLineColor)}
+                {renderParticles("col", x, potentialLineColor)}
               </div>
             ))}
             <div

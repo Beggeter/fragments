@@ -91,6 +91,13 @@ const HomePage: React.FC = () => {
   const [resourcesLoaded, setResourcesLoaded] = useState(false);
   const [showSpinnerAnimation, setShowSpinnerAnimation] = useState(false);
   const [boardRect, setBoardRect] = useState<DOMRect | null>(null);
+  const [clearedLine, setClearedLine] = useState<number | null>(null);
+
+  const handleLineBreakpoint = (lineIdx: number) => {
+    setClearedLine(Math.abs(7 - lineIdx));
+    // Сбросить после короткой задержки, чтобы не очищать повторно
+    setTimeout(() => setClearedLine(null), 100);
+  };
 
   const {
     isAdmin,
@@ -201,6 +208,21 @@ const HomePage: React.FC = () => {
 
     initializeApp();
   }, []); // Запускаем только один раз при монтировании
+
+  useEffect(() => {
+    if (showSpinnerAnimation) {
+      document.body.classList.add("screen-shake");
+      const shakeTimeout = setTimeout(() => {
+        document.body.classList.remove("screen-shake");
+      }, 300); // 1/4 длительности анимации
+      return () => {
+        clearTimeout(shakeTimeout);
+        document.body.classList.remove("screen-shake");
+      };
+    } else {
+      document.body.classList.remove("screen-shake");
+    }
+  }, [showSpinnerAnimation]);
 
   // useEffect для управления экраном на основе статуса авторизации
   useEffect(() => {
@@ -363,12 +385,22 @@ const HomePage: React.FC = () => {
           <LoadingSpinner
             width={boardRect.width}
             height={boardRect.height}
-            left={boardRect.left}
-            top={boardRect.top}
             onFinish={() => setShowSpinnerAnimation(false)}
+            onLineBreakpoint={handleLineBreakpoint}
           />
         </div>
       )}
+
+      <div
+        className={`glow-side glow-left${
+          showSpinnerAnimation ? " glow-visible" : ""
+        }`}
+      />
+      <div
+        className={`glow-side glow-right${
+          showSpinnerAnimation ? " glow-visible" : ""
+        }`}
+      />
 
       {/* Dev-панель для ручного переключения экрана */}
       {/* {isDev && (
@@ -430,6 +462,7 @@ const HomePage: React.FC = () => {
           onGameOver={handleGameOver}
           onShowSpinner={handleShowSpinnerAnimation}
           onBoardRectChange={setBoardRect}
+          clearedLine={clearedLine}
         />
       )}
 
