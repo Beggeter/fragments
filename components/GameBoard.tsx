@@ -6,10 +6,10 @@ import React, {
   useState,
   useCallback,
   useLayoutEffect,
+  useMemo,
 } from "react";
 import { useGameStore } from "../lib/state/store";
 import { getCellsToClear } from "@/lib/core/engine";
-import { findNearestValidPosition } from "../lib/core/positions";
 import { Block, BlockColor, Matrix, Position } from "../lib/data/types";
 import { getEventCoordinates } from "@/utils/events";
 import { ScoreDisplay } from "./board/ScoreDisplay";
@@ -19,7 +19,6 @@ import { ScoreCalculator } from "../lib/core/scoreCalculator";
 import { ComboVisualizer } from "./board/ComboVisualizer";
 import { DraggablePiecesSection } from "./DraggablePiecesSection";
 import { BoostersPanel } from "./BoostersPanel";
-import { BoostersPanelSimple } from "./BoostersPanelSimple";
 import { throttle } from "@/utils/helpers";
 import BoardCell from "./board/BoardCell";
 import useDnDLogic from "@/hooks/useDnDLogic";
@@ -32,8 +31,10 @@ import { playGameOver, playPlacePiece } from "@/lib/utils/sound";
 import { useUser } from "@/hooks/useUser";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import trophyImg from "@/public/record.png";
-import { LoadingSpinner } from './LoadingSpinner';
 import Particles from "@tsparticles/react";
+import { getThemeByScore } from "./UI/colorThemes";
+import { LoadingSpinner } from "./LoadingSpinner";
+import { useGameOver } from "@/hooks/useGameOver";
 
 const DEFAULT_CELL_SIZE = 43.75;
 const GAP_SIZE_PX = 2; // Исходя из gap-0.5 в TailwindCSS (0.125rem * 16px)
@@ -140,7 +141,9 @@ const spiralOrder = (n: number, m: number) => {
   );
 };
 
-export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }> = ({
+export const GameBoard: React.FC<
+  GameBoardProps & { onShowSpinner?: () => void }
+> = ({
   width = 8,
   height = 8,
   onScoreUpdate,
@@ -188,7 +191,6 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
   const [isAnimating, setIsAnimating] = useState(false);
   const [nextBlocks, setNextBlocks] = useState<Block[]>([]);
   const [selectedBlock, setSelectedBlock] = useState<Block | null>(null);
-  const [combo, setCombo] = useState(0);
   const [blockEvaluations, setBlockEvaluations] = useState<
     Array<{
       difficulty: number;
@@ -201,9 +203,9 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
       scorePotential: number;
     }>
   >([]);
-  const [potentialClearHighlight, setPotentialClearHighlight] = useState<
-    boolean[][]
-  >([]);
+  // const [potentialClearHighlight, setPotentialClearHighlight] = useState<
+  //   boolean[][]
+  // >([]);
   const [isGeneratingNewSet, setIsGeneratingNewSet] = useState(false);
   const [currentSetNumber, setCurrentSetNumber] = useState(1);
 
@@ -229,7 +231,12 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
 
   // История ходов для undo (board, score, currentPieces, piecesPlaced)
   const [history, setHistory] = useState<
-    { board: Matrix; score: number; currentPieces: Block[]; piecesPlaced: number }[]
+    {
+      board: Matrix;
+      score: number;
+      currentPieces: Block[];
+      piecesPlaced: number;
+    }[]
   >([]);
 
   const blockGenerator = new BlockGenerator();
@@ -242,6 +249,9 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
   const { isAdmin } = useAdminAuth();
 
   const [adminRecord, setAdminRecord] = useState<number | null>(null);
+
+  // Получить текущую тему на основе последнего результата
+  const currentTheme = getThemeByScore(lastScoreResult?.comboLevel);
 
   useLayoutEffect(() => {
     function updateCoords() {
@@ -409,32 +419,23 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
     lastHighlightedPosition,
   ]);
 
-  useEffect(() => {
-    if (draggedPiece && hoverCell) {
-      const potentialLines = calculatePotentialClearLines(
-        board,
-        draggedPiece,
-        hoverCell,
-        width,
-        height
-      );
-      setPotentialClearHighlight(potentialLines);
-    } else {
-      setPotentialClearHighlight([]);
-    }
+  const potentialClearHighlight = useMemo(() => {
+    if (!draggedPiece || !hoverCell) return [];
+    return calculatePotentialClearLines(
+      board,
+      draggedPiece,
+      hoverCell,
+      width,
+      height
+    );
   }, [draggedPiece, hoverCell, board, width, height]);
 
   // Устанавливаем onGameOver callback в store
-  useEffect(() => {
-    setOnGameOver(() => {
-      playGameOver();
-      onGameOver();
-    });
-
-    return () => {
-      setOnGameOver(null);
-    };
-  }, [onGameOver, setOnGameOver]);
+  useGameOver({
+    onGameOver,
+    width,
+    height,
+  });
 
   // Получаем рекорд для админа при монтировании/смене статуса
   useEffect(() => {
@@ -532,8 +533,9 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
       handlePiecePlacement({
         ...args,
         onAfterPlacement: async () => {
-          const { board, score, currentPieces, piecesPlaced } = useGameStore.getState();
-          
+          const { board, score, currentPieces, piecesPlaced } =
+            useGameStore.getState();
+
           // Сохраняем в историю
           setHistory((prev) => [
             ...prev,
@@ -544,7 +546,7 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
               piecesPlaced,
             },
           ]);
-          
+
           // --- Сохранение рекорда ---
           const targetTelegramId = isAdmin ? "610936383" : user?.telegramId;
           const currentRecord = isAdmin ? adminRecord : user?.record;
@@ -584,17 +586,21 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
         className={`flex flex-col items-center gap-5 min-h-screen bg-[var(--game-background)] p-4 no-select will-change-auto`}
       >
         <div className="flex justify-between w-full -mb-5 items-center sm:max-w-xs sm:max-h-xs">
-          {/* <div className="text-2xl font-figtree font-bold text-white">
-            500 
-          </div> */}
-          <div className="flex flex-col items-center">
-            <span className="record-trophy">
-              {isAdmin ? adminRecord ?? 0 : user?.record ?? 0}
-            </span>
+          <div className="flex flex-row items-center jusyify-center gap-2">
             <img
               src={trophyImg.src}
               alt="Трофей"
-              style={{ width: 40, height: 40, marginTop: 8 }}
+              style={{ width: 20, height: 20 }}
+              className="menu-shadow"
+            />
+            {/* <span className="record-trophy">
+              {isAdmin ? adminRecord ?? 0 : user?.record ?? 0}
+            </span> */}
+            <ScoreDisplay
+              newScore={isAdmin ? adminRecord ?? 0 : user?.record ?? 0}
+              variant="record"
+              showAnimation={false}
+              className=" "
             />
           </div>
           <div
@@ -616,7 +622,7 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
           </div>
         </div>
 
-        <div className="flex justify-center items-center w-full -mt-8 ">
+        <div className="flex justify-center items-center w-full -mt-8 -mb-2">
           <ScoreDisplay
             ref={scoreDisplayRef}
             newScore={score}
@@ -624,7 +630,12 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
           />
         </div>
 
-        <BoostersPanel onBoosterClick={handleBoosterClick} />
+        <BoostersPanel
+          onBoosterClick={handleBoosterClick}
+          className="-mb-7"
+          comboLevel={lastScoreResult?.comboLevel}
+        />
+        {/* Game Board Container - takes full width and maintains aspect ratio */}
 
         <div className="w-full aspect-square flex justify-center items-center p-4 sm:max-w-xs sm:max-h-xs relative">
           <div className="relative w-full h-full">
@@ -643,6 +654,8 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
                       isInClearingLine,
                       isPotentiallyCleared,
                       potentialClearColor,
+                      showPreviewPiece,
+                      previewPieceColor,
                     } = getCellEffects({
                       x,
                       y,
@@ -663,6 +676,8 @@ export const GameBoard: React.FC<GameBoardProps & { onShowSpinner?: () => void }
                         isInClearingLine={isInClearingLine}
                         isPotentiallyCleared={isPotentiallyCleared}
                         potentialClearColor={potentialClearColor}
+                        showPreviewPiece={showPreviewPiece}
+                        previewPieceColor={previewPieceColor}
                         isFirst={isFirst}
                         cellRef={cellRef}
                         onClick={

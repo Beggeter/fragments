@@ -9,6 +9,8 @@ const BoardCell = React.memo<{
   isInClearingLine: boolean;
   isPotentiallyCleared: boolean;
   potentialClearColor: string | null;
+  showPreviewPiece: boolean;
+  previewPieceColor: string | null;
   isFirst: boolean;
   cellRef: React.RefObject<HTMLDivElement | null>;
   onClick?: () => void;
@@ -21,6 +23,8 @@ const BoardCell = React.memo<{
     isInClearingLine,
     isPotentiallyCleared,
     potentialClearColor,
+    showPreviewPiece,
+    previewPieceColor,
     isFirst,
     cellRef,
     onClick,
@@ -37,17 +41,30 @@ const BoardCell = React.memo<{
       <div
         key={x}
         ref={isFirst ? cellRef : undefined}
-        className={`rounded-[3px] ${
+        className={`rounded-[3px] relative ${
           cell.value ? "bg-gray-900" : "bg-gray-900"
-        } ${highlight ? "ring-2 ring-blue-500" : ""} ${
+        } ${
           isInClearingLine ? "clearing-line-horizontal" : ""
-        } ${isInClearingLine ? "clearing-line-vertical" : ""} ${
+        } ${isInClearingLine ? "clearing-line-vertical" : ""
+        } ${
           isPotentiallyCleared ? "potential-clear-highlight" : ""
         }`}
         onClick={onClick}
       >
         {cell.value === 1 && displayColor && (
           <Piece color={displayColor} size="100%" isClearing={isInClearingLine} />
+        )}
+        
+        {/* Показываем полупрозрачную фигуру-превью */}
+        {showPreviewPiece && previewPieceColor && (
+          <div className="absolute inset-0 z-10">
+            <Piece 
+              color={previewPieceColor} 
+              size="100%" 
+              isClearing={false}
+              isPreview={true}
+            />
+          </div>
         )}
       </div>
     );

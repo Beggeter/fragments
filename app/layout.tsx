@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Figtree, Geist, Geist_Mono } from "next/font/google";
+import { Figtree, Geist, Geist_Mono, Mulish } from "next/font/google";
 import "./globals.css";
 import Script from "next/script";
 
@@ -20,13 +20,20 @@ const figtree = Figtree({
   variable: "--font-figtree",
 });
 
+const mulish = Mulish({
+  subsets: ["latin", 'cyrillic'],
+  weight: ["400", "600", "800", "900", "700"],
+  style: ["normal", "italic"],
+  variable: "--font-mulish",
+});
+
 export const metadata: Metadata = {
   title: "Fragments",
   description: "Play Fragments game!",
-  manifest: '/manifest.json',
+  manifest: "/manifest.json",
   other: {
-    'telegram-web-app-ready': 'true',
-    'telegram-web-app-version': '6.0',
+    "telegram-web-app-ready": "true",
+    "telegram-web-app-version": "6.0",
   },
 };
 
@@ -46,7 +53,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${figtree.variable} antialiased overflow-y-hidden overflow-x-hidden`}
+      className={`${geistSans.variable} ${geistMono.variable} ${figtree.variable} ${mulish.variable} antialiased overflow-y-hidden overflow-x-hidden`}
       suppressHydrationWarning={true}
     >
       <head>

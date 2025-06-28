@@ -1,7 +1,10 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useGameStore } from "../lib/state/store";
 import BackgroundAnimation from "@/components/UI/BackgroundAnimation";
 import MenuButton from "@/components/UI/MenuButton";
+import { useUser } from "@/hooks/useUser";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { ScoreDisplay } from "./board/ScoreDisplay";
 
 interface GameOverProps {
   onPlayAgain: () => void;
@@ -9,6 +12,31 @@ interface GameOverProps {
 
 export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain }) => {
   const { score } = useGameStore();
+  const { user } = useUser();
+  const { isAdmin } = useAdminAuth();
+  const [adminRecord, setAdminRecord] = useState<number | null>(null);
+  const [highScore, setHighScore] = useState<number>(user?.record ?? 0);
+
+  useEffect(() => {
+    setHighScore(user?.record ?? 0);
+  }, [user]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetch("/api/users/610936383")
+        .then((res) => res.json())
+        .then((data) => setAdminRecord(typeof data.record === "number" ? data.record : 0))
+        .catch(() => setAdminRecord(0));
+    } else {
+      setAdminRecord(null);
+    }
+  }, [isAdmin]);
+
+  useEffect(() => {
+    if (isAdmin && adminRecord !== null) {
+      setHighScore(adminRecord);
+    }
+  }, [isAdmin, adminRecord]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center min-h-screen w-full">
@@ -18,7 +46,7 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain }) => {
         <h2 className="text-6xl font-bold font-figtree text-white mb-2 tracking-wide menu-shadow">
           Game Over
         </h2>
-        <div>
+        <div className="flex flex-col gap-5">
           <div className="flex flex-col items-center gap-2 max-w-md w-[90vw]">
             <p className="text-3xl font-figtree text-white font-bold mb-2">
               Your score:
@@ -32,7 +60,7 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain }) => {
               High score:
             </p>
             <div className="text-5xl font-extrabold font-figtree text-amber-400 mb-4 menu-shadow">
-              99999
+              {highScore}
             </div>
           </div>
         </div>

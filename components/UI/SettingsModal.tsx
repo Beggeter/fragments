@@ -28,12 +28,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center min-h-screen w-full bg-black/40"
+      className="flex fixed inset-0 z-50 justify-center items-center w-full min-h-screen bg-black/40"
       style={{ zIndex: 9999 }}
+      onClick={onClose}
     >
       <div
-        className="flex flex-col items-center gap-10 h-[60%] min-h-fit max-w-md
+        className="flex flex-col z-60 items-center gap-10 h-[60%] min-h-fit max-w-md
        w-[90vw] bg-[var(--game-background)] rounded-3xl p-8 shadow-2xl border-2 border-gray-700 relative"
+        onClick={(e) => e.stopPropagation()}
       >
         <button
           className="absolute top-4 right-4 text-3xl text-white hover:text-gray-300 focus:outline-none"
@@ -42,7 +44,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         >
           ×
         </button>
-        <h2 className="text-4xl font-bold font-figtree text-white mb-4 tracking-wide menu-shadow">
+        <h2 className="mb-4 text-4xl font-bold tracking-wide text-white font-figtree menu-shadow">
           Settings
         </h2>
         <div className="grid grid-cols-2 gap-8 w-full">
@@ -50,17 +52,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             className="bg-gray-800 rounded-xl px-6 py-4 flex
            flex-col gap-4 items-center justify-center min-h-[120px]"
           >
-            <div className="flex w-full justify-center items-center ">
-              <span className="text-xl text-white font-semibold">Vibrate</span>
+            <div className="flex justify-center items-center w-full">
+              <span className="text-xl font-semibold text-white">Vibrate</span>
             </div>
-            <div className="flex w-full items-center gap-4">
+            <div className="flex gap-4 items-center w-full">
               <input
                 type="range"
                 min={10}
                 max={100}
                 value={vibration}
                 step={10}
-                className="w-full accent-green-500  custom-range"
+                className="w-full accent-green-500 custom-range"
                 onChange={(e) => handleVibrChange(e.target.value)}
               />
             </div>
@@ -70,7 +72,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             onClick={() => setSoundEnabled(!soundEnabled)}
           >
             <button
-              className="p-0 bg-transparent border-none flex items-center justify-center transition-all"
+              className="flex justify-center items-center p-0 bg-transparent border-none transition-all"
               aria-label="Toggle sound"
               style={{ boxShadow: "none" }}
             >
@@ -88,7 +90,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </button>
           </div>
         </div>
-        <div className="flex flex-col gap-2 w-full items-center pt-6">
+        <div className="flex flex-col gap-2 items-center pt-6 w-full">
           {onRestart && (
             <MenuButton
               text="Restart"

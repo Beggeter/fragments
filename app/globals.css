@@ -1,8 +1,14 @@
 @import "tailwindcss";
 
+@media (max-width: 900px) {
+  .min-h-screen {
+    min-height: 100dvh !important;
+  }
+}
+
 @font-face {
-  font-family: 'Holtwood One SC';
-  src: url('/fonts/HoltwoodOneSC-Regular.ttf') format('truetype');
+  font-family: "Holtwood One SC";
+  src: url("/fonts/HoltwoodOneSC-Regular.ttf") format("truetype");
   font-weight: normal;
   font-style: normal;
   font-display: swap;
@@ -572,14 +578,37 @@ input[type="range"].custom-range {
 }
 
 .record-trophy {
-  font-family: 'Holtwood One SC', serif;
-  font-size: 20px;
-  letter-spacing: 0;
   line-height: 1;
   text-align: center;
-  background: linear-gradient(90deg, #FFD700 0%, #FFA500 100%);
+  background: linear-gradient(90deg, #ffcf23 0%, #ffa500 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 2px 4px #0008) drop-shadow(0 0px 8px #fff8);
+  filter: drop-shadow(0 2px 2px #0008);
   /* Можно добавить inner shadow через box-shadow, но это не всегда работает для текста */
+}
+
+.booster-container {
+  display: flex;
+  z-index: 1;
+  min-width: fit-content;
+  width: fit-content;
+  min-height: fit-content;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 1s ease;
+  border-color: var(--outline-color);
+  filter: drop-shadow(0 0 2px var(--outline-color))
+}
+
+.fade-in-menu {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.fade-in-menu--visible {
+  opacity: 1;
+}
+
+.store-scroll{
+  scrollbar-width: none;
 }

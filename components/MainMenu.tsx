@@ -1,6 +1,6 @@
 // src/pages/New.tsx
 import Image from "next/image";
-import { FC } from "react";
+import { FC, useEffect, useState } from "react";
 import logo from "@/public/logo-frame.svg";
 import bullseye from "@/public/bullseye.svg";
 import infinity from "@/public/infinity.svg";
@@ -13,42 +13,50 @@ import BackgroundAnimation from "@/components/UI/BackgroundAnimation";
 
 interface MainMenuProps {
   onStartClassic: () => void;
+  onOpenShop: () => void;
 }
 interface BottomButtonsProps {
   onStartClassic: () => void;
 }
-const MainMenu: FC<MainMenuProps> = ({ onStartClassic }) => {
+const MainMenu: FC<MainMenuProps> = ({ onStartClassic, onOpenShop }) => {
+  const [fadeIn, setFadeIn] = useState(false);
+
+  useEffect(() => {
+    setFadeIn(true);
+  }, []);
+
   return (
     <>
       <div
-        className="min-h-screen  menu-bg text-white
-     flex flex-col  py-10 relative z-1 overflow-y-hidden"
+        className={`min-h-screen menu-bg text-white
+           flex flex-col py-10 relative z-1 overflow-y-hidden
+            fade-in-menu${fadeIn ? "fade-in-menu--visible" : ""}`}
       >
-        <BackgroundAnimation className="absolute inset-0 -top-15 overflow-x-hidden px-4 " />
+        <BackgroundAnimation className="overflow-x-hidden absolute inset-0 px-4 -top-15" />
         <span className="absolute top-4 right-4 text-3xl menu-shadow">
-          <img 
-            src={settings.src} 
-            alt="settings" 
+          <img
+            src={settings.src}
+            alt="settings"
             className="w-10 h-10"
             style={{
-              WebkitTransform: 'translateZ(0)',
-              transform: 'translateZ(0)',
-              WebkitBackfaceVisibility: 'hidden',
-              backfaceVisibility: 'hidden',
+              WebkitTransform: "translateZ(0)",
+              transform: "translateZ(0)",
+              WebkitBackfaceVisibility: "hidden",
+              backfaceVisibility: "hidden",
             }}
           />
         </span>
         <main className="flex flex-col gap-[15vh] items-center">
-          <TopButtons />
+          <TopButtons onOpenShop={onOpenShop} />
           <img
             src={logo.src}
             alt="FRAGMENTS"
             className="px-3 sm:px-10 max-w-[90vw] md:max-w-[30%] z-100"
             style={{
-              WebkitTransform: 'translateZ(0)',
-              transform: 'translateZ(0)',
-              WebkitBackfaceVisibility: 'hidden',
-              backfaceVisibility: 'hidden',
+              WebkitTransform: "translateZ(0)",
+              transform: "translateZ(0)",
+              WebkitBackfaceVisibility: "hidden",
+              backfaceVisibility: "hidden",
             }}
           />
           <BottomButtons onStartClassic={onStartClassic} />
@@ -58,7 +66,7 @@ const MainMenu: FC<MainMenuProps> = ({ onStartClassic }) => {
   );
 };
 
-const TopButtons: FC = () => {
+const TopButtons: FC<{ onOpenShop: () => void }> = ({ onOpenShop }) => {
   return (
     <div className="flex flex-col gap-4 w-full z-100">
       {/* Daily Missions */}
@@ -82,6 +90,7 @@ const TopButtons: FC = () => {
         rightIcon={powers}
         gradientClass="orange-gradient"
         className="w-[35vw] sm:w-1/2 md:w-1/3 max-w-3xs rounded-r-2xl"
+        onClick={onOpenShop}
       />
     </div>
   );

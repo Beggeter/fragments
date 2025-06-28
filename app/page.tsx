@@ -13,6 +13,7 @@ import { ResourceLoader } from "@/utils/ResourceLoader";
 import { BlockColor } from "@/lib/data/types";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import LoadingSpinner from "../components/LoadingSpinner";
+import ShopScreen from "../components/ShopScreen";
 
 type Screen =
   | "admin login"
@@ -20,7 +21,8 @@ type Screen =
   | "main menu"
   | "classic mode"
   | "settings"
-  | "gameover";
+  | "gameover"
+  | "shop";
 
 // Функция для надежного определения Telegram WebApp
 const isLaunchedInTelegram = (): boolean => {
@@ -216,7 +218,8 @@ const HomePage: React.FC = () => {
       currentScreen !== "main menu" &&
       currentScreen !== "classic mode" &&
       currentScreen !== "settings" &&
-      currentScreen !== "gameover"
+      currentScreen !== "gameover" &&
+      currentScreen !== "shop"
     ) {
       console.log("✅ Пользователь авторизован, переключаем на главное меню");
       setCurrentScreen("main menu");
@@ -297,6 +300,8 @@ const HomePage: React.FC = () => {
     setResourcesLoaded(true);
     // НЕ устанавливаем currentScreen - пусть логика авторизации сама определит
   };
+
+  const handleOpenShop = () => setCurrentScreen("shop");
 
   // Показываем загрузку ресурсов если они еще не загружены
   if (!resourcesLoaded) {
@@ -394,14 +399,10 @@ const HomePage: React.FC = () => {
         />
       )}
 
-      {currentScreen === "main menu" && (
-        <MainMenu onStartClassic={hadleStartClassic} />
-      )}
-
-      {/* Дополнительная проверка для отображения главного меню */}
-      {!currentScreen && (isAuthenticated || isAdmin) && (
-        <MainMenu onStartClassic={hadleStartClassic} />
-      )}
+      {/* MainMenu теперь скрывается через CSS, а не размонтируется хззззззз*/}
+      <div style={{ display: currentScreen === "main menu" ? "block" : "none" }}>
+        <MainMenu onStartClassic={hadleStartClassic} onOpenShop={handleOpenShop} />
+      </div>
 
       {currentScreen === "classic mode" && (
         <GameBoard
@@ -419,6 +420,10 @@ const HomePage: React.FC = () => {
             useGameStore.getState().resetGame();
           }}
         />
+      )}
+
+      {currentScreen === "shop" && (
+        <ShopScreen onBack={handleGoToMenu} />
       )}
 
       {/* Fallback для отладки */}

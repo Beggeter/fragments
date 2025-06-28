@@ -7,6 +7,7 @@ interface PieceProps {
   inset?: number;
   radius?: number;
   isClearing?: boolean;
+  isPreview?: boolean;
 }
 
 // CSS градиенты как fallback для каждого цвета
@@ -21,8 +22,10 @@ const colorGradients: Record<BlockColor, string> = {
   cyan: "linear-gradient(135deg, #00BCD4 0%, #0097A7 100%)",
 };
 
-export const Piece: React.FC<PieceProps> = ({ color, size = 32, isClearing }) => {
+export const Piece: React.FC<PieceProps> = ({ color, size = 32, isClearing, isPreview = false }) => {
   const [imageError, setImageError] = useState(false);
+
+  const opacity = isPreview ? 0.5 : 1;
 
   // Если изображение не загрузилось, используем CSS градиент
   if (imageError) {
@@ -35,6 +38,7 @@ export const Piece: React.FC<PieceProps> = ({ color, size = 32, isClearing }) =>
           background: colorGradients[color],
           borderRadius: '5px',
           boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3)',
+          opacity,
         }}
       />
     );
@@ -53,6 +57,7 @@ export const Piece: React.FC<PieceProps> = ({ color, size = 32, isClearing }) =>
           transform: 'translateZ(0)',
           WebkitBackfaceVisibility: 'hidden',
           backfaceVisibility: 'hidden',
+          opacity,
         }}
         onError={() => setImageError(true)}
       />

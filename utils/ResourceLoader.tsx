@@ -91,7 +91,6 @@ export const ResourceLoader: React.FC<ResourceLoaderProps> = ({
         "/web-app-manifest-192x192.png",
         "/web-app-manifest-512x512.png",
         "/icon-192x192.png",
-      
         // Дополнительные иконки
         "/apple-icon.png",
         "/favicon.ico",
