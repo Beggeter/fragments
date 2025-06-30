@@ -410,6 +410,7 @@ const HomePage: React.FC = () => {
           onScoreUpdate={(newScore) => setScore(newScore)}
           onGameOver={handleGameOver}
           onShowSpinner={handleShowSpinnerAnimation}
+          onGoHome={handleGoToMenu}
         />
       )}
 

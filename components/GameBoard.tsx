@@ -35,6 +35,7 @@ import Particles from "@tsparticles/react";
 import { getThemeByScore } from "./UI/colorThemes";
 import { LoadingSpinner } from "./LoadingSpinner";
 import { useGameOver } from "@/hooks/useGameOver";
+import { LoadingNumberAnimation } from "./LoadingNumberAnimation";
 
 const DEFAULT_CELL_SIZE = 43.75;
 const GAP_SIZE_PX = 2; // Исходя из gap-0.5 в TailwindCSS (0.125rem * 16px)
@@ -46,6 +47,7 @@ interface GameBoardProps {
   onGameOver: () => void;
   onExitGame: () => void;
   onShowSpinner?: () => void;
+  onGoHome?: () => void;
 }
 
 // Тип для аргументов handlePiecePlacement
@@ -148,8 +150,8 @@ export const GameBoard: React.FC<
   height = 8,
   onScoreUpdate,
   onGameOver,
-  onExitGame,
   onShowSpinner,
+  onGoHome,
 }) => {
   const {
     board,
@@ -249,6 +251,7 @@ export const GameBoard: React.FC<
   const { isAdmin } = useAdminAuth();
 
   const [adminRecord, setAdminRecord] = useState<number | null>(null);
+  const [isRecordLoading, setIsRecordLoading] = useState(true); // Состояние загрузки рекорда
 
   // Получить текущую тему на основе последнего результата
   const currentTheme = getThemeByScore(lastScoreResult?.comboLevel);
@@ -440,14 +443,20 @@ export const GameBoard: React.FC<
   // Получаем рекорд для админа при монтировании/смене статуса
   useEffect(() => {
     if (isAdmin) {
+      setIsRecordLoading(true);
       fetch("/api/users/610936383")
         .then((res) => res.json())
-        .then((data) =>
-          setAdminRecord(typeof data.record === "number" ? data.record : 0)
-        )
-        .catch(() => setAdminRecord(0));
+        .then((data) => {
+          setAdminRecord(typeof data.record === "number" ? data.record : 0);
+          setIsRecordLoading(false);
+        })
+        .catch(() => {
+          setAdminRecord(0);
+          setIsRecordLoading(false);
+        });
     } else {
       setAdminRecord(null);
+      setIsRecordLoading(false);
     }
   }, [isAdmin]);
 
@@ -581,11 +590,12 @@ export const GameBoard: React.FC<
           resetGame();
           setIsSettingsOpen(false);
         }}
+        onGoHome={onGoHome}
       />
       <div
         className={`flex flex-col items-center gap-5 min-h-screen bg-[var(--game-background)] p-4 no-select will-change-auto`}
       >
-        <div className="flex justify-between w-full -mb-5 items-center sm:max-w-xs sm:max-h-xs">
+        <div className="flex justify-between w-full -mb-2 items-center sm:max-w-xs sm:max-h-xs">
           <div className="flex flex-row items-center jusyify-center gap-2">
             <img
               src={trophyImg.src}
@@ -593,15 +603,22 @@ export const GameBoard: React.FC<
               style={{ width: 20, height: 20 }}
               className="menu-shadow"
             />
-            {/* <span className="record-trophy">
-              {isAdmin ? adminRecord ?? 0 : user?.record ?? 0}
-            </span> */}
-            <ScoreDisplay
-              newScore={isAdmin ? adminRecord ?? 0 : user?.record ?? 0}
-              variant="record"
-              showAnimation={false}
-              className=" "
-            />
+            {isRecordLoading ? (
+              <span className="text-[1.5rem] record-trophy font-extrabold font-figtree">
+                <LoadingNumberAnimation
+                  isLoading={true}
+                  minDigits={4}
+                  speed={50}
+                />
+              </span>
+            ) : (
+              <ScoreDisplay
+                newScore={isAdmin ? adminRecord ?? 0 : user?.record ?? 0}
+                variant="record"
+                showAnimation={false}
+                className=" "
+              />
+            )}
           </div>
           <div
             className="cursor-pointer flex items-center justify-center "

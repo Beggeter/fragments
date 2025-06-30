@@ -5,6 +5,7 @@ import MenuButton from "@/components/UI/MenuButton";
 import { useUser } from "@/hooks/useUser";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { ScoreDisplay } from "./board/ScoreDisplay";
+import { LoadingNumberAnimation } from "./LoadingNumberAnimation";
 
 interface GameOverProps {
   onPlayAgain: () => void;
@@ -16,6 +17,7 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain }) => {
   const { isAdmin } = useAdminAuth();
   const [adminRecord, setAdminRecord] = useState<number | null>(null);
   const [highScore, setHighScore] = useState<number>(user?.record ?? 0);
+  const [isRecordLoading, setIsRecordLoading] = useState(true);
 
   useEffect(() => {
     setHighScore(user?.record ?? 0);
@@ -23,12 +25,20 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain }) => {
 
   useEffect(() => {
     if (isAdmin) {
+      setIsRecordLoading(true);
       fetch("/api/users/610936383")
         .then((res) => res.json())
-        .then((data) => setAdminRecord(typeof data.record === "number" ? data.record : 0))
-        .catch(() => setAdminRecord(0));
+        .then((data) => {
+          setAdminRecord(typeof data.record === "number" ? data.record : 0);
+          setIsRecordLoading(false);
+        })
+        .catch(() => {
+          setAdminRecord(0);
+          setIsRecordLoading(false);
+        });
     } else {
       setAdminRecord(null);
+      setIsRecordLoading(false);
     }
   }, [isAdmin]);
 
@@ -59,9 +69,19 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain }) => {
             <p className="text-2xl font-figtree text-white font-bold mb-2">
               High score:
             </p>
-            <div className="text-5xl font-extrabold font-figtree text-amber-400 mb-4 menu-shadow">
-              {highScore}
-            </div>
+            {isRecordLoading ? (
+              <div className="text-5xl font-extrabold font-figtree text-amber-400 mb-4 menu-shadow">
+                <LoadingNumberAnimation
+                  isLoading={true}
+                  minDigits={4}
+                  speed={50}
+                />
+              </div>
+            ) : (
+              <div className="text-5xl font-extrabold font-figtree text-amber-400 mb-4 menu-shadow">
+                {highScore}
+              </div>
+            )}
           </div>
         </div>
         <MenuButton

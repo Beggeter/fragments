@@ -58,14 +58,14 @@ export const ScoreDisplay = forwardRef<HTMLDivElement, ScoreDisplayProps>(
         setIsAnimating(true);
         let animationDuration: number;
         if (endScore === 0) {
-          animationDuration = 300;
+          animationDuration = 1000;
         } else {
           // Базовое время анимации
           const baseDuration = variant === "record" ? 1000 : 2000; // Быстрее для рекорда
           // Вычисляем разницу между значениями
           const scoreDifference = Math.abs(endScore - startScore);
           // Увеличиваем время анимации в зависимости от разницы
-          const additionalDuration = Math.floor(scoreDifference / 50) * 500;
+          const additionalDuration = Math.floor(scoreDifference / 50) * 1000;
           animationDuration = baseDuration + additionalDuration;
         }
 

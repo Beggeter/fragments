@@ -1,5 +1,6 @@
 import React from "react";
 import { Piece } from "../pieces/Piece";
+import { BlockColor } from "../../lib/data/types";
 
 const BoardCell = React.memo<{
   cell: any;
@@ -59,7 +60,7 @@ const BoardCell = React.memo<{
         {showPreviewPiece && previewPieceColor && (
           <div className="absolute inset-0 z-10">
             <Piece 
-              color={previewPieceColor} 
+              color={previewPieceColor as BlockColor} 
               size="100%" 
               isClearing={false}
               isPreview={true}

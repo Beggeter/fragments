@@ -28,7 +28,7 @@ const MainMenu: FC<MainMenuProps> = ({ onStartClassic, onOpenShop }) => {
   return (
     <>
       <div
-        className={`min-h-screen menu-bg text-white
+        className={`min-h-screen menu-bg text-white fade-in-animation-fast
            flex flex-col py-10 relative z-1 overflow-y-hidden
             fade-in-menu${fadeIn ? "fade-in-menu--visible" : ""}`}
       >

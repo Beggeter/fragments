@@ -46,7 +46,7 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
       onClick={onClose}
     >
       <div 
-        className="relative bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl border border-white/20 p-8 max-w-md w-full mx-4"
+        className="relative fade-in-animation-fast bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl border border-white/20 p-8 max-w-md w-full mx-4"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Баланс в верхней части */}
