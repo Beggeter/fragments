@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import GameBoard from "../components/GameBoard";
 import MainMenu from "@/components/MainMenu";
 import AdminLogin from "@/components/AdminLogin";
@@ -84,6 +84,7 @@ const isLaunchedInTelegram = (): boolean => {
 };
 
 const HomePage: React.FC = () => {
+  // --- все хуки должны быть до любых return! ---
   const [score, setScore] = useState(0);
   const [currentScreen, setCurrentScreen] = useState<Screen | "">("");
   const [isTelegramAutoAuth, setIsTelegramAutoAuth] = useState(false);
@@ -92,6 +93,29 @@ const HomePage: React.FC = () => {
   const [devScreen, setDevScreen] = useState<Screen | "">("");
   const [resourcesLoaded, setResourcesLoaded] = useState(false);
   const [showSpinnerAnimation, setShowSpinnerAnimation] = useState(false);
+  const [boardRect, setBoardRect] = useState<DOMRect | null>(null);
+  const [clearedLine, setClearedLine] = useState<number | null>(null);
+  const [particlesInit, setParticlesInit] = useState(false);
+
+  // --- tsparticles engine init ---
+
+  const particlesOptions = useMemo(() => ({
+    particles: {
+      number: { value: 100 },
+      color: { value: "#f00" },
+      shape: { type: "square" },
+      size: { value: { min: 10, max: 20 } },
+      move: { enable: false },
+    },
+    detectRetina: true,
+    fullScreen: { enable: false },
+  }), []);
+
+  const handleLineBreakpoint = (lineIdx: number) => {
+    setClearedLine(Math.abs(7 - lineIdx));
+    // Сбросить после короткой задержки, чтобы не очищать повторно
+    setTimeout(() => setClearedLine(null), 100);
+  };
 
   const {
     isAdmin,
@@ -202,6 +226,21 @@ const HomePage: React.FC = () => {
 
     initializeApp();
   }, []); // Запускаем только один раз при монтировании
+
+  useEffect(() => {
+    if (showSpinnerAnimation) {
+      document.body.classList.add("screen-shake");
+      const shakeTimeout = setTimeout(() => {
+        document.body.classList.remove("screen-shake");
+      }, 300); // 1/4 длительности анимации
+      return () => {
+        clearTimeout(shakeTimeout);
+        document.body.classList.remove("screen-shake");
+      };
+    } else {
+      document.body.classList.remove("screen-shake");
+    }
+  }, [showSpinnerAnimation]);
 
   // useEffect для управления экраном на основе статуса авторизации
   useEffect(() => {
@@ -349,11 +388,40 @@ const HomePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-blue-900">
       {/* Overlay spinner */}
-      {showSpinnerAnimation && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center pointer-events-none">
-          <LoadingSpinner onFinish={() => setShowSpinnerAnimation(false)} />
+      {showSpinnerAnimation && boardRect && (
+        <div
+          style={{
+            position: "fixed",
+            left: boardRect.left,
+            top: boardRect.top,
+            width: boardRect.width,
+            height: boardRect.height,
+            zIndex: 9999,
+            pointerEvents: "none",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <LoadingSpinner
+            width={boardRect.width}
+            height={boardRect.height}
+            onFinish={() => setShowSpinnerAnimation(false)}
+            onLineBreakpoint={handleLineBreakpoint}
+          />
         </div>
       )}
+
+      <div
+        className={`glow-side glow-left${
+          showSpinnerAnimation ? " glow-visible" : ""
+        }`}
+      />
+      <div
+        className={`glow-side glow-right${
+          showSpinnerAnimation ? " glow-visible" : ""
+        }`}
+      />
 
       {/* Dev-панель для ручного переключения экрана */}
       {/* {isDev && (
@@ -410,6 +478,8 @@ const HomePage: React.FC = () => {
           onScoreUpdate={(newScore) => setScore(newScore)}
           onGameOver={handleGameOver}
           onShowSpinner={handleShowSpinnerAnimation}
+          onBoardRectChange={setBoardRect}
+          clearedLine={clearedLine}
           onGoHome={handleGoToMenu}
         />
       )}
