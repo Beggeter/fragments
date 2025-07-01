@@ -241,7 +241,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
         </div>
       )}
 
-      {1 && (
+      {showClearText && (
         <div
           className=" clear-text text-red-200  absolute flex items-center justify-center
         inset-0 z-1000 font-figtree font-bold tracking-wider text-5xl"
