@@ -74,6 +74,15 @@ export const ResourceLoader: React.FC<ResourceLoaderProps> = ({
         "/boosters/back.png",
         "/boosters/laser.png",
         "/boosters/spinner.png",
+        "/boosters/bomb.png",
+        "/boosters/bomb.svg",
+        // Магазин
+        "/crystal.svg",
+        "/2crystal2.svg",
+        "/3crystals.svg",
+        "/4crystals.svg",
+        "/9crystals.svg",
+        "/tgstar.svg",
         // Основные UI элементы
         "/logo-frame.svg",
         "/stars.svg",
@@ -87,6 +96,7 @@ export const ResourceLoader: React.FC<ResourceLoaderProps> = ({
         "/file.svg",
         "/lh.svg",
         "/romn.svg",
+        "/record.png",
         // PWA иконки
         "/web-app-manifest-192x192.png",
         "/web-app-manifest-512x512.png",
