@@ -1,6 +1,14 @@
 @import "tailwindcss";
 
+@media (max-width: 900px) {
+  .min-h-screen {
+    min-height: 100dvh !important;
+  }
+}
+
 @font-face {
+  font-family: "Holtwood One SC";
+  src: url("/fonts/HoltwoodOneSC-Regular.ttf") format("truetype");
   font-family: "Holtwood One SC";
   src: url("/fonts/HoltwoodOneSC-Regular.ttf") format("truetype");
   font-weight: normal;
@@ -187,6 +195,13 @@ body {
 .red-gradient {
   background: linear-gradient(120deg, #f9c2b9 0%, #fe705a 30%, #bc4a38 100%);
   box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5);
+}
+
+.settings-gradient {
+  @apply backdrop-blur-md;
+  background: linear-gradient(120deg, #b9c8f955 0%, #5a86fe55 30%, #3862bc55 100%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.5);
+ 
 }
 
 .notif-gradient {
@@ -498,8 +513,8 @@ input[type="range"].custom-range {
 input[type="range"].custom-range::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 28px;
-  height: 28px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: #fff;
   border: 3px solid #22c55e;
@@ -516,8 +531,8 @@ input[type="range"].custom-range:active::-webkit-slider-thumb {
 
 /* Для Firefox */
 input[type="range"].custom-range::-moz-range-thumb {
-  width: 28px;
-  height: 28px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: #fff;
   border: 3px solid #22c55e;
@@ -534,8 +549,8 @@ input[type="range"].custom-range:active::-moz-range-thumb {
 
 /* Для IE */
 input[type="range"].custom-range::-ms-thumb {
-  width: 28px;
-  height: 28px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   background: #fff;
   border: 3px solid #22c55e;
@@ -572,15 +587,13 @@ input[type="range"].custom-range {
 }
 
 .record-trophy {
-  font-family: "Holtwood One SC", serif;
-  font-size: 20px;
-  letter-spacing: 0;
   line-height: 1;
   text-align: center;
-  background: linear-gradient(90deg, #ffd700 0%, #ffa500 100%);
+  background: linear-gradient(90deg, #ffcf23 0%, #ffa500 100%);
+  background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  filter: drop-shadow(0 2px 4px #0008) drop-shadow(0 0px 8px #fff8);
+  filter: drop-shadow(0 2px 2px #0008);
   /* Можно добавить inner shadow через box-shadow, но это не всегда работает для текста */
 }
 
@@ -694,4 +707,141 @@ input[type="range"].custom-range {
     rgba(0,255,255,0.15) 60%,
     rgba(0,255,255,0.0) 100%
   );
+}
+
+/* Анимации для партиклов-звездочек */
+.star-particle {
+  box-shadow: 0 0 8px 2px #fff, 0 0 16px 4px currentColor;
+}
+
+@keyframes star-fade {
+  0%,
+  100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 0.1;
+  }
+}
+
+@keyframes star-scale {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.5;
+  }
+}
+
+@keyframes screen-shake {
+  0% {
+    transform: translate(0, 0);
+  }
+  10% {
+    transform: translate(-2px, 1px);
+  }
+  20% {
+    transform: translate(1.5px, -1px);
+  }
+  30% {
+    transform: translate(-1px, 1.5px);
+  }
+  40% {
+    transform: translate(1px, -1.5px);
+  }
+  50% {
+    transform: translate(-1.5px, 1px);
+  }
+  60% {
+    transform: translate(1.5px, 0.5px);
+  }
+  70% {
+    transform: translate(-0.5px, -1.5px);
+  }
+  80% {
+    transform: translate(1px, 1px);
+  }
+  90% {
+    transform: translate(-1px, -1px);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+.screen-shake {
+  animation: screen-shake 0.5s linear infinite;
+}
+
+.glow-side {
+  position: fixed;
+  top: 0;
+  height: 100vh;
+  width: 40px;
+  pointer-events: none;
+  z-index: 99999;
+  opacity: 0;
+  transition: opacity 0.4s cubic-bezier(.4,0,.2,1);
+  border-radius: 40px / 80px;
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 20%,
+    black 80%,
+    transparent 100%
+  );
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0%,
+    black 20%,
+    black 80%,
+    transparent 100%
+  );
+}
+.glow-side.glow-visible {
+  opacity: 0.7;
+}
+.glow-left {
+  left: 0;
+  background: linear-gradient(
+    to right,
+    rgba(0,255,255,0.5) 0%,
+    rgba(0,255,255,0.15) 60%,
+    rgba(0,255,255,0.0) 100%
+  );
+}
+.glow-right {
+  right: 0;
+  background: linear-gradient(
+    to left,
+    rgba(0,255,255,0.5) 0%,
+    rgba(0,255,255,0.15) 60%,
+    rgba(0,255,255,0.0) 100%
+  );
+}
+
+.booster-container {
+  display: flex;
+  z-index: 1;
+  min-width: fit-content;
+  width: fit-content;
+  min-height: fit-content;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 1s ease;
+  border-color: var(--outline-color);
+  filter: drop-shadow(0 0 2px var(--outline-color))
+}
+
+.fade-in-menu {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.fade-in-menu--visible {
+  opacity: 1;
+}
+
+.store-scroll{
+  scrollbar-width: none;
 }

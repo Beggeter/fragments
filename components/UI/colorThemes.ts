@@ -5,6 +5,15 @@ export type ColorTheme = {
   borderEnd: string;
 };
 
+/**
+ * Gets the appropriate color theme based on the combo level
+ */
+export const getThemeByScore = (score: number | undefined): ColorTheme => {
+  if (!score) return colorThemes.level1;
+  if (score > 21) return colorThemes.level21;
+  return colorThemes[`level${score}` as keyof typeof colorThemes];
+};
+
 export const colorThemes: Record<string, ColorTheme> = {
   // Blue theme
   level1: {

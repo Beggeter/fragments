@@ -11,6 +11,7 @@ interface DraggablePiecesProps {
   dynamicCellSize: number;
   calculateDynamicOffset: (x: number, y: number) => Position;
   onPieceStart: (piece: Block, x: number, y: number) => void;
+  panelRefs?: React.RefObject<HTMLDivElement>[];
 }
 
 export const DraggablePiecesSection: React.FC<DraggablePiecesProps> = ({
@@ -20,6 +21,7 @@ export const DraggablePiecesSection: React.FC<DraggablePiecesProps> = ({
   dynamicCellSize,
   calculateDynamicOffset,
   onPieceStart,
+  panelRefs,
 }) => {
   // Создаем массив с фиксированными позициями
   const piecesWithPositions = [0, 1, 2].map((index) => {
@@ -48,6 +50,7 @@ export const DraggablePiecesSection: React.FC<DraggablePiecesProps> = ({
             className="w-1/3 h-[20vh] flex justify-center items-center -mt-10 relative"
             onMouseDown={(e) => activePiece && handleStart(e, activePiece)}
             onTouchStart={(e) => activePiece && handleStart(e, activePiece)}
+            ref={panelRefs ? panelRefs[containerIndex] : undefined}
           >
             {activePiece && (
               <DraggablePiece

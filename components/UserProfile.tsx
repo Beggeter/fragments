@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { User } from '@/lib/db/types';
+import { LoadingNumberAnimation } from './LoadingNumberAnimation';
 
 interface UserProfileProps {
   telegramId: string;
@@ -154,11 +155,31 @@ export default function UserProfile({ telegramId }: UserProfileProps) {
         
         <div className="grid grid-cols-3 gap-4 mt-6">
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">{user.record}</div>
+            {loading ? (
+              <div className="text-2xl font-bold text-blue-600">
+                <LoadingNumberAnimation
+                  isLoading={true}
+                  minDigits={4}
+                  speed={50}
+                />
+              </div>
+            ) : (
+              <div className="text-2xl font-bold text-blue-600">{user.record}</div>
+            )}
             <div className="text-sm text-gray-600">Best Record</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">{balance}</div>
+            {loading ? (
+              <div className="text-2xl font-bold text-green-600">
+                <LoadingNumberAnimation
+                  isLoading={true}
+                  minDigits={3}
+                  speed={50}
+                />
+              </div>
+            ) : (
+              <div className="text-2xl font-bold text-green-600">{balance}</div>
+            )}
             <div className="text-sm text-gray-600">Currency</div>
           </div>
           <div className="text-center">

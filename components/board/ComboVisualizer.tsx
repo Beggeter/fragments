@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
 import { ScoreResult } from "@/lib/data/types";
-import { ColorTheme, colorThemes } from "../UI/colorThemes";
+import { ColorTheme, colorThemes, getThemeByScore } from "../UI/colorThemes";
 import React, { useState, useEffect } from "react";
 import { animate, useMotionValue, motion } from "framer-motion";
 import { useGameStore } from "@/lib/state/store";
@@ -13,15 +13,6 @@ interface ComboVisualizerProps {
   className?: string;
   lastScore: ScoreResult | null;
 }
-
-/**
- * Gets the appropriate color theme based on the combo level
- */
-const getThemeByScore = (score: number | undefined): ColorTheme => {
-  if (!score) return colorThemes.level1;
-  if (score > 21) return colorThemes.level21;
-  return colorThemes[`level${score}` as keyof typeof colorThemes];
-};
 
 /**
  * Calculates blur values based on moves and combo level
@@ -67,8 +58,6 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   const [isExploding, setIsExploding] = useState(false);
   const [showComboText, setShowComboText] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
-  const [activeTheme, setActiveTheme] = useState(1);
-  const [activeBlur, setActiveBlur] = useState(1);
   const [scorePluses, setScorePluses] = useState<
     {
       id: number;
@@ -86,17 +75,16 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   useEffect(() => {
     if (lastScore?.comboLevel) {
       setIsExploding(true);
-      handleVibrate();
-      const timer = setTimeout(() => setIsExploding(false), 400);
-      return () => clearTimeout(timer);
-    }
-  }, [lastScore?.comboLevel]);
-
-  useEffect(() => {
-    if (lastScore?.comboLevel) {
       setShowComboText(true);
-      const timer = setTimeout(() => setShowComboText(false), 800);
-      return () => clearTimeout(timer);
+      handleVibrate();
+
+      const explodeTimer = setTimeout(() => setIsExploding(false), 400);
+      const textTimer = setTimeout(() => setShowComboText(false), 800);
+
+      return () => {
+        clearTimeout(explodeTimer);
+        clearTimeout(textTimer);
+      };
     }
   }, [lastScore?.comboLevel]);
 
@@ -125,7 +113,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   }, [lastScore?.pixelPosition]);
 
   const handleVibrate = () => {
-    vibrate(vibration)
+    vibrate(vibration);
   };
 
   useEffect(() => {

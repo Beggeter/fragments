@@ -10,7 +10,7 @@ interface DraggablePieceProps {
   isDragged?: boolean;
   onStart?: (piece: Block, x: number, y: number) => void;
   style?: React.CSSProperties;
-  
+  onTransitionEnd?: () => void;
 }
 
 export const DraggablePiece: React.FC<DraggablePieceProps> = ({
@@ -19,22 +19,24 @@ export const DraggablePiece: React.FC<DraggablePieceProps> = ({
   style,
   originalSize = 32,
   ghostSize = 44,
+  onTransitionEnd,
 }) => {
   if (!piece || !piece.matrix) {
     return null;
   }
 
   const baseClasses = `grid gap-0.5  ${
-    isGhost ? "pointer-events-none " : "cursor-pointer drop-shadow-[5px_5px_2px_rgba(0,0,0,0.2)]"
+    isGhost ? "pointer-events-none drop-shadow-[5px_5px_2px_rgba(0,0,0,0.3)]" : "cursor-pointer drop-shadow-[5px_5px_2px_rgba(0,0,0,0.2)]"
   }`;
   const containerClasses = isGhost
-    ? "fixed z-[1000] opacity-70 transition-transform duration-200"
+    ? "fixed z-[1000] opacity-100 transition-transform duration-200"
     : `rounded-lg transition-all opacity-in-animation cursor-pointer touch-manipulation`;
 
   return (
     <div
       className={containerClasses}
       style={style}
+      onTransitionEnd={onTransitionEnd}
     >
       <div className={baseClasses}>
         {piece.matrix.map((row, y) => (

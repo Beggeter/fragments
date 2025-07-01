@@ -1,6 +1,9 @@
 // fragments/components/UI/MenuButton.tsx
 import React, { FC, ReactNode } from "react";
 import Image, { StaticImageData } from "next/image";
+import { vibrate } from "@/utils/helpers";
+import { useSettingsStore } from "@/lib/state/settings";
+
 
 interface MenuButtonProps {
   text?: string | ReactNode; // Текст или любой React узел для содержимого кнопки
@@ -32,6 +35,12 @@ const MenuButton: FC<MenuButtonProps> = ({
     }
     return icon.src.includes(".svg");
   };
+  
+  const vibration = useSettingsStore((state) => state.vibrationValue);
+  const handleClick = () => {
+    vibrate(vibration)
+    onClick?.()
+  }
 
   // Компонент для отображения изображения с поддержкой iOS
   const ImageComponent = ({
@@ -78,7 +87,7 @@ const MenuButton: FC<MenuButtonProps> = ({
   return (
     <button
       className={`menu-button ${gradientClass} ${className}`}
-      onClick={onClick}
+      onClick={handleClick}
     >
       <span className="flex flex-row items-center gap-2 w-full justify-center">
         {/* Левая иконка */}
