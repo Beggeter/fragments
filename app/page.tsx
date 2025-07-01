@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import GameBoard from "../components/GameBoard";
 import MainMenu from "@/components/MainMenu";
 import AdminLogin from "@/components/AdminLogin";
@@ -13,6 +13,11 @@ import { ResourceLoader } from "@/utils/ResourceLoader";
 import { BlockColor } from "@/lib/data/types";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import LoadingSpinner from "../components/LoadingSpinner";
+
+import dynamic from "next/dynamic";
+import { initParticlesEngine } from "@tsparticles/react";
+import { loadSlim } from "@tsparticles/slim";
+const Particles = dynamic(() => import("@tsparticles/react"), { ssr: false });
 
 type Screen =
   | "admin login"
@@ -82,6 +87,7 @@ const isLaunchedInTelegram = (): boolean => {
 };
 
 const HomePage: React.FC = () => {
+  // --- все хуки должны быть до любых return! ---
   const [score, setScore] = useState(0);
   const [currentScreen, setCurrentScreen] = useState<Screen | "">("");
   const [isTelegramAutoAuth, setIsTelegramAutoAuth] = useState(false);
@@ -92,6 +98,25 @@ const HomePage: React.FC = () => {
   const [showSpinnerAnimation, setShowSpinnerAnimation] = useState(false);
   const [boardRect, setBoardRect] = useState<DOMRect | null>(null);
   const [clearedLine, setClearedLine] = useState<number | null>(null);
+  const [particlesInit, setParticlesInit] = useState(false);
+
+  // --- tsparticles engine init ---
+  useEffect(() => {
+    initParticlesEngine(async (engine) => {
+      await loadSlim(engine);
+    }).then(() => setParticlesInit(true));
+  }, []);
+  const particlesOptions = useMemo(() => ({
+    particles: {
+      number: { value: 100 },
+      color: { value: "#f00" },
+      shape: { type: "square" },
+      size: { value: { min: 10, max: 20 } },
+      move: { enable: false },
+    },
+    detectRetina: true,
+    fullScreen: { enable: false },
+  }), []);
 
   const handleLineBreakpoint = (lineIdx: number) => {
     setClearedLine(Math.abs(7 - lineIdx));

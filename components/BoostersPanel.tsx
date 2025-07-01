@@ -1,8 +1,9 @@
-import React from 'react';
+import React from "react";
 
 const boosters = [
   { id: "undo", name: "Undo", icon: "/boosters/back.png" },
   // { id: "laser", name: "Лазер", icon: "/boosters/laser.png" },
+  { id: "bomb", name: "Бомба", icon: "/boosters/bomb.png" },
   { id: "spinner", name: "Спиннер", icon: "/boosters/spinner.png" },
 ];
 

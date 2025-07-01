@@ -1,112 +1,63 @@
-Line 0:
-LoadingSpinner.tsx:102   startY: 523
-LoadingSpinner.tsx:103   topBounce: 200
-LoadingSpinner.tsx:104   finalY: 139.6208364833563
-LoadingSpinner.tsx:105   topBounce - finalY: 60.3791635166437
-LoadingSpinner.tsx:106   breakpoints: (3) [290, 380, 470]
-LoadingSpinner.tsx:107   scaleXTimes: (5) [0, 0.6996996996996997, 0.4294294294294294, 0.15915915915915915, 1]
-LoadingSpinner.tsx:101 Line 0:
-LoadingSpinner.tsx:102   startY: 523
-LoadingSpinner.tsx:103   topBounce: 200
-LoadingSpinner.tsx:104   finalY: 139.6208364833563
-LoadingSpinner.tsx:105   topBounce - finalY: 60.3791635166437
-LoadingSpinner.tsx:106   breakpoints: (3) [290, 380, 470]
-LoadingSpinner.tsx:107   scaleXTimes: (5) [0, 0.6996996996996997, 0.4294294294294294, 0.15915915915915915, 1]
-LoadingSpinner.tsx:101 Line 1:
-LoadingSpinner.tsx:102   startY: 566
-LoadingSpinner.tsx:103   topBounce: 200
-LoadingSpinner.tsx:104   finalY: 165.8028018597704
-LoadingSpinner.tsx:105   topBounce - finalY: 34.1971981402296
-LoadingSpinner.tsx:106   breakpoints: (3) [290, 380, 470]
-LoadingSpinner.tsx:107   scaleXTimes: (5) [0, 0.7340425531914893, 0.4946808510638298, 0.2553191489361702, 1]
-LoadingSpinner.tsx:101 Line 1:
-LoadingSpinner.tsx:102   startY: 566
-LoadingSpinner.tsx:103   topBounce: 200
-LoadingSpinner.tsx:104   finalY: 165.8028018597704
-LoadingSpinner.tsx:105   topBounce - finalY: 34.1971981402296
-LoadingSpinner.tsx:106   breakpoints: (3) [290, 380, 470]
-LoadingSpinner.tsx:107   scaleXTimes: (5) [0, 0.7340425531914893, 0.4946808510638298, 0.2553191489361702, 1]
-LoadingSpinner.tsx:101 Line 2:
-LoadingSpinner.tsx:102   startY: 609
-LoadingSpinner.tsx:103   topBounce: 200
-LoadingSpinner.tsx:104   finalY: 143.8257404092243
-LoadingSpinner.tsx:105   topBounce - finalY: 56.174259590775705
-LoadingSpinner.tsx:106   breakpoints: (3) [290, 380, 470]
-LoadingSpinner.tsx:107   scaleXTimes: (5) [0, 0.7613365155131265, 0.5465393794749404, 0.3317422434367542, 1]
-LoadingSpinner.tsx:101 Line 2:
-LoadingSpinner.tsx:102   startY: 609
-LoadingSpinner.tsx:103   topBounce: 200
-LoadingSpinner.tsx:104   finalY: 143.8257404092243
-LoadingSpinner.tsx:105   topBounce - finalY: 56.174259590775705
-LoadingSpinner.tsx:106   breakpoints: (3) [290, 380, 470]
-LoadingSpinner.tsx:107   scaleXTimes: (5) [0, 0.7613365155131265, 0.5465393794749404, 0.3317422434367542, 1]
-LoadingSpinner.tsx:101 Line 3:
-LoadingSpinner.tsx:102   startY: 652
-LoadingSpinner.tsx:103   topBounce: 200
-LoadingSpinner.tsx:104   finalY: 162.71344769482965
-LoadingSpinner.tsx:105   topBounce - finalY: 37.286552305170346
-LoadingSpinner.tsx:106   breakpoints: (3) [290, 380, 470]
-LoadingSpinner.tsx:107   scaleXTimes: (5) [0, 0.7835497835497837, 0.5887445887445888, 0.393939393939394, 1]
-LoadingSpinner.tsx:101 Line 3:
-LoadingSpinner.tsx:102   startY: 652
-LoadingSpinner.tsx:103   topBounce: 200
-LoadingSpinner.tsx:104   finalY: 162.71344769482965
-LoadingSpinner.tsx:105   topBounce - finalY: 37.286552305170346
-LoadingSpinner.tsx:106   breakpoints: (3) [290, 380, 470]
-LoadingSpinner.tsx:107   scaleXTimes: (5) [0, 0.7835497835497837, 0.5887445887445888, 0.393939393939394, 1]
-LoadingSpinner.tsx:101 Line 4:
-LoadingSpinner.tsx:102   startY: 695
-LoadingSpinner.tsx:103   topBounce: 200
-LoadingSpinner.tsx:104   finalY: 181.14686050058356
-LoadingSpinner.tsx:105   topBounce - finalY: 18.853139499416443
-LoadingSpinner.tsx:106   breakpoints: (3) [290, 380, 470]
-LoadingSpinner.tsx:107   scaleXTimes: (5) [0, 0.8019801980198021, 0.6237623762376238, 0.44554455445544555, 1]
-LoadingSpinner.tsx:101 Line 4:
-LoadingSpinner.tsx:102   startY: 695
-LoadingSpinner.tsx:103   topBounce: 200
-LoadingSpinner.tsx:104   finalY: 181.14686050058356
-LoadingSpinner.tsx:105   topBounce - finalY: 18.853139499416443
-LoadingSpinner.tsx:106   breakpoints: (3) [290, 380, 470]
-LoadingSpinner.tsx:107   scaleXTimes: (5) [0, 0.8019801980198021, 0.6237623762376238, 0.44554455445544555, 1]
-LoadingSpinner.tsx:101 Line 5:
-LoadingSpinner.tsx:102   startY: 738
-LoadingSpinner.tsx:103   topBounce: 200
-LoadingSpinner.tsx:104   finalY: 189.45573560070906
-LoadingSpinner.tsx:105   topBounce - finalY: 10.544264399290938
-LoadingSpinner.tsx:106   breakpoints: (3) [290, 380, 470]
-LoadingSpinner.tsx:107   scaleXTimes: (5) [0, 0.8175182481751826, 0.6532846715328468, 0.48905109489051096, 1]
-LoadingSpinner.tsx:101 Line 5:
-LoadingSpinner.tsx:102   startY: 738
-LoadingSpinner.tsx:103   topBounce: 200
-LoadingSpinner.tsx:104   finalY: 189.45573560070906
-LoadingSpinner.tsx:105   topBounce - finalY: 10.544264399290938
-LoadingSpinner.tsx:106   breakpoints: (3) [290, 380, 470]
-LoadingSpinner.tsx:107   scaleXTimes: (5) [0, 0.8175182481751826, 0.6532846715328468, 0.48905109489051096, 1]
-LoadingSpinner.tsx:101 Line 6:
-LoadingSpinner.tsx:102   startY: 781
-LoadingSpinner.tsx:103   topBounce: 200
-LoadingSpinner.tsx:104   finalY: 163.95751078786643
-LoadingSpinner.tsx:105   topBounce - finalY: 36.042489212133574
-LoadingSpinner.tsx:106   breakpoints: (3) [290, 380, 470]
-LoadingSpinner.tsx:107   scaleXTimes: (5) [0, 0.8307952622673436, 0.6785109983079527, 0.5262267343485617, 1]
-LoadingSpinner.tsx:101 Line 6:
-LoadingSpinner.tsx:102   startY: 781
-LoadingSpinner.tsx:103   topBounce: 200
-LoadingSpinner.tsx:104   finalY: 163.95751078786643
-LoadingSpinner.tsx:105   topBounce - finalY: 36.042489212133574
-LoadingSpinner.tsx:106   breakpoints: (3) [290, 380, 470]
-LoadingSpinner.tsx:107   scaleXTimes: (5) [0, 0.8307952622673436, 0.6785109983079527, 0.5262267343485617, 1]
-LoadingSpinner.tsx:101 Line 7:
-LoadingSpinner.tsx:102   startY: 824
-LoadingSpinner.tsx:103   topBounce: 200
-LoadingSpinner.tsx:104   finalY: 166.73313807983703
-LoadingSpinner.tsx:105   topBounce - finalY: 33.26686192016297
-LoadingSpinner.tsx:106   breakpoints: (3) [290, 380, 470]
-LoadingSpinner.tsx:107   scaleXTimes: (5) [0, 0.8422712933753943, 0.7003154574132493, 0.5583596214511041, 1]
-LoadingSpinner.tsx:101 Line 7:
-LoadingSpinner.tsx:102   startY: 824
-LoadingSpinner.tsx:103   topBounce: 200
-LoadingSpinner.tsx:104   finalY: 166.73313807983703
-LoadingSpinner.tsx:105   topBounce - finalY: 33.26686192016297
-LoadingSpinner.tsx:106   breakpoints: (3) [290, 380, 470]
-LoadingSpinner.tsx:107   scaleXTimes: (5) [0, 0.8422712933753943, 0.7003154574132493, 0.5583596214511041, 1]
+LoadingSpinner.tsx:140 0
+LoadingSpinner.tsx:140 1
+LoadingSpinner.tsx:140 2
+LoadingSpinner.tsx:140 1
+LoadingSpinner.tsx:140 0
+LoadingSpinner.tsx:140 1
+LoadingSpinner.tsx:140 2
+LoadingSpinner.tsx:140 3
+LoadingSpinner.tsx:140 0
+LoadingSpinner.tsx:140 4
+LoadingSpinner.tsx:140 0
+LoadingSpinner.tsx:140 1
+LoadingSpinner.tsx:140 2
+LoadingSpinner.tsx:140 3
+LoadingSpinner.tsx:140 5
+LoadingSpinner.tsx:140 4
+LoadingSpinner.tsx:140 3
+LoadingSpinner.tsx:140 2
+LoadingSpinner.tsx:140 1
+LoadingSpinner.tsx:140 0
+LoadingSpinner.tsx:140 6
+LoadingSpinner.tsx:140 4
+LoadingSpinner.tsx:140 5
+LoadingSpinner.tsx:140 1
+LoadingSpinner.tsx:140 2
+LoadingSpinner.tsx:140 3
+LoadingSpinner.tsx:140 0
+LoadingSpinner.tsx:140 6
+LoadingSpinner.tsx:140 7
+LoadingSpinner.tsx:140 2
+LoadingSpinner.tsx:140 3
+LoadingSpinner.tsx:140 4
+LoadingSpinner.tsx:140 5
+LoadingSpinner.tsx:140 1
+LoadingSpinner.tsx:140 0
+LoadingSpinner.tsx:140 6
+LoadingSpinner.tsx:140 7
+LoadingSpinner.tsx:140 3
+LoadingSpinner.tsx:140 4
+LoadingSpinner.tsx:140 5
+LoadingSpinner.tsx:140 2
+LoadingSpinner.tsx:140 1
+LoadingSpinner.tsx:140 5
+LoadingSpinner.tsx:140 6
+LoadingSpinner.tsx:140 7
+LoadingSpinner.tsx:140 4
+LoadingSpinner.tsx:140 2
+LoadingSpinner.tsx:140 3
+LoadingSpinner.tsx:140 5
+LoadingSpinner.tsx:140 6
+LoadingSpinner.tsx:140 7
+LoadingSpinner.tsx:140 4
+LoadingSpinner.tsx:140 3
+LoadingSpinner.tsx:140 7
+LoadingSpinner.tsx:140 6
+LoadingSpinner.tsx:140 5
+LoadingSpinner.tsx:140 4
+LoadingSpinner.tsx:140 7
+LoadingSpinner.tsx:140 6
+LoadingSpinner.tsx:140 5
+LoadingSpinner.tsx:140 7
+LoadingSpinner.tsx:140 6
+LoadingSpinner.tsx:140 7

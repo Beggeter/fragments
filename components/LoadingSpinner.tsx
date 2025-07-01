@@ -72,6 +72,7 @@ const Line = ({
 }: LineProps & {
   onLineBreakpoint?: (lineIdx: number, rowIdx: number) => void;
 }) => {
+  const [clearedLines, setClearedLines] = useState();
   // Временные точки анимации
   const frac = flyDuration / totalDuration;
   const times = [0, frac, frac + 0.25 * (1 - frac), frac + 0.6 * (1 - frac), 1];
@@ -138,7 +139,9 @@ const Line = ({
           if (!triggeredRowsRef.current[rowIdx] && latestY <= rowY) {
             triggeredRowsRef.current[rowIdx] = true;
             if (onLineBreakpoint) {
-              onLineBreakpoint(lineIdx, rowIdx);
+              if (lineIdx != rowIdx) {
+                onLineBreakpoint(lineIdx, rowIdx);
+              }
             }
           }
         });
