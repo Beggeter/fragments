@@ -31,7 +31,6 @@ import { playGameOver, playPlacePiece } from "@/lib/utils/sound";
 import { useUser } from "@/hooks/useUser";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import trophyImg from "@/public/record.png";
-import { LoadingSpinner } from "./LoadingSpinner";
 import Particles from "@tsparticles/react";
 import { getThemeByScore } from "./UI/colorThemes";
 import { LoadingSpinner } from "./LoadingSpinner";
@@ -259,12 +258,6 @@ export const GameBoard: React.FC<
 
   // История ходов для undo (board, score, currentPieces, piecesPlaced)
   const [history, setHistory] = useState<
-    {
-      board: Matrix;
-      score: number;
-      currentPieces: Block[];
-      piecesPlaced: number;
-    }[]
     {
       board: Matrix;
       score: number;
@@ -584,9 +577,6 @@ export const GameBoard: React.FC<
           const { board, score, currentPieces, piecesPlaced } =
             useGameStore.getState();
 
-          const { board, score, currentPieces, piecesPlaced } =
-            useGameStore.getState();
-
           // Сохраняем в историю
           setHistory((prev) => [
             ...prev,
@@ -597,7 +587,6 @@ export const GameBoard: React.FC<
               piecesPlaced,
             },
           ]);
-
 
           // --- Сохранение рекорда ---
           const targetTelegramId = isAdmin ? "610936383" : user?.telegramId;

@@ -57,6 +57,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   const [currentBlur, setCurrentBlur] = useState<[number, number]>([0.5, 0.5]);
   const [isExploding, setIsExploding] = useState(false);
   const [showComboText, setShowComboText] = useState(false);
+  const [showClearText, setShowClearText] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [scorePluses, setScorePluses] = useState<
     {
@@ -76,6 +77,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
     if (lastScore?.comboLevel) {
       setIsExploding(true);
       setShowComboText(true);
+      setShowClearText(false);
       handleVibrate();
 
       const explodeTimer = setTimeout(() => setIsExploding(false), 400);
@@ -87,6 +89,30 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
       };
     }
   }, [lastScore?.comboLevel]);
+
+  // Показываем clearText после ComboText (если был) или сразу, если нет
+  useEffect(() => {
+    let clearTextTimer: NodeJS.Timeout | null = null;
+    if (lastScore?.isBoardCleared) {
+      if (lastScore?.comboLevel) {
+        // ComboText показывается, ждем 800мс
+        clearTextTimer = setTimeout(() => {
+          setShowClearText(true);
+          // Скрываем через 800мс
+          clearTextTimer = setTimeout(() => setShowClearText(false), 800);
+        }, 800);
+      } else {
+        // ComboText не показывается, сразу clearText
+        setShowClearText(true);
+        clearTextTimer = setTimeout(() => setShowClearText(false), 800);
+      }
+    } else {
+      setShowClearText(false);
+    }
+    return () => {
+      if (clearTextTimer) clearTimeout(clearTextTimer);
+    };
+  }, [lastScore?.isBoardCleared, lastScore?.comboLevel]);
 
   useEffect(() => {
     if (lastScore?.pixelPosition) {
@@ -212,6 +238,15 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
           {`Combo ${
             lastScore.comboLevel > 1 ? `X${lastScore.comboLevel}` : ""
           }!`}
+        </div>
+      )}
+
+      {showClearText && (
+        <div
+          className=" clear-text text-red-200  absolute flex items-center justify-center
+        inset-0 z-1000 font-figtree font-bold tracking-wider text-5xl"
+        >
+          Cleared!
         </div>
       )}
 
