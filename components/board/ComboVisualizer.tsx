@@ -2,7 +2,7 @@
 
 import { ScoreResult } from "@/lib/data/types";
 import { ColorTheme, colorThemes, getThemeByScore } from "../UI/colorThemes";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { animate, useMotionValue, motion } from "framer-motion";
 import { useGameStore } from "@/lib/state/store";
 import { vibrate } from "@/utils/helpers";
@@ -23,9 +23,9 @@ const getBlur = (
   comboLevel: number | undefined
 ): [number, number] => {
   if (!comboLevel || comboLevel < 1) return [0.5, 0.5];
-  if (!moves || moves === 0) return [25, 1];
-  if (moves === 1) return [15, 2];
-  if (moves === 2) return [5, 3];
+  if (!moves || moves === 0) return [8, 1];
+  if (moves === 1) return [6, 2];
+  if (moves === 2) return [3, 3];
   if (moves >= 3) return [1, 8];
   return [0.5, 0.5];
 };
@@ -71,6 +71,8 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   >([]);
 
   const scorePlusId = React.useRef(0);
+  const comboRef = useRef<SVGTextElement | null>(null);
+  const [comboWidth, setComboWidth] = useState(0);
 
   // Handle combo level changes
   useEffect(() => {
@@ -152,13 +154,19 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
     animate(borderEnd, t.borderEnd, { duration: 0.7 });
 
     if (isExploding) {
-      animate(blurValue, `${b[0] * 1.6}px`, { duration: 0.4 });
-      animate(brightnessValue, 1.4, { duration: 0.4 }); // Добавляем анимацию brightness
+      animate(blurValue, `${Math.min(b[0] * 1.6, 12)}px`, { duration: 0.4 });
+      animate(brightnessValue, 1.15, { duration: 0.4 });
     } else {
       animate(blurValue, `${b[0]}px`, { duration: 0.7 });
-      animate(brightnessValue, 1, { duration: 0.4 }); // Возвращаем к нормальному brightness
+      animate(brightnessValue, 1, { duration: 0.4 });
     }
   }, [theme, blur, currentTheme, currentBlur, debugMode]);
+
+  useLayoutEffect(() => {
+    if (comboRef.current) {
+      setComboWidth(comboRef.current.getBBox().width);
+    }
+  }, [lastScore?.comboLevel, showComboText]);
 
   const borderStyle = {
     "--border-angle": "0deg",
@@ -191,7 +199,8 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
               "--scoreplus-y-to": `${sp.to.y}px`,
               pointerEvents: "none",
               color: sp.color,
-              textShadow: "0 0 8px #000, 0 0 2px #fff",
+              WebkitTextStroke: "1.2px #38BDF8",
+              textShadow: undefined,
               position: "absolute",
             } as React.CSSProperties
           }
@@ -210,12 +219,13 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
           top: sp.y,
           pointerEvents: "none",
           color: sp.color,
-          textShadow: "0 0 8px #000, 0 0 2px #fff",
+          WebkitTextStroke: "1.2px #38BDF8",
+          textShadow: undefined,
           position: "absolute",
         }}
         className="text-4xl z-2000 font-extrabold font-figtree"
       >
-        +{sp.value}
+        {sp.value}
       </div>
     );
   };
@@ -232,12 +242,54 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
         <div
           className={`combo-text ${
             showComboText ? "show" : ""
-          } text-amber-100 absolute flex items-center justify-center inset-0
-           z-1000 font-figtree font-extrabold italic text-4xl  ]`}
+          } absolute flex items-center justify-center inset-0 z-1000`}
+          // style={{ pointerEvents: "none" }}
+          style={{
+            position: "absolute",
+            left: lastScore.pixelPosition?.x,
+            top: lastScore.pixelPosition?.y,
+            transform: "translate(-50%, -100%)",
+            pointerEvents: "none",
+            zIndex: 1000,
+          }}
         >
-          {`Combo ${
-            lastScore.comboLevel > 1 ? `X${lastScore.comboLevel}` : ""
-          }!`}
+          <svg
+            width={comboWidth + (lastScore.comboLevel > 1 ? 70 : 0) + 24}
+            height={70}
+            style={{ display: "block" }}
+          >
+            <text
+              ref={comboRef}
+              x={10}
+              y={52}
+              fontFamily="'Montserrat', Arial, sans-serif"
+              fontWeight="900"
+              fontSize="48"
+              stroke="#2968EA"
+              strokeWidth="6"
+              fill="#fff"
+              paintOrder="stroke"
+              style={{ letterSpacing: 2 }}
+            >
+              Combo
+            </text>
+            {lastScore.comboLevel > 1 && (
+              <text
+                x={comboWidth + 16}
+                y={52}
+                fontFamily="'Montserrat', Arial, sans-serif"
+                fontWeight="900"
+                fontSize="54"
+                stroke="#2968EA"
+                strokeWidth="6"
+                fill="#FFD600"
+                paintOrder="stroke"
+                style={{ letterSpacing: 2 }}
+              >
+                {lastScore.comboLevel}
+              </text>
+            )}
+          </svg>
         </div>
       )}
 

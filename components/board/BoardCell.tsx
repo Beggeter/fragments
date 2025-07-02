@@ -45,15 +45,12 @@ const BoardCell = React.memo<{
         className={`rounded-[3px] relative ${
           cell.value ? "bg-gray-900" : "bg-gray-900"
         } ${
-          isInClearingLine ? "clearing-line-horizontal" : ""
-        } ${isInClearingLine ? "clearing-line-vertical" : ""
-        } ${
           isPotentiallyCleared ? "potential-clear-highlight" : ""
         }`}
         onClick={onClick}
       >
         {cell.value === 1 && displayColor && (
-          <Piece color={displayColor} size="100%" isClearing={isInClearingLine} />
+          <Piece color={displayColor} size="100%" isClearing={false} />
         )}
         
         {/* Показываем полупрозрачную фигуру-превью */}

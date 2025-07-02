@@ -259,18 +259,16 @@ export const useGameStore = create<
 
       // Если есть линии для очистки, обновляем доску после анимации
       if (hasCellsToClear) {
-        setTimeout(() => {
-          set({
-            board: boardAfterClearing,
-            isAnimating: false,
-          });
+        set({
+          board: boardAfterClearing,
+          isAnimating: false,
+        });
 
-          // Проверяем завершение игры ПОСЛЕ очистки линий
-          if (checkGameOver(boardAfterClearing, newCurrentPieces)) {
-            handleGameOver();
-            return;
-          }
-        }, 300); // Соответствует длительности анимации из CSS
+        // Проверяем завершение игры ПОСЛЕ очистки линий
+        if (checkGameOver(boardAfterClearing, newCurrentPieces)) {
+          handleGameOver();
+          return;
+        }
       } else {
         // Если нет линий для очистки, проверяем Game Over сразу
         if (checkGameOver(newBoard, newCurrentPieces)) {

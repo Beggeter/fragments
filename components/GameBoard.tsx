@@ -9,7 +9,6 @@ import React, {
   useMemo,
 } from "react";
 import { useGameStore } from "../lib/state/store";
-import { getCellsToClear } from "@/lib/core/engine";
 import { Block, BlockColor, Matrix, Position } from "../lib/data/types";
 import { getEventCoordinates } from "@/utils/events";
 import { ScoreDisplay } from "./board/ScoreDisplay";
@@ -19,7 +18,6 @@ import { ScoreCalculator } from "../lib/core/scoreCalculator";
 import { ComboVisualizer } from "./board/ComboVisualizer";
 import { DraggablePiecesSection } from "./DraggablePiecesSection";
 import { BoostersPanel } from "./BoostersPanel";
-import { throttle } from "@/utils/helpers";
 import BoardCell from "./board/BoardCell";
 import useDnDLogic from "@/hooks/useDnDLogic";
 import { getCellEffects } from "./board/getCellEffects";
@@ -27,19 +25,19 @@ import { calculatePotentialClearLines } from "./board/boardUtils";
 import { handlePiecePlacement } from "./board/boardUtils";
 import SettingsModal from "@/components/UI/SettingsModal";
 import settings from "@/public/settings.svg";
-import { playGameOver, playPlacePiece } from "@/lib/utils/sound";
+import { playPlacePiece } from "@/lib/utils/sound";
 import { useUser } from "@/hooks/useUser";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import trophyImg from "@/public/record.png";
 import Particles from "@tsparticles/react";
 import { getThemeByScore } from "./UI/colorThemes";
-import { LoadingSpinner } from "./LoadingSpinner";
 import { useGameOver } from "@/hooks/useGameOver";
 import { LoadingNumberAnimation } from "./LoadingNumberAnimation";
-import { number } from "framer-motion";
 import { motion } from "framer-motion";
 import { Piece } from "./pieces/Piece";
 import NeonGlowOutline from "./NeonGlowOutline";
+import BoardClearAnimationsOverlay from "./board/BoardClearAnimationsOverlay";
+import { v4 as uuidv4 } from "uuid";
 
 const DEFAULT_CELL_SIZE = 43.75;
 const GAP_SIZE_PX = 2; // Исходя из gap-0.5 в TailwindCSS (0.125rem * 16px)
@@ -165,6 +163,17 @@ const COLOR_HEX: Record<string, string> = {
   pink: "#FF4C76",
 };
 
+// Восстановлено локальное определение типа AnimationCell
+// чтобы не было ошибок типов
+// (раньше импортировался, теперь определяем здесь)
+type AnimationCell = {
+  id: string;
+  x: number;
+  y: number;
+  color: BlockColor;
+  delay?: number;
+};
+
 export const GameBoard: React.FC<
   GameBoardProps & { onShowSpinner?: () => void }
 > = ({
@@ -266,6 +275,8 @@ export const GameBoard: React.FC<
     }[]
   >([]);
 
+  const [clearAnimations, setClearAnimations] = useState<AnimationCell[]>([]);
+
   const blockGenerator = new BlockGenerator();
   const scoreCalculator = new ScoreCalculator();
   const difficultyEvaluator = new DifficultyEvaluator();
@@ -274,6 +285,40 @@ export const GameBoard: React.FC<
 
   const { user } = useUser();
   const { isAdmin } = useAdminAuth();
+
+  const [boosters, setBoosters] = useState<any[]>([]);
+
+  // --- Вынести fetchBoosters наружу, чтобы использовать в useBooster ---
+  const fetchBoosters = useCallback(async () => {
+    let tgid: number | undefined = user?.telegramId;
+    if (isAdmin && process.env.NODE_ENV === 'development') {
+      tgid = 610936383;
+    }
+    if (!tgid) return;
+    const res = await fetch(`/api/users/${tgid}/boosters`);
+    const data = await res.json();
+    const boostersForPanel = (data.availableBoosters as Array<any>).map((booster: any) => {
+      const userBooster = (data.userBoosters as Array<any>).find(
+        (ub: any) => ub.boosterTypeId === booster.id
+      );
+      let icon = '';
+      if (booster.name === 'undo') icon = '/boosters/back.png';
+      if (booster.name === 'bomb') icon = '/boosters/bomb.svg';
+      if (booster.name === 'whirlwind') icon = '/boosters/spinner.png';
+      return {
+        id: booster.name,
+        name: booster.name,
+        icon,
+        quantity: userBooster ? userBooster.quantity : 0,
+        boosterTypeId: booster.id,
+      };
+    });
+    setBoosters(boostersForPanel);
+  }, [user?.telegramId, isAdmin]);
+
+  useEffect(() => {
+    fetchBoosters();
+  }, [fetchBoosters]);
 
   const [adminRecord, setAdminRecord] = useState<number | null>(null);
   const [isRecordLoading, setIsRecordLoading] = useState(true); // Состояние загрузки рекорда
@@ -290,10 +335,19 @@ export const GameBoard: React.FC<
       dy: number;
       rot: number;
     }[];
-    left: number;
-    top: number;
     cellSize: number;
   }>(null);
+
+  const potentialClearHighlight = useMemo(() => {
+    if (!draggedPiece || !hoverCell) return [];
+    return calculatePotentialClearLines(
+      board,
+      draggedPiece,
+      hoverCell,
+      width,
+      height
+    );
+  }, [draggedPiece, hoverCell, board, width, height]);
 
   useLayoutEffect(() => {
     function updateCoords() {
@@ -370,7 +424,7 @@ export const GameBoard: React.FC<
   );
 
   useEffect(() => {
-    const handleMove = throttle((e: MouseEvent | TouchEvent) => {
+    const handleMove = (e: MouseEvent | TouchEvent) => {
       if (!draggedPiece || !boardRef.current) return;
 
       if (e instanceof TouchEvent) {
@@ -396,7 +450,7 @@ export const GameBoard: React.FC<
       }
 
       setHoverCell(nearestPosition);
-    }, 16); // ~60fps throttling
+    };
 
     const handleStart = (e: TouchEvent) => {
       // e.preventDefault();
@@ -460,17 +514,6 @@ export const GameBoard: React.FC<
     hoverCell,
     lastHighlightedPosition,
   ]);
-
-  const potentialClearHighlight = useMemo(() => {
-    if (!draggedPiece || !hoverCell) return [];
-    return calculatePotentialClearLines(
-      board,
-      draggedPiece,
-      hoverCell,
-      width,
-      height
-    );
-  }, [draggedPiece, hoverCell, board, width, height]);
 
   // Устанавливаем onGameOver callback в store
   useGameOver({
@@ -548,36 +591,206 @@ export const GameBoard: React.FC<
     }, 0);
   }, [history]);
 
-  // Обработчик кликов по бустерам
-  const handleBoosterClick = useCallback(
-    (boosterId: string) => {
-      if (boosterId === "laser") {
-        setLaserMode(true);
-      } else if (boosterId === "undo") {
-        handleUndo();
-      } else if (boosterId === "spinner") {
-        if (onShowSpinner) onShowSpinner();
-        useGameStore.setState({ score: score + 300 });
-      } else if (boosterId === "bomb") {
-        setBombMode(true);
-        setBombCenter(null);
-      } else {
-        alert(`Бустер ${boosterId} пока не реализован`);
+  // --- Добавляю функцию списывания бустера ---
+  const useBooster = async (boosterName: string) => {
+    let boosterTypeId: number | undefined;
+    const booster = boosters.find((b) => b.id === boosterName);
+    if (!booster) return;
+    boosterTypeId = booster.boosterTypeId || booster.id;
+    if (!boosterTypeId) return;
+    let tgid: number | undefined = user?.telegramId;
+    if (isAdmin && process.env.NODE_ENV === 'development') {
+      tgid = 610936383;
+    }
+    if (!tgid) return;
+    const res = await fetch(`/api/users/${tgid}/boosters`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'use',
+        boosterTypeId,
+        quantity: 1,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error || 'Ошибка списания бустера');
+      return false;
+    }
+    await fetchBoosters();
+    return true;
+  };
+
+  // --- В обработчиках применения бомбы ---
+  const handleBombMouseUp = async (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!bombMode || bombCenter === null) return;
+    const cell = getCellFromPointer(e.clientX, e.clientY);
+    if (cell) {
+      const gridW = board[0].length;
+      const gridH = board.length;
+      const cx = clamp(cell.x, 1, gridW - 2);
+      const cy = clamp(cell.y, 1, gridH - 2);
+      const cellSize = boardRef.current ? boardRef.current.offsetWidth / gridW : 40;
+      const cells = [];
+      const maxDist = 120;
+      const minDist = 80;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const x = cx + dx;
+          const y = cy + dy;
+          if (x >= 0 && x < gridW && y >= 0 && y < gridH) {
+            const cellData = board[y][x];
+            if (cellData.value) {
+              // Вектор от центра к клетке
+              const vecX = x - cx;
+              const vecY = y - cy;
+              let dxx, dyy;
+              if (vecX === 0 && vecY === 0) {
+                const angle = Math.random() * 2 * Math.PI;
+                const dist = minDist + Math.random() * (maxDist - minDist);
+                dxx = Math.cos(angle) * dist;
+                dyy = Math.sin(angle) * dist;
+              } else {
+                const len = Math.sqrt(vecX * vecX + vecY * vecY) || 1;
+                const normX = vecX / len;
+                const normY = vecY / len;
+                const dist = minDist + Math.random() * (maxDist - minDist);
+                dxx = normX * dist;
+                dyy = normY * dist;
+              }
+              const rot = (Math.random() - 0.5) * 60;
+              cells.push({
+                x,
+                y,
+                color: String(cellData.color || "gray"),
+                dx: dxx,
+                dy: dyy,
+                rot,
+              });
+            }
+          }
+        }
       }
-    },
-    [board, score, currentPieces, handleUndo, onShowSpinner]
-  );
+      setExplodingCells({ cells, cellSize });
+      // Очищаем клетки с поля
+      const newBoard = board.map((row, rowIdx) =>
+        row.map((cell, colIdx) => {
+          if (Math.abs(rowIdx - cy) <= 1 && Math.abs(colIdx - cx) <= 1) {
+            return { ...cell, value: 0 };
+          }
+          return cell;
+        })
+      );
+      useGameStore.setState({ board: newBoard });
+      setHistory((prev) => [
+        ...prev,
+        {
+          board: newBoard.map((row) => row.map((cell) => ({ ...cell }))),
+          score,
+          currentPieces: currentPieces.map((piece) => ({ ...piece })),
+          piecesPlaced: piecesPlaced,
+        },
+      ]);
+      setTimeout(() => setExplodingCells(null), 500);
+      // --- Списываем бустер только после успешного применения ---
+      await useBooster('bomb');
+    }
+    setBombMode(false);
+    setBombCenter(null);
+  };
+
+  const handleBombTouchEnd = async (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!bombMode || bombCenter === null) return;
+    const touch = e.changedTouches[0];
+    if (!touch) {
+      setBombMode(false);
+      setBombCenter(null);
+      return;
+    }
+    const cell = getCellFromPointer(touch.clientX, touch.clientY);
+    if (cell) {
+      const gridW = board[0].length;
+      const gridH = board.length;
+      const cx = clamp(cell.x, 1, gridW - 2);
+      const cy = clamp(cell.y, 1, gridH - 2);
+      const cellSize = boardRef.current ? boardRef.current.offsetWidth / gridW : 40;
+      const cells = [];
+      const maxDist = 120;
+      const minDist = 80;
+      for (let dy = -1; dy <= 1; dy++) {
+        for (let dx = -1; dx <= 1; dx++) {
+          const x = cx + dx;
+          const y = cy + dy;
+          if (x >= 0 && x < gridW && y >= 0 && y < gridH) {
+            const cellData = board[y][x];
+            if (cellData.value) {
+              // Вектор от центра к клетке
+              const vecX = x - cx;
+              const vecY = y - cy;
+              let dxx, dyy;
+              if (vecX === 0 && vecY === 0) {
+                const angle = Math.random() * 2 * Math.PI;
+                const dist = minDist + Math.random() * (maxDist - minDist);
+                dxx = Math.cos(angle) * dist;
+                dyy = Math.sin(angle) * dist;
+              } else {
+                const len = Math.sqrt(vecX * vecX + vecY * vecY) || 1;
+                const normX = vecX / len;
+                const normY = vecY / len;
+                const dist = minDist + Math.random() * (maxDist - minDist);
+                dxx = normX * dist;
+                dyy = normY * dist;
+              }
+              const rot = (Math.random() - 0.5) * 60;
+              cells.push({
+                x,
+                y,
+                color: String(cellData.color || "gray"),
+                dx: dxx,
+                dy: dyy,
+                rot,
+              });
+            }
+          }
+        }
+      }
+      setExplodingCells({ cells, cellSize });
+      // Очищаем клетки с поля
+      const newBoard = board.map((row, rowIdx) =>
+        row.map((cell, colIdx) => {
+          if (Math.abs(rowIdx - cy) <= 1 && Math.abs(colIdx - cx) <= 1) {
+            return { ...cell, value: 0 };
+          }
+          return cell;
+        })
+      );
+      useGameStore.setState({ board: newBoard });
+      setHistory((prev) => [
+        ...prev,
+        {
+          board: newBoard.map((row) => row.map((cell) => ({ ...cell }))),
+          score,
+          currentPieces: currentPieces.map((piece) => ({ ...piece })),
+          piecesPlaced: piecesPlaced,
+        },
+      ]);
+      setTimeout(() => setExplodingCells(null), 500);
+      // --- Списываем бустер только после успешного применения ---
+      await useBooster('bomb');
+    }
+    setBombMode(false);
+    setBombCenter(null);
+  };
 
   // Функция-обёртка для размещения фигуры с сохранением истории и рекорда
   const onPiecePlaced = useCallback(
     (args: HandlePiecePlacementArgs) => {
       handlePiecePlacement({
         ...args,
+        addClearAnimations,
         onAfterPlacement: async () => {
           const { board, score, currentPieces, piecesPlaced } =
             useGameStore.getState();
-
-          // Сохраняем в историю
           setHistory((prev) => [
             ...prev,
             {
@@ -587,30 +800,10 @@ export const GameBoard: React.FC<
               piecesPlaced,
             },
           ]);
-
-          // --- Сохранение рекорда ---
-          const targetTelegramId = isAdmin ? "610936383" : user?.telegramId;
-          const currentRecord = isAdmin ? adminRecord : user?.record;
-          if (
-            targetTelegramId &&
-            typeof currentRecord === "number" &&
-            score > currentRecord
-          ) {
-            try {
-              await fetch(`/api/users/${targetTelegramId}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ record: score }),
-              });
-              if (isAdmin) setAdminRecord(score);
-            } catch (e) {
-              /* ignore */
-            }
-          }
         },
       });
     },
-    [user, adminRecord, isAdmin]
+    [setHistory]
   );
 
   useEffect(() => {
@@ -621,6 +814,9 @@ export const GameBoard: React.FC<
 
   // Получаем цвет фигуры для подсветки
   const potentialLineColor = draggedPiece?.color ? draggedPiece.color : "#fff";
+
+  // --- Управление цветом анимации очистки линий ---
+  const usePlacedPieceColorInClearAnim = true; // Вынесено в переменную для удобства
 
   // Функция для генерации партиклов
   function renderParticles(
@@ -754,88 +950,6 @@ export const GameBoard: React.FC<
     const cell = getCellFromPointer(e.clientX, e.clientY);
     setBombCenter(cell);
   };
-  const handleBombMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!bombMode || bombCenter === null) return;
-    const cell = getCellFromPointer(e.clientX, e.clientY);
-    if (cell) {
-      const gridW = board[0].length;
-      const gridH = board.length;
-      const cx = clamp(cell.x, 1, gridW - 2);
-      const cy = clamp(cell.y, 1, gridH - 2);
-      // Копируем 3x3 svg-клетки
-      const cellSize = boardRef.current
-        ? boardRef.current.offsetWidth / gridW
-        : 40;
-      const boardRect = boardRef.current?.getBoundingClientRect();
-      const left = boardRect ? boardRect.left : 0;
-      const top = boardRect ? boardRect.top : 0;
-      const cells = [];
-      const maxDist = 120;
-      const minDist = 80;
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
-          const x = cx + dx;
-          const y = cy + dy;
-          if (x >= 0 && x < gridW && y >= 0 && y < gridH) {
-            const cellData = board[y][x];
-            if (cellData.value) {
-              // Вектор от центра к клетке
-              const vecX = x - cx;
-              const vecY = y - cy;
-              let dxx, dyy;
-              if (vecX === 0 && vecY === 0) {
-                // Центр — случайное направление
-                const angle = Math.random() * 2 * Math.PI;
-                const dist = minDist + Math.random() * (maxDist - minDist);
-                dxx = Math.cos(angle) * dist;
-                dyy = Math.sin(angle) * dist;
-              } else {
-                const len = Math.sqrt(vecX * vecX + vecY * vecY) || 1;
-                const normX = vecX / len;
-                const normY = vecY / len;
-                const dist = minDist + Math.random() * (maxDist - minDist);
-                dxx = normX * dist;
-                dyy = normY * dist;
-              }
-              const rot = (Math.random() - 0.5) * 60;
-              cells.push({
-                x,
-                y,
-                color: String(cellData.color || "gray"),
-                dx: dxx,
-                dy: dyy,
-                rot,
-              });
-            }
-          }
-        }
-      }
-      setExplodingCells({ cells, left, top, cellSize });
-      // Очищаем клетки с поля
-      const newBoard = board.map((row, rowIdx) =>
-        row.map((cell, colIdx) => {
-          if (Math.abs(rowIdx - cy) <= 1 && Math.abs(colIdx - cx) <= 1) {
-            return { ...cell, value: 0 };
-          }
-          return cell;
-        })
-      );
-      useGameStore.setState({ board: newBoard });
-      setHistory((prev) => [
-        ...prev,
-        {
-          board: newBoard.map((row) => row.map((cell) => ({ ...cell }))),
-          score,
-          currentPieces: currentPieces.map((piece) => ({ ...piece })),
-          piecesPlaced: piecesPlaced,
-        },
-      ]);
-      // После анимации убираем div
-      setTimeout(() => setExplodingCells(null), 500);
-    }
-    setBombMode(false);
-    setBombCenter(null);
-  };
   const handleBombMouseLeave = () => {
     if (!bombMode || bombCenter === null) return;
     setBombMode(false);
@@ -857,94 +971,6 @@ export const GameBoard: React.FC<
     if (!touch) return;
     const cell = getCellFromPointer(touch.clientX, touch.clientY);
     setBombCenter(cell);
-  };
-  const handleBombTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!bombMode || bombCenter === null) return;
-    const touch = e.changedTouches[0];
-    if (!touch) {
-      setBombMode(false);
-      setBombCenter(null);
-      return;
-    }
-    const cell = getCellFromPointer(touch.clientX, touch.clientY);
-    if (cell) {
-      const gridW = board[0].length;
-      const gridH = board.length;
-      const cx = clamp(cell.x, 1, gridW - 2);
-      const cy = clamp(cell.y, 1, gridH - 2);
-      // Копируем 3x3 svg-клетки
-      const cellSize = boardRef.current
-        ? boardRef.current.offsetWidth / gridW
-        : 40;
-      const boardRect = boardRef.current?.getBoundingClientRect();
-      const left = boardRect ? boardRect.left : 0;
-      const top = boardRect ? boardRect.top : 0;
-      const cells = [];
-      const maxDist = 120;
-      const minDist = 80;
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
-          const x = cx + dx;
-          const y = cy + dy;
-          if (x >= 0 && x < gridW && y >= 0 && y < gridH) {
-            const cellData = board[y][x];
-            if (cellData.value) {
-              // Вектор от центра к клетке
-              const vecX = x - cx;
-              const vecY = y - cy;
-              let dxx, dyy;
-              if (vecX === 0 && vecY === 0) {
-                // Центр — случайное направление
-                const angle = Math.random() * 2 * Math.PI;
-                const dist = minDist + Math.random() * (maxDist - minDist);
-                dxx = Math.cos(angle) * dist;
-                dyy = Math.sin(angle) * dist;
-              } else {
-                const len = Math.sqrt(vecX * vecX + vecY * vecY) || 1;
-                const normX = vecX / len;
-                const normY = vecY / len;
-                const dist = minDist + Math.random() * (maxDist - minDist);
-                dxx = normX * dist;
-                dyy = normY * dist;
-              }
-              const rot = (Math.random() - 0.5) * 60;
-              cells.push({
-                x,
-                y,
-                color: String(cellData.color || "gray"),
-                dx: dxx,
-                dy: dyy,
-                rot,
-              });
-            }
-          }
-        }
-      }
-      setExplodingCells({ cells, left, top, cellSize });
-      // Очищаем клетки с поля
-      const newBoard = board.map((row, rowIdx) =>
-        row.map((cell, colIdx) => {
-          if (Math.abs(rowIdx - cy) <= 1 && Math.abs(colIdx - cx) <= 1) {
-            return { ...cell, value: 0 };
-          }
-          return cell;
-        })
-      );
-      useGameStore.setState({ board: newBoard });
-      setHistory((prev) => [
-        ...prev,
-        {
-          board: newBoard.map((row) => row.map((cell) => ({ ...cell }))),
-          score,
-          currentPieces: currentPieces.map((piece) => ({ ...piece })),
-          piecesPlaced: piecesPlaced,
-        },
-      ]);
-      // После анимации убираем div
-      setTimeout(() => setExplodingCells(null), 500);
-    }
-    setBombMode(false);
-    setBombCenter(null);
   };
   const handleBombTouchCancel = () => {
     if (!bombMode || bombCenter === null) return;
@@ -1150,6 +1176,103 @@ export const GameBoard: React.FC<
     return path;
   }
 
+  function addClearAnimations(
+    board: any[][],
+    cellsToClear: boolean[][],
+    placedPieceColor?: BlockColor
+  ) {
+    const newAnims: AnimationCell[] = [];
+    // Определяем очищаемые строки и столбцы
+    const rowsToClear = new Set<number>();
+    const colsToClear = new Set<number>();
+    for (let y = 0; y < cellsToClear.length; y++) {
+      let fullRow = true;
+      for (let x = 0; x < cellsToClear[0].length; x++) {
+        if (!cellsToClear[y][x]) fullRow = false;
+      }
+      if (fullRow) rowsToClear.add(y);
+    }
+    for (let x = 0; x < cellsToClear[0].length; x++) {
+      let fullCol = true;
+      for (let y = 0; y < cellsToClear.length; y++) {
+        if (!cellsToClear[y][x]) fullCol = false;
+      }
+      if (fullCol) colsToClear.add(x);
+    }
+    // Горизонтальные линии
+    for (let y = 0; y < cellsToClear.length; y++) {
+      if (rowsToClear.has(y)) {
+        for (let x = 0; x < cellsToClear[0].length; x++) {
+          if (cellsToClear[y][x]) {
+            newAnims.push({
+              id: uuidv4(),
+              x,
+              y,
+              color: usePlacedPieceColorInClearAnim
+                ? placedPieceColor
+                : board[y][x]?.color || placedPieceColor,
+              delay: (cellsToClear[0].length - 1 - x) * 0.03,
+            });
+          }
+        }
+      }
+    }
+    // Вертикальные линии
+    for (let x = 0; x < cellsToClear[0].length; x++) {
+      if (colsToClear.has(x)) {
+        for (let y = 0; y < cellsToClear.length; y++) {
+          if (cellsToClear[y][x]) {
+            newAnims.push({
+              id: uuidv4(),
+              x,
+              y,
+              color: usePlacedPieceColorInClearAnim
+                ? placedPieceColor
+                : board[y][x]?.color || placedPieceColor,
+              delay: y * 0.03,
+            });
+          }
+        }
+      }
+    }
+    if (newAnims.length) {
+      setClearAnimations((prev: AnimationCell[]) => [...prev, ...newAnims]);
+      // Учитываем максимальный delay и длительность анимации взрыва (0.55s), плюс запас
+      const ANIMATION_DURATION = 0.55; // должно совпадать с BoardClearAnimationsOverlay
+      const maxDelay = Math.max(...newAnims.map((a) => a.delay ?? 0));
+      setTimeout(() => {
+        setClearAnimations((prev: AnimationCell[]) =>
+          prev.filter((cell) => !newAnims.some((anim) => anim.id === cell.id))
+        );
+      }, (maxDelay + ANIMATION_DURATION) * 1000 + 80);
+    }
+  }
+
+  // --- Обработчик клика по бустеру ---
+  const handleBoosterClick = async (boosterId: string) => {
+    if (boosterId === 'bomb') {
+      setBombMode(true);
+      setBombCenter(null);
+      return;
+    }
+    const ok = await useBooster(boosterId);
+    if (!ok) return;
+    if (boosterId === 'undo') {
+      handleUndo();
+    }
+    // ... другие действия для других бустеров ...
+  };
+
+  // --- iOS viewport width fix ---
+  useEffect(() => {
+    const setVw = () => {
+      document.documentElement.style.setProperty('--app-vw', `${window.innerWidth}px`);
+    };
+    setVw();
+    window.addEventListener('resize', setVw);
+    return () => window.removeEventListener('resize', setVw);
+  }, []);
+
   return (
     <div className="relative">
       <SettingsModal
@@ -1215,264 +1338,392 @@ export const GameBoard: React.FC<
             moveScore={lastScoreResult}
           />
         </div>
-
         <BoostersPanel
+          boosters={boosters}
           onBoosterClick={handleBoosterClick}
-          className="-mb-7"
+          className="-mb-9"
           comboLevel={lastScoreResult?.comboLevel}
         />
-        {/* Game Board Container - takes full width and maintains aspect ratio */}
-
-        <div className="w-full aspect-square flex justify-center items-center p-4 sm:max-w-xs sm:max-h-xs relative">
-          <div className="relative w-full h-full">
-            <ComboVisualizer speed={4} lastScore={lastScoreResult} />
-            {/* Неоновый контур потенциально очищаемых областей */}
-            {potentialClearHighlight &&
-              potentialClearHighlight.length > 0 &&
-              draggedPiece &&
-              boardRef.current &&
-              (() => {
-                // Получаем размеры доски в px
-                const boardW = boardRef.current.offsetWidth;
-                const boardH = boardRef.current.offsetHeight;
-                // Переводим path из относительных координат (0-8) в пиксели
-                const scaleX = boardW / board[0].length;
-                const scaleY = boardH / board.length;
-                function scalePath(d: string) {
-                  // Преобразует d="M x y L x y ..." в пиксели
-                  return d.replace(
-                    /([ML])\s*([\d.]+)\s*([\d.]+)/g,
-                    (_m, cmd, x, y) => {
-                      return `${cmd} ${+x * scaleX} ${+y * scaleY}`;
-                    }
-                  );
-                }
-                return findConnectedAreas(potentialClearHighlight).map(
-                  (area, idx) => {
-                    const edges = getCellEdges(
-                      area as [number, number][],
-                      potentialClearHighlight
-                    );
-                    if (edges.length === 0) return null;
-                    const d = edgesToPath(edges);
-                    const dPx = scalePath(d);
-                    const color = COLOR_HEX[draggedPiece.color] || "#fff";
-                    return (
-                      <div
-                        key={idx}
-                        style={{
-                          position: "absolute",
-                          left: 0,
-                          top: 0,
-                          width: boardW,
-                          height: boardH,
-                          pointerEvents: "none",
-                          zIndex: 1001,
-                        }}
-                      >
-                        <NeonGlowOutline
-                          d={dPx}
-                          color={color}
-                          glowRadius={10}
-                          strokeWidth={12}
-                          opacity={0.5}
-                          style={{ width: "100%", height: "100%" }}
-                        />
-                      </div>
+        {/* Визуализатор комбо и анимаций очков */}
+        <div
+          className="flex justify-center items-center p-4 sm:max-w-xs sm:max-h-xs relative"
+          style={{ width: 'var(--app-vw)', height: 'var(--app-vw)', maxWidth: '100vw', maxHeight: '100vw' }}
+        >
+          <div className="glowing-border relative w-full h-full">
+            <div className="relative w-full h-full">
+              {/* Визуализатор комбо и анимаций очков теперь внутри поля */}
+              <ComboVisualizer lastScore={lastScoreResult} />
+              <BoardClearAnimationsOverlay
+                cells={clearAnimations}
+                cellSize={dynamicCellSize || DEFAULT_CELL_SIZE}
+                gap={GAP_SIZE_PX}
+                boardRect={null}
+              />
+              {/* Неоновый контур потенциально очищаемых областей */}
+              {potentialClearHighlight &&
+                potentialClearHighlight.length > 0 &&
+                draggedPiece &&
+                boardRef.current &&
+                (() => {
+                  // Получаем размеры доски в px
+                  const boardW = boardRef.current.offsetWidth;
+                  const boardH = boardRef.current.offsetHeight;
+                  // Переводим path из относительных координат (0-8) в пиксели
+                  const scaleX = boardW / board[0].length;
+                  const scaleY = boardH / board.length;
+                  function scalePath(d: string) {
+                    // Преобразует d="M x y L x y ..." в пиксели
+                    return d.replace(
+                      /([ML])\s*([\d.]+)\s*([\d.]+)/g,
+                      (_m, cmd, x, y) => {
+                        return `${cmd} ${+x * scaleX} ${+y * scaleY}`;
+                      }
                     );
                   }
-                );
-              })()}
-            {/* Glow-оверлеи для потенциальных линий */}
-            {potentialRows.map((y) => (
-              <div
-                key={`glow-row-${y}`}
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  top: `calc(${y} * 12.5% + 0.5px * ${y})`,
-                  width: "100%",
-                  height: "12.5%",
-                  pointerEvents: "none",
-                  zIndex: 200,
-                  boxShadow: "0 0 32px 16px #ff0, 0 0 64px 32px #f00",
-                  borderRadius: 8,
-                  background: "rgba(255,0,0,0.5)",
-                  opacity: 1,
-                }}
-                className="find-me"
-              >
-                {renderParticles("row", y, potentialLineColor)}
-              </div>
-            ))}
-            {potentialCols.map((x) => (
-              <div
-                key={`glow-col-${x}`}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: `calc(${x} * 12.5% + 0.5px * ${x})`,
-                  width: "12.5%",
-                  height: "100%",
-                  pointerEvents: "none",
-                  zIndex: 200,
-                  boxShadow: "0 0 32px 16px #ff0, 0 0 64px 32px #f00",
-                  borderRadius: 8,
-                  background: "rgba(255,0,0,0.5)",
-                  opacity: 1,
-                }}
-              >
-                {renderParticles("col", x, potentialLineColor)}
-              </div>
-            ))}
-            <div
-              ref={boardRef}
-              id="game-board-grid"
-              className="relative z-10 grid grid-cols-8 grid-rows-8 gap-0.5 w-full h-full bg-gray-800 p-1 rounded-lg will-change-transform"
-              onMouseDown={bombMode ? handleBombMouseDown : undefined}
-              onMouseMove={bombMode ? handleBombMouseMove : undefined}
-              onMouseUp={bombMode ? handleBombMouseUp : undefined}
-              onMouseLeave={bombMode ? handleBombMouseLeave : undefined}
-              onTouchStart={bombMode ? handleBombTouchStart : undefined}
-              onTouchMove={bombMode ? handleBombTouchMove : undefined}
-              onTouchEnd={bombMode ? handleBombTouchEnd : undefined}
-              onTouchCancel={bombMode ? handleBombTouchCancel : undefined}
-            >
-              {board.map((row, y) => (
-                <React.Fragment key={y}>
-                  {row.map((cell, x) => {
-                    const isFirst = y === 0 && x === 0;
-                    const {
-                      highlight,
-                      isInClearingLine,
-                      isPotentiallyCleared,
-                      potentialClearColor,
-                      showPreviewPiece,
-                      previewPieceColor,
-                    } = getCellEffects({
-                      x,
-                      y,
-                      draggedPiece,
-                      hoverCell,
-                      potentialClearHighlight,
-                      clearingHorizontalLines,
-                      clearingVerticalLines,
-                    });
-
-                    return (
-                      <BoardCell
-                        key={x}
-                        cell={cell}
-                        x={x}
-                        y={y}
-                        highlight={
-                          !!(
-                            highlight ||
-                            (!bombMode &&
-                              bombCenter &&
-                              Math.abs(bombCenter.x - x) <= 1 &&
-                              Math.abs(bombCenter.y - y) <= 1)
-                          )
-                        }
-                        isInClearingLine={isInClearingLine}
-                        isPotentiallyCleared={isPotentiallyCleared}
-                        potentialClearColor={potentialClearColor}
-                        showPreviewPiece={showPreviewPiece}
-                        previewPieceColor={previewPieceColor}
-                        isFirst={isFirst}
-                        cellRef={cellRef}
-                        onClick={
-                          laserMode
-                            ? () => handleLaserCellClick(y, x)
-                            : undefined
-                        }
-                      />
+                  // --- Вспомогательные функции ---
+                  function findConnectedAreas(
+                    matrix: boolean[][]
+                  ): number[][][] {
+                    const h = matrix.length;
+                    const w = matrix[0]?.length || 0;
+                    const visited = Array.from({ length: h }, () =>
+                      Array(w).fill(false)
                     );
-                  })}
-                </React.Fragment>
+                    const areas: number[][][] = [];
+                    for (let y = 0; y < h; y++) {
+                      for (let x = 0; x < w; x++) {
+                        if (matrix[y][x] && !visited[y][x]) {
+                          // BFS
+                          const queue: [number, number][] = [[y, x]];
+                          const area: [number, number][] = [];
+                          visited[y][x] = true;
+                          while (queue.length) {
+                            const [cy, cx] = queue.shift()!;
+                            area.push([cy, cx]);
+                            for (const [dy, dx] of [
+                              [0, 1],
+                              [1, 0],
+                              [0, -1],
+                              [-1, 0],
+                            ]) {
+                              const ny = cy + dy,
+                                nx = cx + dx;
+                              if (
+                                ny >= 0 &&
+                                ny < h &&
+                                nx >= 0 &&
+                                nx < w &&
+                                matrix[ny][nx] &&
+                                !visited[ny][nx]
+                              ) {
+                                visited[ny][nx] = true;
+                                queue.push([ny, nx]);
+                              }
+                            }
+                          }
+                          areas.push(area);
+                        }
+                      }
+                    }
+                    return areas;
+                  }
+                  function getCellEdges(
+                    area: [number, number][],
+                    matrix: boolean[][]
+                  ) {
+                    const edges: Array<[[number, number], [number, number]]> =
+                      [];
+                    const set = new Set(area.map(([y, x]) => `${y},${x}`));
+                    for (const [y, x] of area) {
+                      // top
+                      if (!set.has(`${y - 1},${x}`))
+                        edges.push([
+                          [x, y],
+                          [x + 1, y],
+                        ]);
+                      // right
+                      if (!set.has(`${y},${x + 1}`))
+                        edges.push([
+                          [x + 1, y],
+                          [x + 1, y + 1],
+                        ]);
+                      // bottom
+                      if (!set.has(`${y + 1},${x}`))
+                        edges.push([
+                          [x + 1, y + 1],
+                          [x, y + 1],
+                        ]);
+                      // left
+                      if (!set.has(`${y},${x - 1}`))
+                        edges.push([
+                          [x, y + 1],
+                          [x, y],
+                        ]);
+                    }
+                    return edges;
+                  }
+                  function edgesToPath(
+                    edges: Array<[[number, number], [number, number]]>
+                  ): string {
+                    if (edges.length === 0) return "";
+                    // Строим карту: start -> end
+                    const edgeMap = new Map<string, [number, number]>();
+                    edges.forEach(([[x1, y1], [x2, y2]]) => {
+                      edgeMap.set(`${x1},${y1}`, [x2, y2]);
+                    });
+                    // Находим стартовую точку (ту, которая встречается только один раз)
+                    const points = edges.flat();
+                    const count = new Map<string, number>();
+                    points.forEach(([x, y]) => {
+                      const k = `${x},${y}`;
+                      count.set(k, (count.get(k) || 0) + 1);
+                    });
+                    let startKey =
+                      Array.from(count.entries()).find(
+                        ([k, v]) => v === 1
+                      )?.[0] || `${edges[0][0][0]},${edges[0][0][1]}`;
+                    let path = `M ${startKey.replace(",", " ")}`;
+                    let currKey = startKey;
+                    let steps = 0;
+                    while (steps < edges.length + 5) {
+                      const next = edgeMap.get(currKey);
+                      if (!next) break;
+                      path += ` L ${next[0]} ${next[1]}`;
+                      currKey = `${next[0]},${next[1]}`;
+                      if (currKey === startKey) break;
+                      steps++;
+                    }
+                    path += " Z";
+                    return path;
+                  }
+                  return findConnectedAreas(potentialClearHighlight).map(
+                    (area, idx) => {
+                      const edges = getCellEdges(
+                        area as [number, number][],
+                        potentialClearHighlight
+                      );
+                      if (edges.length === 0) return null;
+                      const d = edgesToPath(edges);
+                      const dPx = scalePath(d);
+                      const color = COLOR_HEX[draggedPiece.color] || "#fff";
+                      return (
+                        <div
+                          key={idx}
+                          style={{
+                            position: "absolute",
+                            left: 0,
+                            top: 0,
+                            width: boardW,
+                            height: boardH,
+                            pointerEvents: "none",
+                            zIndex: 1001,
+                          }}
+                        >
+                          <NeonGlowOutline
+                            d={dPx}
+                            color={color}
+                            glowRadius={10}
+                            strokeWidth={12}
+                            opacity={0.5}
+                            style={{ width: "100%", height: "100%" }}
+                          />
+                        </div>
+                      );
+                    }
+                  );
+                })()}
+              {/* Glow-оверлеи для потенциальных линий */}
+              {potentialRows.map((y) => (
+                <div
+                  key={`glow-row-${y}`}
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: `calc(${y} * 12.5% + 0.5px * ${y})`,
+                    width: "100%",
+                    height: "12.5%",
+                    pointerEvents: "none",
+                    zIndex: 200,
+                    boxShadow: "0 0 32px 16px #ff0, 0 0 64px 32px #f00",
+                    borderRadius: 8,
+                    background: "rgba(255,0,0,0.5)",
+                    opacity: 1,
+                  }}
+                  className="find-me"
+                >
+                  {renderParticles("row", y, potentialLineColor)}
+                </div>
               ))}
-            </div>
-            {bombMode &&
-              bombCenter &&
-              (() => {
-                const gridW = board[0].length;
-                const gridH = board.length;
-                const highlight = getBombHighlightCenter(
-                  bombCenter,
-                  gridW,
-                  gridH
-                );
-                if (!highlight) return null;
-                return (
-                  <div
-                    style={{
-                      position: "absolute",
-                      zIndex: 1000,
-                      pointerEvents: "none",
-                      left: `calc(${(highlight.cx - 1) * (100 / gridW)}%)`,
-                      top: `calc(${(highlight.cy - 1) * (100 / gridH)}%)`,
-                      width: `calc(3 * (100% / ${gridW}))`,
-                      height: `calc(3 * (100% / ${gridH}))`,
-                      boxSizing: "border-box",
-                      border: "3px solid #ff0033",
-                      borderRadius: 12,
-                      boxShadow:
-                        "0 0 16px 8px #ff0033, 0 0 32px 16px #ff0033aa, 0 0 64px 32px #ff003388",
-                      transition: "left 0.05s, top 0.05s",
-                    }}
-                  />
-                );
-              })()}
-            {explodingCells && (
+              {potentialCols.map((x) => (
+                <div
+                  key={`glow-col-${x}`}
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: `calc(${x} * 12.5% + 0.5px * ${x})`,
+                    width: "12.5%",
+                    height: "100%",
+                    pointerEvents: "none",
+                    zIndex: 200,
+                    boxShadow: "0 0 32px 16px #ff0, 0 0 64px 32px #f00",
+                    borderRadius: 8,
+                    background: "rgba(255,0,0,0.5)",
+                    opacity: 1,
+                  }}
+                >
+                  {renderParticles("col", x, potentialLineColor)}
+                </div>
+              ))}
+
               <div
-                style={{
-                  position: "fixed",
-                  left: 0,
-                  top: 0,
-                  width: "100vw",
-                  height: "100vh",
-                  pointerEvents: "none",
-                  zIndex: 2000,
-                }}
+                ref={boardRef}
+                id="game-board-grid"
+                className="relative z-10 grid grid-cols-8 grid-rows-8 gap-0.5 w-full h-full bg-gray-800 p-1 rounded-lg will-change-transform "
+                onMouseDown={bombMode ? handleBombMouseDown : undefined}
+                onMouseMove={bombMode ? handleBombMouseMove : undefined}
+                onMouseUp={bombMode ? handleBombMouseUp : undefined}
+                onMouseLeave={bombMode ? handleBombMouseLeave : undefined}
+                onTouchStart={bombMode ? handleBombTouchStart : undefined}
+                onTouchMove={bombMode ? handleBombTouchMove : undefined}
+                onTouchEnd={bombMode ? handleBombTouchEnd : undefined}
+                onTouchCancel={bombMode ? handleBombTouchCancel : undefined}
               >
-                {explodingCells.cells.map((cell) => {
-                  // Смещение относительно board
-                  const xPx =
-                    explodingCells.left + cell.x * explodingCells.cellSize;
-                  const yPx =
-                    explodingCells.top + cell.y * explodingCells.cellSize;
+                {board.map((row, y) => (
+                  <React.Fragment key={y}>
+                    {row.map((cell, x) => {
+                      const isFirst = y === 0 && x === 0;
+                      const {
+                        highlight,
+                        isInClearingLine,
+                        isPotentiallyCleared,
+                        potentialClearColor,
+                        showPreviewPiece,
+                        previewPieceColor,
+                      } = getCellEffects({
+                        x,
+                        y,
+                        draggedPiece,
+                        hoverCell,
+                        potentialClearHighlight,
+                        clearingHorizontalLines,
+                        clearingVerticalLines,
+                      });
+
+                      return (
+                        <BoardCell
+                          key={x}
+                          cell={cell}
+                          x={x}
+                          y={y}
+                          highlight={
+                            !!(
+                              highlight ||
+                              (!bombMode &&
+                                bombCenter &&
+                                Math.abs(bombCenter.x - x) <= 1 &&
+                                Math.abs(bombCenter.y - y) <= 1)
+                            )
+                          }
+                          isInClearingLine={isInClearingLine}
+                          isPotentiallyCleared={isPotentiallyCleared}
+                          potentialClearColor={potentialClearColor}
+                          showPreviewPiece={showPreviewPiece}
+                          previewPieceColor={previewPieceColor}
+                          isFirst={isFirst}
+                          cellRef={cellRef}
+                          onClick={
+                            laserMode
+                              ? () => handleLaserCellClick(y, x)
+                              : undefined
+                          }
+                        />
+                      );
+                    })}
+                  </React.Fragment>
+                ))}
+              </div>
+              {bombMode &&
+                bombCenter &&
+                (() => {
+                  const gridW = board[0].length;
+                  const gridH = board.length;
+                  const highlight = getBombHighlightCenter(
+                    bombCenter,
+                    gridW,
+                    gridH
+                  );
+                  if (!highlight) return null;
                   return (
-                    <motion.div
-                      key={`${cell.x}-${cell.y}`}
-                      initial={{
-                        x: xPx,
-                        y: yPx,
-                        scale: 1,
-                        rotate: 0,
-                        opacity: 1,
-                      }}
-                      animate={{
-                        x: xPx + cell.dx,
-                        y: yPx + cell.dy,
-                        scale: 1.2,
-                        rotate: cell.rot,
-                        opacity: 0,
-                      }}
-                      transition={{ duration: 0.28, ease: "easeIn" }}
+                    <div
                       style={{
                         position: "absolute",
-                        width: explodingCells.cellSize,
-                        height: explodingCells.cellSize,
+                        zIndex: 1000,
+                        pointerEvents: "none",
+                        left: `calc(${(highlight.cx - 1) * (100 / gridW)}%)`,
+                        top: `calc(${(highlight.cy - 1) * (100 / gridH)}%)`,
+                        width: `calc(3 * (100% / ${gridW}))`,
+                        height: `calc(3 * (100% / ${gridH}))`,
+                        boxSizing: "border-box",
+                        border: "3px solid #ff0033",
+                        borderRadius: 12,
+                        boxShadow:
+                          "0 0 16px 8px #ff0033, 0 0 32px 16px #ff0033aa, 0 0 64px 32px #ff003388",
+                        transition: "left 0.05s, top 0.05s",
                       }}
-                    >
-                      <Piece color={cell.color as any} size="100%" />
-                    </motion.div>
+                    />
                   );
-                })}
-              </div>
-            )}
+                })()}
+              {/* Анимация взрыва бомбы теперь внутри поля */}
+              {explodingCells && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: 0,
+                    width: "100%",
+                    height: "100%",
+                    pointerEvents: "none",
+                    zIndex: 2000,
+                  }}
+                >
+                  {explodingCells.cells.map((cell) => {
+                    const xPx = cell.x * explodingCells.cellSize;
+                    const yPx = cell.y * explodingCells.cellSize;
+                    return (
+                      <motion.div
+                        key={`${cell.x}-${cell.y}`}
+                        initial={{
+                          x: xPx,
+                          y: yPx,
+                          scale: 1,
+                          rotate: 0,
+                          opacity: 1,
+                        }}
+                        animate={{
+                          x: xPx + cell.dx,
+                          y: yPx + cell.dy,
+                          scale: 1.2,
+                          rotate: cell.rot,
+                          opacity: 0,
+                        }}
+                        transition={{ duration: 0.28, ease: "easeIn" }}
+                        style={{
+                          position: "absolute",
+                          width: explodingCells.cellSize,
+                          height: explodingCells.cellSize,
+                        }}
+                      >
+                        <Piece color={cell.color as any} size="100%" />
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Панель бустеров под игровым полем */}
 
         {/* Draggable Pieces */}
         <DraggablePiecesSection

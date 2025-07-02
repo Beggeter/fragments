@@ -5,6 +5,8 @@ import BoosterPurchaseModal from "./store/BoosterPurchaseModal";
 import ZenPurchaseModal from "./store/ZenPurchaseModal";
 import { LoadingNumberAnimation } from "./LoadingNumberAnimation";
 import { BOOSTERS, SHARD_PACKS, ZEN_SUBS } from "./store/storeItems";
+import ShardPurchaseModal from "./store/ShardPurchaseModal";
+import { ShardPack } from "@/types/shop";
 
 interface ShopScreenProps {
   onBack: () => void;
@@ -14,8 +16,10 @@ const TABS = ["Осколки", "Бустеры", "ZEN"];
 
 function ShardPackCard({ amount, price, label, labelType, icon, onBuy }: any) {
   return (
-    <div className="relative bg-white/10 backdrop-blur-md rounded-3xl shadow-xl flex flex-col items-center justify-between p-5 min-w-[140px] max-w-[180px] w-full min-h-[120px] aspect-[3/4] mx-auto border border-white/20 hover:scale-[1.04] transition-transform hover:bg-white/15 hover:border-white/30"
-    onClick={onBuy}>
+    <div
+      className="relative bg-white/10 backdrop-blur-md rounded-3xl shadow-xl flex flex-col items-center justify-between p-5 min-w-[140px] max-w-[180px] w-full min-h-[120px] aspect-[3/4] mx-auto border border-white/20 hover:scale-[1.04] transition-transform hover:bg-white/15 hover:border-white/30"
+      onClick={onBuy}
+    >
       {/* Лейбл выгоды */}
       {label && (
         <div
@@ -52,13 +56,13 @@ function ShardPackCardHorizontal({
   label,
   labelType,
   icon,
-  onBuy
+  onBuy,
 }: any) {
   return (
     <div
       className="relative bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl
      flex flex-row items-center justify-between px-8 py-6 min-h-[120px] w-full border border-white/20 hover:scale-[1.02] transition-transform hover:bg-white/15 hover:border-white/30 col-span-2 md:col-span-3"
-     onClick={onBuy}
+      onClick={onBuy}
     >
       {/* Лейбл выгоды */}
       {label && (
@@ -118,11 +122,7 @@ function BoosterCard({ icon, name, description, price, onBuy }: any) {
 function ZenDescriptionCard() {
   return (
     <div className="relative bg-white/10 backdrop-blur-md rounded-3xl shadow-xl flex flex-col items-center justify-between p-8 w-full max-w-lg border border-white/20 mb-8">
-      <img
-        src="/stars.svg"
-        alt="ZEN"
-        className=" w-40 h-30  "
-      />
+      <img src="/stars.svg" alt="ZEN" className=" w-40 h-30  " />
       <div className="mb-3 text-3xl font-extrabold text-white font-mulish menu-shadow tracking-wide text-center">
         ZEN-подписка
       </div>
@@ -131,28 +131,40 @@ function ZenDescriptionCard() {
           <span className="text-2xl">❌</span>
           <div className="flex flex-col">
             <span className="font-bold text-lg text-white">Без рекламы</span>
-            <span className="text-white/80 text-sm">Ничего не отвлекает от удовольствия</span>
+            <span className="text-white/80 text-sm">
+              Ничего не отвлекает от удовольствия
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-4 bg-white/10 rounded-2xl px-4 py-3">
           <span className="text-2xl">💸</span>
           <div className="flex flex-col">
-            <span className="font-bold text-lg text-white">Скидка на бустеры</span>
-            <span className="text-white/80 text-sm">Выгодные покупки в магазине</span>
+            <span className="font-bold text-lg text-white">
+              Скидка на бустеры
+            </span>
+            <span className="text-white/80 text-sm">
+              Выгодные покупки в магазине
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-4 bg-white/10 rounded-2xl px-4 py-3">
           <span className="text-2xl">🧘</span>
           <div className="flex flex-col">
             <span className="font-bold text-lg text-white">ZEN-режим</span>
-            <span className="text-white/80 text-sm">Спокойный геймплей без ограничений</span>
+            <span className="text-white/80 text-sm">
+              Спокойный геймплей без ограничений
+            </span>
           </div>
         </div>
         <div className="flex items-center gap-4 bg-white/10 rounded-2xl px-4 py-3">
           <span className="text-2xl">🏆</span>
           <div className="flex flex-col">
-            <span className="font-bold text-lg text-white">Розыгрыши призов</span>
-            <span className="text-white/80 text-sm">Чем больше очков, тем выше шансы!</span>
+            <span className="font-bold text-lg text-white">
+              Розыгрыши призов
+            </span>
+            <span className="text-white/80 text-sm">
+              Чем больше очков, тем выше шансы!
+            </span>
           </div>
         </div>
       </div>
@@ -239,7 +251,15 @@ function ZenSubCard({
 // Вызвать эту функцию при покупке любого пакета осколков.
 // Пример вызова:
 //   handleShardPurchase({ userId: user?.id, amount: pack.amount, price: pack.price })
-function handleShardPurchase({ userId, amount, price }: { userId: number; amount: number; price: number }) {
+function handleShardPurchase({
+  userId,
+  amount,
+  price,
+}: {
+  userId: number;
+  amount: number;
+  price: number;
+}) {
   /**
    * BACKEND: Покупка осколков
    * userId: ID пользователя
@@ -266,6 +286,11 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack }) => {
   // BACKEND: Получить баланс игрока из стора/пропсов. Заглушка для currency (осколки).
   const { user } = useUser();
   const balance = user?.currency ?? 0;
+
+  const [selectedShardPack, setSelectedShardPack] = useState<ShardPack | null>(
+    null
+  );
+  const [isShardModalOpen, setIsShardModalOpen] = useState(false);
 
   useEffect(() => {
     if (isAdmin) {
@@ -396,9 +421,23 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack }) => {
               className="w-full max-w-2xl py-6 max-h-[80dvh] overflow-y-auto store-scroll grid
              grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-y-10 gap-x-6 auto-rows-[minmax(140px,auto)]"
             >
-              <ShardPackCardHorizontal key={0} {...SHARD_PACKS[0]} />
+              <ShardPackCardHorizontal
+                key={0}
+                {...SHARD_PACKS[0]}
+                onBuy={() => {
+                  setSelectedShardPack(SHARD_PACKS[0]);
+                  setIsShardModalOpen(true);
+                }}
+              />
               {SHARD_PACKS.slice(1).map((pack, i) => (
-                <ShardPackCard key={i + 1} {...pack} />
+                <ShardPackCard
+                  key={i + 1}
+                  {...pack}
+                  onBuy={() => {
+                    setSelectedShardPack(pack);
+                    setIsShardModalOpen(true);
+                  }}
+                />
               ))}
             </div>
           </div>
@@ -454,6 +493,21 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack }) => {
           onConfirm={handleZenPurchaseConfirm}
           subscription={selectedSub}
           playerBalanceCrystals={isAdmin ? adminBalance ?? 333 : balance}
+        />
+      )}
+      {selectedShardPack && (
+        <ShardPurchaseModal
+          isOpen={isShardModalOpen}
+          onClose={() => {
+            setIsShardModalOpen(false);
+            setSelectedShardPack(null);
+          }}
+          pack={selectedShardPack}
+          userId={user?.id}
+          onSuccess={() => {
+            setIsShardModalOpen(false);
+            setSelectedShardPack(null); /* обновить баланс, если нужно */
+          }}
         />
       )}
     </div>

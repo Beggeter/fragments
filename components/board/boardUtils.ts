@@ -1,4 +1,5 @@
 import { Block, Position } from "../../lib/data/types";
+import { placeBlock } from "../../lib/core/engine";
 
 export function calculatePotentialClearLines(
   board: any[][],
@@ -75,6 +76,7 @@ export function handlePiecePlacement({
   GAP_SIZE_PX,
   useGameStore,
   onAfterPlacement,
+  addClearAnimations,
 }: {
   x: number;
   y: number;
@@ -91,58 +93,34 @@ export function handlePiecePlacement({
   GAP_SIZE_PX: number;
   useGameStore: any;
   onAfterPlacement?: () => void;
+  addClearAnimations?: (board: any[][], cellsToClear: boolean[][], placedPieceColor?: import("../../lib/data/types").BlockColor) => void;
 }) {
   if (draggedPiece && hoverCell) {
     const getCellsToClear = require("@/lib/core/engine").getCellsToClear;
-    const cellsToClear = getCellsToClear(board, draggedPiece, hoverCell);
-    const hasCellsToClear = cellsToClear.some((row: any[]) =>
-      row.some((cell: any) => cell)
-    );
-
+    // Сначала размещаем фигуру на временной доске
+    const tempBoard = require("@/lib/core/engine").placeBlock(board, draggedPiece, hoverCell);
+    const cellsToClear = getCellsToClear(tempBoard, draggedPiece, hoverCell);
+    if (addClearAnimations) addClearAnimations(tempBoard, cellsToClear, draggedPiece.color);
+    placePiece(x, y);
+    // --- Добавляем вычисление pixelPosition только если есть очищаемые линии ---
+    const hasCellsToClear = cellsToClear.some((row: any[]) => row.some((cell: any) => cell));
     if (hasCellsToClear) {
-      // Находим горизонтальные линии
-      const horizontalLines = cellsToClear
-        .map((row: any[], index: number) => (row.every((cell: any) => cell) ? index : -1))
-        .filter((index: number) => index !== -1);
-
-      // Находим вертикальные линии
-      const verticalLines = Array(width)
-        .fill(0)
-        .map((_: any, colIndex: number) => {
-          const isFullLine = cellsToClear.every((row: any[]) => row[colIndex]);
-          return isFullLine ? colIndex : -1;
-        })
-        .filter((index: number) => index !== -1);
-
-      // Сначала размещаем фигуру
-      placePiece(x, y);
-      // Затем запускаем анимацию
-      requestAnimationFrame(() => {
-        setClearingHorizontalLines(horizontalLines);
-        setClearingVerticalLines(verticalLines);
-        setIsAnimating(true);
-
-        // Очищаем состояния анимации через некоторое время
-        setTimeout(() => {
-          setClearingHorizontalLines([]);
-          setClearingVerticalLines([]);
-          setIsAnimating(false);
-          if (onAfterPlacement) onAfterPlacement();
-        }, 300);
-      });
-
       setTimeout(() => {
         const { lastScoreResult } = useGameStore.getState();
-        if (lastScoreResult && boardRect && dynamicCellSize) {
+        if (
+          lastScoreResult &&
+          boardRect &&
+          dynamicCellSize &&
+          hoverCell
+        ) {
           const pixelX = hoverCell.x * (dynamicCellSize + GAP_SIZE_PX);
           const pixelY = hoverCell.y * (dynamicCellSize + GAP_SIZE_PX);
           lastScoreResult.pixelPosition = { x: pixelX, y: pixelY };
           useGameStore.setState({ lastScoreResult: { ...lastScoreResult } });
         }
       }, 0);
-    } else {
-      placePiece(x, y);
-      if (onAfterPlacement) onAfterPlacement();
     }
+    // --- конец блока pixelPosition ---
+    if (onAfterPlacement) onAfterPlacement();
   }
 } 

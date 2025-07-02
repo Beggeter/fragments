@@ -188,48 +188,32 @@ export class BoosterService {
   static async initializeDefaultBoosters(): Promise<void> {
     const defaultBoosters: Omit<NewBoosterType, 'id' | 'createdAt'>[] = [
       {
-        name: 'score_multiplier_2x',
-        description: 'Удваивает очки за 30 секунд',
-        price: 100,
+        name: 'undo',
+        description: 'Отмените последний ход и исправьте ошибку! Идеально для стратегических решений.',
+        price: 20,
         effect: {
-          type: 'score_multiplier',
-          value: 2,
-          duration: 30,
-          description: 'Удваивает очки'
+          type: 'undo',
+          description: 'Отменяет последний ход игрока.'
         },
         isActive: true,
       },
       {
-        name: 'piece_preview',
-        description: 'Показывает следующую фигуру',
-        price: 50,
+        name: 'bomb',
+        description: 'Мощный взрыв! Уничтожает все блоки в зоне 3×3, открывая новые комбинации.',
+        price: 60,
         effect: {
-          type: 'piece_preview',
-          value: 1,
-          description: 'Показывает следующую фигуру'
+          type: 'bomb',
+          description: 'Взрывает область 3x3.'
         },
         isActive: true,
       },
       {
-        name: 'line_clear_bonus',
-        description: 'Дополнительные очки за очистку линий',
-        price: 75,
+        name: 'whirlwind',
+        description: 'Полный хаос! Очищает всё поле и даёт +300 очков за круговорот удачи!',
+        price: 120,
         effect: {
-          type: 'line_clear',
-          value: 50,
-          description: '+50 очков за каждую очищенную линию'
-        },
-        isActive: true,
-      },
-      {
-        name: 'time_freeze',
-        description: 'Останавливает время на 15 секунд',
-        price: 150,
-        effect: {
-          type: 'time_freeze',
-          value: 1,
-          duration: 15,
-          description: 'Останавливает время'
+          type: 'whirlwind',
+          description: 'Очищает всё поле и даёт бонусные очки.'
         },
         isActive: true,
       },
