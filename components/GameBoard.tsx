@@ -9,7 +9,6 @@ import React, {
   useMemo,
 } from "react";
 import { useGameStore } from "../lib/state/store";
-import { getCellsToClear } from "@/lib/core/engine";
 import { Block, BlockColor, Matrix, Position } from "../lib/data/types";
 import { getEventCoordinates } from "@/utils/events";
 import { ScoreDisplay } from "./board/ScoreDisplay";
@@ -19,7 +18,6 @@ import { ScoreCalculator } from "../lib/core/scoreCalculator";
 import { ComboVisualizer } from "./board/ComboVisualizer";
 import { DraggablePiecesSection } from "./DraggablePiecesSection";
 import { BoostersPanel } from "./BoostersPanel";
-import { throttle } from "@/utils/helpers";
 import BoardCell from "./board/BoardCell";
 import useDnDLogic from "@/hooks/useDnDLogic";
 import { getCellEffects } from "./board/getCellEffects";
@@ -27,16 +25,14 @@ import { calculatePotentialClearLines } from "./board/boardUtils";
 import { handlePiecePlacement } from "./board/boardUtils";
 import SettingsModal from "@/components/UI/SettingsModal";
 import settings from "@/public/settings.svg";
-import { playGameOver, playPlacePiece } from "@/lib/utils/sound";
+import { playPlacePiece } from "@/lib/utils/sound";
 import { useUser } from "@/hooks/useUser";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import trophyImg from "@/public/record.png";
 import Particles from "@tsparticles/react";
 import { getThemeByScore } from "./UI/colorThemes";
-import { LoadingSpinner } from "./LoadingSpinner";
 import { useGameOver } from "@/hooks/useGameOver";
 import { LoadingNumberAnimation } from "./LoadingNumberAnimation";
-import { number } from "framer-motion";
 import { motion } from "framer-motion";
 import { Piece } from "./pieces/Piece";
 import NeonGlowOutline from "./NeonGlowOutline";
@@ -428,7 +424,7 @@ export const GameBoard: React.FC<
   );
 
   useEffect(() => {
-    const handleMove = throttle((e: MouseEvent | TouchEvent) => {
+    const handleMove = (e: MouseEvent | TouchEvent) => {
       if (!draggedPiece || !boardRef.current) return;
 
       if (e instanceof TouchEvent) {
@@ -454,7 +450,7 @@ export const GameBoard: React.FC<
       }
 
       setHoverCell(nearestPosition);
-    }, 16); // ~60fps throttling
+    };
 
     const handleStart = (e: TouchEvent) => {
       // e.preventDefault();
@@ -818,6 +814,9 @@ export const GameBoard: React.FC<
 
   // Получаем цвет фигуры для подсветки
   const potentialLineColor = draggedPiece?.color ? draggedPiece.color : "#fff";
+
+  // --- Управление цветом анимации очистки линий ---
+  const usePlacedPieceColorInClearAnim = true; // Вынесено в переменную для удобства
 
   // Функция для генерации партиклов
   function renderParticles(
@@ -1209,8 +1208,10 @@ export const GameBoard: React.FC<
               id: uuidv4(),
               x,
               y,
-              color: board[y][x]?.color || placedPieceColor,
-              delay: (cellsToClear[0].length - 1 - x) * 0.07,
+              color: usePlacedPieceColorInClearAnim
+                ? placedPieceColor
+                : board[y][x]?.color || placedPieceColor,
+              delay: (cellsToClear[0].length - 1 - x) * 0.03,
             });
           }
         }
@@ -1225,8 +1226,10 @@ export const GameBoard: React.FC<
               id: uuidv4(),
               x,
               y,
-              color: board[y][x]?.color || placedPieceColor,
-              delay: y * 0.07,
+              color: usePlacedPieceColorInClearAnim
+                ? placedPieceColor
+                : board[y][x]?.color || placedPieceColor,
+              delay: y * 0.03,
             });
           }
         }
@@ -1234,11 +1237,14 @@ export const GameBoard: React.FC<
     }
     if (newAnims.length) {
       setClearAnimations((prev: AnimationCell[]) => [...prev, ...newAnims]);
+      // Учитываем максимальный delay и длительность анимации взрыва (0.55s), плюс запас
+      const ANIMATION_DURATION = 0.55; // должно совпадать с BoardClearAnimationsOverlay
+      const maxDelay = Math.max(...newAnims.map((a) => a.delay ?? 0));
       setTimeout(() => {
         setClearAnimations((prev: AnimationCell[]) =>
           prev.filter((cell) => !newAnims.some((anim) => anim.id === cell.id))
         );
-      }, 800 + Math.max(...newAnims.map((a) => a.delay ?? 0)) * 1000);
+      }, (maxDelay + ANIMATION_DURATION) * 1000 + 80);
     }
   }
 
@@ -1256,6 +1262,16 @@ export const GameBoard: React.FC<
     }
     // ... другие действия для других бустеров ...
   };
+
+  // --- iOS viewport width fix ---
+  useEffect(() => {
+    const setVw = () => {
+      document.documentElement.style.setProperty('--app-vw', `${window.innerWidth}px`);
+    };
+    setVw();
+    window.addEventListener('resize', setVw);
+    return () => window.removeEventListener('resize', setVw);
+  }, []);
 
   return (
     <div className="relative">
@@ -1329,7 +1345,10 @@ export const GameBoard: React.FC<
           comboLevel={lastScoreResult?.comboLevel}
         />
         {/* Визуализатор комбо и анимаций очков */}
-        <div className="w-full aspect-square flex justify-center items-center p-4 sm:max-w-xs sm:max-h-xs relative">
+        <div
+          className="flex justify-center items-center p-4 sm:max-w-xs sm:max-h-xs relative"
+          style={{ width: 'var(--app-vw)', height: 'var(--app-vw)', maxWidth: '100vw', maxHeight: '100vw' }}
+        >
           <div className="glowing-border relative w-full h-full">
             <div className="relative w-full h-full">
               {/* Визуализатор комбо и анимаций очков теперь внутри поля */}
@@ -1559,7 +1578,7 @@ export const GameBoard: React.FC<
               <div
                 ref={boardRef}
                 id="game-board-grid"
-                className="relative z-10 grid grid-cols-8 grid-rows-8 gap-0.5 w-full h-full bg-gray-800 p-1 rounded-lg will-change-transform"
+                className="relative z-10 grid grid-cols-8 grid-rows-8 gap-0.5 w-full h-full bg-gray-800 p-1 rounded-lg will-change-transform "
                 onMouseDown={bombMode ? handleBombMouseDown : undefined}
                 onMouseMove={bombMode ? handleBombMouseMove : undefined}
                 onMouseUp={bombMode ? handleBombMouseUp : undefined}

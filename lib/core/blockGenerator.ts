@@ -768,8 +768,6 @@ export class BlockGenerator {
 
       // Проверяем, можно ли разместить все блоки
       if (this.canPlaceAllBlocks(board, blocks)) {
-        // Логируем успешную генерацию
-        this.logGameState(board, blocks, 0, 0);
         return blocks;
       }
 
@@ -778,7 +776,6 @@ export class BlockGenerator {
 
     // Если не удалось найти подходящий набор, возвращаем случайные блоки
     const fallbackBlocks = this.generateWeightedRandomBlocks(board);
-    this.logGameState(board, fallbackBlocks, 0, 0);
     return fallbackBlocks;
   }
 
@@ -865,31 +862,6 @@ export class BlockGenerator {
     }
 
     return selectedBlocks;
-  }
-
-  private async logGameState(
-    board: Matrix,
-    blocks: Block[],
-    score: number,
-    linesCleared: number
-  ) {
-    try {
-      await fetch("/api/game-logs", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          board,
-          blocks,
-          score,
-          linesCleared,
-          gameState: "block_generation",
-        }),
-      });
-    } catch (error) {
-      console.error("Failed to log game state:", error);
-    }
   }
 
   private findBestBlockPlacement(

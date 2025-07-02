@@ -102,6 +102,25 @@ export function handlePiecePlacement({
     const cellsToClear = getCellsToClear(tempBoard, draggedPiece, hoverCell);
     if (addClearAnimations) addClearAnimations(tempBoard, cellsToClear, draggedPiece.color);
     placePiece(x, y);
+    // --- Добавляем вычисление pixelPosition только если есть очищаемые линии ---
+    const hasCellsToClear = cellsToClear.some((row: any[]) => row.some((cell: any) => cell));
+    if (hasCellsToClear) {
+      setTimeout(() => {
+        const { lastScoreResult } = useGameStore.getState();
+        if (
+          lastScoreResult &&
+          boardRect &&
+          dynamicCellSize &&
+          hoverCell
+        ) {
+          const pixelX = hoverCell.x * (dynamicCellSize + GAP_SIZE_PX);
+          const pixelY = hoverCell.y * (dynamicCellSize + GAP_SIZE_PX);
+          lastScoreResult.pixelPosition = { x: pixelX, y: pixelY };
+          useGameStore.setState({ lastScoreResult: { ...lastScoreResult } });
+        }
+      }, 0);
+    }
+    // --- конец блока pixelPosition ---
     if (onAfterPlacement) onAfterPlacement();
   }
 } 
