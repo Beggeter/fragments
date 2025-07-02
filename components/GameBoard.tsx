@@ -40,6 +40,9 @@ import { number } from "framer-motion";
 import { motion } from "framer-motion";
 import { Piece } from "./pieces/Piece";
 import NeonGlowOutline from "./NeonGlowOutline";
+import BoardClearAnimationsOverlay from "./board/BoardClearAnimationsOverlay";
+import { v4 as uuidv4 } from "uuid";
+import type { AnimationCell } from "./board/BoardClearAnimationsOverlay";
 
 const DEFAULT_CELL_SIZE = 43.75;
 const GAP_SIZE_PX = 2; // Исходя из gap-0.5 в TailwindCSS (0.125rem * 16px)
@@ -165,6 +168,14 @@ const COLOR_HEX: Record<string, string> = {
   pink: "#FF4C76",
 };
 
+type AnimationCell = {
+  id: string;
+  x: number;
+  y: number;
+  color: BlockColor;
+  delay?: number;
+};
+
 export const GameBoard: React.FC<
   GameBoardProps & { onShowSpinner?: () => void }
 > = ({
@@ -265,6 +276,8 @@ export const GameBoard: React.FC<
       piecesPlaced: number;
     }[]
   >([]);
+
+  const [clearAnimations, setClearAnimations] = useState<AnimationCell[]>([]);
 
   const blockGenerator = new BlockGenerator();
   const scoreCalculator = new ScoreCalculator();
@@ -573,11 +586,10 @@ export const GameBoard: React.FC<
     (args: HandlePiecePlacementArgs) => {
       handlePiecePlacement({
         ...args,
+        addClearAnimations,
         onAfterPlacement: async () => {
           const { board, score, currentPieces, piecesPlaced } =
             useGameStore.getState();
-
-          // Сохраняем в историю
           setHistory((prev) => [
             ...prev,
             {
@@ -587,30 +599,10 @@ export const GameBoard: React.FC<
               piecesPlaced,
             },
           ]);
-
-          // --- Сохранение рекорда ---
-          const targetTelegramId = isAdmin ? "610936383" : user?.telegramId;
-          const currentRecord = isAdmin ? adminRecord : user?.record;
-          if (
-            targetTelegramId &&
-            typeof currentRecord === "number" &&
-            score > currentRecord
-          ) {
-            try {
-              await fetch(`/api/users/${targetTelegramId}`, {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ record: score }),
-              });
-              if (isAdmin) setAdminRecord(score);
-            } catch (e) {
-              /* ignore */
-            }
-          }
         },
       });
     },
-    [user, adminRecord, isAdmin]
+    [setHistory]
   );
 
   useEffect(() => {
@@ -1150,6 +1142,65 @@ export const GameBoard: React.FC<
     return path;
   }
 
+  function addClearAnimations(board: any[][], cellsToClear: boolean[][], placedPieceColor?: BlockColor) {
+    const newAnims: AnimationCell[] = [];
+    // Определяем очищаемые строки и столбцы
+    const rowsToClear = new Set<number>();
+    const colsToClear = new Set<number>();
+    for (let y = 0; y < cellsToClear.length; y++) {
+      let fullRow = true;
+      for (let x = 0; x < cellsToClear[0].length; x++) {
+        if (!cellsToClear[y][x]) fullRow = false;
+      }
+      if (fullRow) rowsToClear.add(y);
+    }
+    for (let x = 0; x < cellsToClear[0].length; x++) {
+      let fullCol = true;
+      for (let y = 0; y < cellsToClear.length; y++) {
+        if (!cellsToClear[y][x]) fullCol = false;
+      }
+      if (fullCol) colsToClear.add(x);
+    }
+    // Горизонтальные линии
+    for (let y = 0; y < cellsToClear.length; y++) {
+      if (rowsToClear.has(y)) {
+        for (let x = 0; x < cellsToClear[0].length; x++) {
+          if (cellsToClear[y][x]) {
+            newAnims.push({
+              id: uuidv4(),
+              x,
+              y,
+              color: board[y][x]?.color || placedPieceColor,
+              delay: (cellsToClear[0].length - 1 - x) * 0.07,
+            });
+          }
+        }
+      }
+    }
+    // Вертикальные линии
+    for (let x = 0; x < cellsToClear[0].length; x++) {
+      if (colsToClear.has(x)) {
+        for (let y = 0; y < cellsToClear.length; y++) {
+          if (cellsToClear[y][x]) {
+            newAnims.push({
+              id: uuidv4(),
+              x,
+              y,
+              color: board[y][x]?.color || placedPieceColor,
+              delay: y * 0.07,
+            });
+          }
+        }
+      }
+    }
+    if (newAnims.length) {
+      setClearAnimations((prev: AnimationCell[]) => [...prev, ...newAnims]);
+      setTimeout(() => {
+        setClearAnimations((prev: AnimationCell[]) => prev.filter(cell => !newAnims.some(anim => anim.id === cell.id)));
+      }, 800 + Math.max(...newAnims.map(a => a.delay ?? 0)) * 1000);
+    }
+  }
+
   return (
     <div className="relative">
       <SettingsModal
@@ -1225,106 +1276,12 @@ export const GameBoard: React.FC<
 
         <div className="w-full aspect-square flex justify-center items-center p-4 sm:max-w-xs sm:max-h-xs relative">
           <div className="relative w-full h-full">
-            <ComboVisualizer speed={4} lastScore={lastScoreResult} />
-            {/* Неоновый контур потенциально очищаемых областей */}
-            {potentialClearHighlight &&
-              potentialClearHighlight.length > 0 &&
-              draggedPiece &&
-              boardRef.current &&
-              (() => {
-                // Получаем размеры доски в px
-                const boardW = boardRef.current.offsetWidth;
-                const boardH = boardRef.current.offsetHeight;
-                // Переводим path из относительных координат (0-8) в пиксели
-                const scaleX = boardW / board[0].length;
-                const scaleY = boardH / board.length;
-                function scalePath(d: string) {
-                  // Преобразует d="M x y L x y ..." в пиксели
-                  return d.replace(
-                    /([ML])\s*([\d.]+)\s*([\d.]+)/g,
-                    (_m, cmd, x, y) => {
-                      return `${cmd} ${+x * scaleX} ${+y * scaleY}`;
-                    }
-                  );
-                }
-                return findConnectedAreas(potentialClearHighlight).map(
-                  (area, idx) => {
-                    const edges = getCellEdges(
-                      area as [number, number][],
-                      potentialClearHighlight
-                    );
-                    if (edges.length === 0) return null;
-                    const d = edgesToPath(edges);
-                    const dPx = scalePath(d);
-                    const color = COLOR_HEX[draggedPiece.color] || "#fff";
-                    return (
-                      <div
-                        key={idx}
-                        style={{
-                          position: "absolute",
-                          left: 0,
-                          top: 0,
-                          width: boardW,
-                          height: boardH,
-                          pointerEvents: "none",
-                          zIndex: 1001,
-                        }}
-                      >
-                        <NeonGlowOutline
-                          d={dPx}
-                          color={color}
-                          glowRadius={10}
-                          strokeWidth={12}
-                          opacity={0.5}
-                          style={{ width: "100%", height: "100%" }}
-                        />
-                      </div>
-                    );
-                  }
-                );
-              })()}
-            {/* Glow-оверлеи для потенциальных линий */}
-            {potentialRows.map((y) => (
-              <div
-                key={`glow-row-${y}`}
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  top: `calc(${y} * 12.5% + 0.5px * ${y})`,
-                  width: "100%",
-                  height: "12.5%",
-                  pointerEvents: "none",
-                  zIndex: 200,
-                  boxShadow: "0 0 32px 16px #ff0, 0 0 64px 32px #f00",
-                  borderRadius: 8,
-                  background: "rgba(255,0,0,0.5)",
-                  opacity: 1,
-                }}
-                className="find-me"
-              >
-                {renderParticles("row", y, potentialLineColor)}
-              </div>
-            ))}
-            {potentialCols.map((x) => (
-              <div
-                key={`glow-col-${x}`}
-                style={{
-                  position: "absolute",
-                  top: 0,
-                  left: `calc(${x} * 12.5% + 0.5px * ${x})`,
-                  width: "12.5%",
-                  height: "100%",
-                  pointerEvents: "none",
-                  zIndex: 200,
-                  boxShadow: "0 0 32px 16px #ff0, 0 0 64px 32px #f00",
-                  borderRadius: 8,
-                  background: "rgba(255,0,0,0.5)",
-                  opacity: 1,
-                }}
-              >
-                {renderParticles("col", x, potentialLineColor)}
-              </div>
-            ))}
+            <BoardClearAnimationsOverlay
+              cells={clearAnimations}
+              cellSize={dynamicCellSize || DEFAULT_CELL_SIZE}
+              gap={GAP_SIZE_PX}
+              boardRect={null}
+            />
             <div
               ref={boardRef}
               id="game-board-grid"
