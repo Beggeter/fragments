@@ -5,6 +5,7 @@ import BoosterPurchaseModal from "./store/BoosterPurchaseModal";
 import ZenPurchaseModal from "./store/ZenPurchaseModal";
 import { LoadingNumberAnimation } from "./LoadingNumberAnimation";
 import { BOOSTERS, SHARD_PACKS, ZEN_SUBS } from "./store/storeItems";
+import ShardPurchaseModal from "./store/ShardPurchaseModal";
 
 interface ShopScreenProps {
   onBack: () => void;
@@ -267,6 +268,9 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack }) => {
   const { user } = useUser();
   const balance = user?.currency ?? 0;
 
+  const [selectedShardPack, setSelectedShardPack] = useState(null);
+  const [isShardModalOpen, setIsShardModalOpen] = useState(false);
+
   useEffect(() => {
     if (isAdmin) {
       setIsBalanceLoading(true);
@@ -396,9 +400,9 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack }) => {
               className="w-full max-w-2xl py-6 max-h-[80dvh] overflow-y-auto store-scroll grid
              grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-y-10 gap-x-6 auto-rows-[minmax(140px,auto)]"
             >
-              <ShardPackCardHorizontal key={0} {...SHARD_PACKS[0]} />
+              <ShardPackCardHorizontal key={0} {...SHARD_PACKS[0]} onBuy={() => { setSelectedShardPack(SHARD_PACKS[0]); setIsShardModalOpen(true); }} />
               {SHARD_PACKS.slice(1).map((pack, i) => (
-                <ShardPackCard key={i + 1} {...pack} />
+                <ShardPackCard key={i + 1} {...pack} onBuy={() => { setSelectedShardPack(pack); setIsShardModalOpen(true); }} />
               ))}
             </div>
           </div>
@@ -454,6 +458,15 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack }) => {
           onConfirm={handleZenPurchaseConfirm}
           subscription={selectedSub}
           playerBalanceCrystals={isAdmin ? adminBalance ?? 333 : balance}
+        />
+      )}
+      {selectedShardPack && (
+        <ShardPurchaseModal
+          isOpen={isShardModalOpen}
+          onClose={() => { setIsShardModalOpen(false); setSelectedShardPack(null); }}
+          pack={selectedShardPack}
+          userId={user?.id}
+          onSuccess={() => { setIsShardModalOpen(false); setSelectedShardPack(null); /* обновить баланс, если нужно */ }}
         />
       )}
     </div>
