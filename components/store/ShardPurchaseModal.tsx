@@ -1,12 +1,5 @@
+import { ShardPack, ShardPurchaseModalProps } from "@/types/shop";
 import React, { useState } from "react";
-
-interface ShardPurchaseModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  pack: { amount: number; price: number; label?: string; icon: string };
-  userId: number;
-  onSuccess: () => void;
-}
 
 const isTelegramWebApp = () => typeof window !== 'undefined' && !!window.Telegram?.WebApp;
 
@@ -31,7 +24,7 @@ const ShardPurchaseModal: React.FC<ShardPurchaseModalProps> = ({ isOpen, onClose
           payload,
           amount: pack.price * 100, // копейки/центы
           currency: 'RUB', // или другая валюта
-        }, (status) => {
+        }, (status: string) => {
           if (status === 'paid') {
             onSuccess();
           } else if (status === 'cancelled') {

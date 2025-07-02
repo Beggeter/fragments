@@ -35,11 +35,29 @@ export const useUser = () => {
     checkUserSession();
   }, []);
 
-  const checkUserSession = () => {
-    // Проверяем, что мы на клиенте
+  const checkUserSession = async () => {
     if (typeof window === 'undefined') {
       setUserState(prev => ({ ...prev, isLoading: false }));
       return;
+    }
+
+    // --- Admin mode (dev only) ---
+    const adminMode = localStorage.getItem('adminMode');
+    if (adminMode === 'true' && process.env.NODE_ENV === 'development') {
+      try {
+        const res = await fetch('/api/users/610936383');
+        const user = await res.json();
+        setUserState({
+          user,
+          sessionToken: null,
+          isLoading: false,
+          isAuthenticated: true,
+        });
+        return;
+      } catch (e) {
+        setUserState(prev => ({ ...prev, isLoading: false }));
+        return;
+      }
     }
 
     try {

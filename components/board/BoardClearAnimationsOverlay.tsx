@@ -34,7 +34,7 @@ const BoardClearAnimationsOverlay: React.FC<BoardClearAnimationsOverlayProps> = 
       width: "100%",
       height: "100%",
       pointerEvents: "none",
-      zIndex: 1000,
+      zIndex: 900,
     }}>
       {cells.map(cell => (
         <div
