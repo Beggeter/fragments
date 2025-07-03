@@ -30,6 +30,26 @@ const getBlur = (
   return [0.5, 0.5];
 };
 
+// Новый хук для получения размеров поля
+function useParentSize(ref: React.RefObject<HTMLElement | null>) {
+  const [size, setSize] = useState<{ width: number; height: number }>({
+    width: 0,
+    height: 0,
+  });
+  useLayoutEffect(() => {
+    function update() {
+      if (ref.current) {
+        const rect = ref.current.getBoundingClientRect();
+        setSize({ width: rect.width, height: rect.height });
+      }
+    }
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [ref]);
+  return size;
+}
+
 /**
  * ComboVisualizer component displays a visual representation of combo levels
  * with animated borders and text effects
@@ -72,7 +92,11 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
 
   const scorePlusId = React.useRef(0);
   const comboRef = useRef<SVGTextElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const { width: fieldWidth, height: fieldHeight } =
+    useParentSize(containerRef);
   const [comboWidth, setComboWidth] = useState(0);
+  const [comboHeight, setComboHeight] = useState(70); // svg высота по умолчанию
 
   // Handle combo level changes
   useEffect(() => {
@@ -164,9 +188,59 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
 
   useLayoutEffect(() => {
     if (comboRef.current) {
-      setComboWidth(comboRef.current.getBBox().width);
+      const bbox = comboRef.current.getBBox();
+      setComboWidth(bbox.width);
+      setComboHeight(bbox.height + 20); // запас
     }
   }, [lastScore?.comboLevel, showComboText]);
+
+  // 9 позиций внутри поля (с учётом размера надписи)
+  function getPossiblePositions() {
+    // Более кучные позиции: ближе к центру
+    const marginX = Math.max(comboWidth / 4, 16);
+    const marginY = Math.max(comboHeight / 2, 20);
+    const xs = [
+      fieldWidth * 0.3,
+      fieldWidth / 2,
+      fieldWidth * 0.7
+    ];
+    const ys = [
+      fieldHeight * 0.3,
+      fieldHeight / 2,
+      fieldHeight * 0.7
+    ];
+    const positions: { x: number; y: number }[] = [];
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        positions.push({ x: xs[j], y: ys[i] });
+      }
+    }
+    return positions;
+  }
+
+  // Функция поиска ближайшей позиции
+  function getNearestPosition(
+    target: { x: number; y: number } | undefined | null
+  ) {
+    const positions = getPossiblePositions();
+    if (!target) return positions[4]; // центр
+    let minDist = Infinity;
+    let best: { x: number; y: number }[] = [];
+    for (const pos of positions) {
+      const dx = pos.x - target.x;
+      const dy = pos.y - target.y;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d < minDist - 1e-3) {
+        minDist = d;
+        best = [pos];
+      } else if (Math.abs(d - minDist) < 1e-3) {
+        best.push(pos);
+      }
+    }
+    // Если несколько — выбираем более правую, если x совпадает — более высокую (меньше y)
+    best.sort((a, b) => b.x - a.x || a.y - b.y);
+    return best[0];
+  }
 
   const borderStyle = {
     "--border-angle": "0deg",
@@ -231,68 +305,95 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   };
 
   return (
-    <>
+    <div
+      ref={containerRef}
+      className="absolute inset-0 w-full h-full pointer-events-none"
+    >
+      {/* Визуализация возможных позиций для Combo (отладка) */}
+      {/* {getPossiblePositions().map((pos, idx) => (
+        <div
+          key={idx}
+          style={{
+            position: "absolute",
+            left: pos.x,
+            top: pos.y,
+            width: 14,
+            height: 14,
+            background: "#38BDF8",
+            borderRadius: "50%",
+            border: "2px solid #fff",
+            boxShadow: "0 0 8px 2px #38BDF8",
+            transform: "translate(-50%, -50%)",
+            zIndex: 2000,
+            pointerEvents: "none",
+            opacity: 0.7,
+          }}
+        />
+      ))} */}
       <motion.div
         className={`absolute inset-0 p-2 -m-2 rounded-xl glowing-border ${
           isExploding ? "combo-explosion" : ""
         }`}
         style={borderStyle}
       />
-      {lastScore && lastScore.comboLevel > 0 && (
-        <div
-          className={`combo-text ${
-            showComboText ? "show" : ""
-          } absolute flex items-center justify-center inset-0 z-1000`}
-          // style={{ pointerEvents: "none" }}
-          style={{
-            position: "absolute",
-            left: lastScore.pixelPosition?.x,
-            top: lastScore.pixelPosition?.y,
-            transform: "translate(-50%, -100%)",
-            pointerEvents: "none",
-            zIndex: 1000,
-          }}
-        >
-          <svg
-            width={comboWidth + (lastScore.comboLevel > 1 ? 70 : 0) + 24}
-            height={70}
-            style={{ display: "block" }}
-          >
-            <text
-              ref={comboRef}
-              x={10}
-              y={52}
-              fontFamily="'Montserrat', Arial, sans-serif"
-              fontWeight="900"
-              fontSize="48"
-              stroke="#2968EA"
-              strokeWidth="6"
-              fill="#fff"
-              paintOrder="stroke"
-              style={{ letterSpacing: 2 }}
+      {lastScore &&
+        lastScore.comboLevel > 0 &&
+        (() => {
+          const comboPos = getNearestPosition(lastScore.pixelPosition);
+          // Смещаем надпись так, чтобы её центр совпадал с выбранной позицией
+          const left = comboPos.x - (comboWidth + (lastScore.comboLevel > 1 ? 70 : 0) + 24) / 2;
+          const top = comboPos.y - comboHeight / 2;
+          return (
+            <div
+              className={`combo-text ${showComboText ? "show" : ""} absolute flex items-center justify-center z-1000`}
+              style={{
+                position: "absolute",
+                left,
+                top,
+                pointerEvents: "none",
+                zIndex: 1000,
+              }}
             >
-              Combo
-            </text>
-            {lastScore.comboLevel > 1 && (
-              <text
-                x={comboWidth + 16}
-                y={52}
-                fontFamily="'Montserrat', Arial, sans-serif"
-                fontWeight="900"
-                fontSize="54"
-                stroke="#2968EA"
-                strokeWidth="6"
-                fill="#FFD600"
-                paintOrder="stroke"
-                style={{ letterSpacing: 2 }}
+              <svg
+                width={comboWidth + (lastScore.comboLevel > 1 ? 70 : 0) + 24}
+                height={comboHeight}
+                style={{ display: "block" }}
               >
-                {lastScore.comboLevel}
-              </text>
-            )}
-          </svg>
-        </div>
-      )}
-
+                <text
+                  ref={comboRef}
+                  x={10}
+                  y={comboHeight - 18}
+                  fontFamily="'Montserrat', Arial, sans-serif"
+                  fontWeight="900"
+                  fontSize="48"
+                  stroke="#2968EA"
+                  strokeWidth="6"
+                  fill="#fff"
+                  paintOrder="stroke"
+                  style={{ letterSpacing: 2 }}
+                >
+                  Combo
+                </text>
+                {lastScore.comboLevel > 1 && (
+                  <text
+                    x={comboWidth + 16}
+                    y={comboHeight - 18}
+                    fontFamily="'Montserrat', Arial, sans-serif"
+                    fontWeight="900"
+                    fontSize="54"
+                    stroke="#2968EA"
+                    strokeWidth="6"
+                    fill="#FFD600"
+                    paintOrder="stroke"
+                    style={{ letterSpacing: 2 }}
+                  >
+                    {lastScore.comboLevel}
+                  </text>
+                )}
+              </svg>
+            </div>
+          );
+        })()}
       {showClearText && (
         <div
           className=" clear-text text-red-200  absolute flex items-center justify-center
@@ -301,8 +402,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
           Cleared!
         </div>
       )}
-
       {scorePluses.map((sp) => renderScorePlus(sp))}
-    </>
+    </div>
   );
 };
