@@ -1,14 +1,62 @@
 "use client";
 
 import React from "react";
-import MenuButton from "@/components/UI/MenuButton";
+import SettingsButton from "@/components/UI/SettingsButton";
 import { useSettingsStore } from "@/lib/state/settings";
+import cart from "@/public/cart.svg";
+import home from "@/public/home.svg";
+import replay from "@/public/replay.svg";
+
+interface ToggleSwitchProps {
+  isEnabled: boolean;
+  onToggle: () => void;
+}
+
+const ToggleSwitch: React.FC<ToggleSwitchProps> = ({ isEnabled, onToggle }) => {
+  // Базовые размеры
+  const containerHeight = "2rem"; // 32px
+  const containerWidth = "4rem"; // 56px (соотношение ~1.75:1)
+  const thumbSize = "1.5rem"; // 24px (75% от высоты контейнера)
+  const padding = "0.3rem"; // 4px отступ
+
+  // Расчет позиции
+  const translateDistance = `calc(${containerWidth} - ${thumbSize} - ${padding} * 2)`;
+
+  return (
+    <div className="flex items-center">
+      <div
+        className={`rounded-full transition-colors duration-300 flex items-center backdrop-blur-lg border border-white/20 ${
+          isEnabled
+            ? "bg-green-500/20 shadow-[0_0_10px_rgba(34,197,94,0.3)]"
+            : "bg-red-600/20"
+        }`}
+        style={{
+          width: containerWidth,
+          height: containerHeight,
+          padding: padding,
+        }}
+      >
+        <div
+          className="bg-white rounded-full transition-transform ease-[linear(0,_0.709_15.6%,_0.929_24.2%,_1.064_33.4%,_1.119_41.6%,_1.131_50.8%,_1.019_84%,_1)] duration-300 transform shadow-lg"
+          style={{
+            width: thumbSize,
+            height: thumbSize,
+            transform: isEnabled
+              ? `translateX(${translateDistance})`
+              : "translateX(0)",
+          }}
+        />
+      </div>
+    </div>
+  );
+};
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRestart?: () => void;
   onGoHome?: () => void;
+  onOpenShop?: () => void;
 }
 
 const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -16,17 +64,20 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   onClose,
   onRestart,
   onGoHome,
+  onOpenShop,
 }) => {
   const vibration = useSettingsStore((state) => state.vibrationValue);
   const setVibration = useSettingsStore((state) => state.setVibrationValue);
   const soundEnabled = useSettingsStore((state) => state.soundEnabled);
   const setSoundEnabled = useSettingsStore((state) => state.setSoundEnabled);
 
-  if (!isOpen) return null;
-  const handleVibrChange = (vibr: string) => {
-    const value = Number(vibr);
-    setVibration(value);
+  // Вибрация только вкл/выкл
+  const vibrationEnabled = vibration > 0;
+  const handleVibrationToggle = () => {
+    setVibration(vibrationEnabled ? 0 : 55);
   };
+
+  if (!isOpen) return null;
 
   return (
     <div
@@ -39,86 +90,94 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         <button
-          className="absolute top-4 right-6 text-4xl text-white hover:text-gray-300 focus:outline-none"
+          className="absolute top-4 right-6 text-5xl z-2 text-white hover:text-gray-300 "
           onClick={onClose}
           aria-label="Close settings"
         >
           ×
         </button>
-        <h2 className="mb-8 text-4xl font-bold tracking-wide text-white font-figtree menu-shadow">
-          Settings
+        <h2 className="mb-6 text-4xl z-1 font-bold tracking-wide text-white font-figtree-mulish menu-shadow">
+          Настройки
         </h2>
-        <div className="grid grid-cols-2 gap-8 w-full mb-8">
+        <div className="flex flex-col gap-4 w-full mb-6">
           <div
-            className="bg-gray-800/20 backdrop-blur-xl rounded-xl px-6 py-4 flex
-           flex-col gap-4 items-center justify-center min-h-[120px]"
+            className="settings-gradient backdrop-blur-xl rounded-3xl px-8 py-4 flex items-center justify-between min-h-[9vh] cursor-pointer filter drop-shadow-[2px_2px_2px_rgba(0,0,0,0.4)]"
+            onClick={handleVibrationToggle}
           >
-            <div className="flex justify-center items-center w-full">
-              <span className="text-xl font-semibold text-white font-fig">
-                Vibrate
-              </span>
-            </div>
-            <div className="flex gap-4 items-center w-full">
-              <input
-                type="range"
-                min={10}
-                max={100}
-                value={vibration}
-                step={10}
-                className="w-full accent-green-500 custom-range"
-                onChange={(e) => handleVibrChange(e.target.value)}
-              />
-            </div>
-          </div>
-          <div
-            className="flex items-center justify-center bg-gray-800/20 backdrop-blur-xl rounded-xl min-h-[120px]"
-            onClick={() => setSoundEnabled(!soundEnabled)}
-          >
-            <button
-              className="flex justify-center items-center p-0 bg-transparent border-none transition-all"
-              aria-label="Toggle sound"
-              style={{ boxShadow: "none" }}
-            >
+            <div className="flex items-center gap-4 menu-shadow">
               <img
-                src={soundEnabled ? "/soundon.svg" : "/soundoff.svg"}
-                alt={soundEnabled ? "Sound on" : "Sound off"}
-                className={`w-15 h-15 transition-filter duration-500 ${
-                  !soundEnabled
-                    ? "drop-shadow-[0_0_7px_#fc3b2d]"
-                    : "drop-shadow-[0_0_7px_#22c55e]"
-                }`}
+                src={vibrationEnabled ? "/vibrateon.svg" : "/vibrateoff.svg"}
+                alt={
+                  vibrationEnabled ? "Вибрация включена" : "Вибрация выключена"
+                }
+                className={`w-8 h-8 transition-filter duration-500 `}
                 draggable={false}
                 style={{ background: "none" }}
               />
-            </button>
+              <span className="font-extrabold text-[1.4rem] text-white font-figtree-mulish">
+                Вибрация
+              </span>
+            </div>
+            <ToggleSwitch
+              isEnabled={vibrationEnabled}
+              onToggle={handleVibrationToggle}
+            />
+          </div>
+
+          <div
+            className="settings-gradient backdrop-blur-xl rounded-3xl px-8 py-4 flex items-center justify-between min-h-[9vh] cursor-pointer filter drop-shadow-[2px_2px_2px_rgba(0,0,0,0.4)]"
+            onClick={() => setSoundEnabled(!soundEnabled)}
+          >
+            <div className="flex items-center gap-4 menu-shadow">
+              <img
+                src={soundEnabled ? "/soundon.svg" : "/soundoff.svg"}
+                alt={soundEnabled ? "Sound on" : "Sound off"}
+                className={`w-8 h-8 transition-filter duration-500 $`}
+                draggable={false}
+                style={{ background: "none" }}
+              />
+              <span className="text-[1.4rem] font-extrabold text-white font-figtree-mulish">
+                Звук
+              </span>
+            </div>
+            <ToggleSwitch
+              isEnabled={soundEnabled}
+              onToggle={() => setSoundEnabled(!soundEnabled)}
+            />
           </div>
         </div>
-        <div className="flex flex-col gap-4 items-center  w-full">
+        <div className="flex flex-col gap-4 items-center w-full">
           {onGoHome && (
-            <MenuButton
-              text="Home"
+            <SettingsButton
+              text="Главное меню"
+              leftIcon="/home.svg"
               gradientClass="settings-gradient"
-              className="rounded-3xl px-8 py-4 font-bold w-[80%]"
-              textClasses="font-extrabold  text-3xl"
+              className="rounded-3xl px-8 py-4 font-bold w-[90%] h-16"
+              textClasses="font-extrabold text-3xl"
               onClick={onGoHome}
             />
           )}
+          {onOpenShop && (
+            <SettingsButton
+              text="Магазин"
+              leftIcon="/cart.svg"
+              imageClasses="w-8 h-8"
+              gradientClass="settings-gradient"
+              className="rounded-3xl px-8 py-4 font-bold w-[90%] h-16"
+              textClasses="font-extrabold text-3xl"
+              onClick={onOpenShop}
+            />
+          )}
           {onRestart && (
-            <MenuButton
-              text="Restart"
-              gradientClass="settings-gradient "
-              className="rounded-3xl px-8 py-4 font-bold w-[80%]"
-              textClasses="font-extrabold  text-3xl"
+            <SettingsButton
+              text="Начать заново"
+              leftIcon="/replay.svg"
+              gradientClass="settings-gradient"
+              className="rounded-3xl px-8 py-4 font-bold w-[90%] h-16"
+              textClasses="font-extrabold text-3xl"
               onClick={onRestart}
             />
           )}
-          <MenuButton
-            text="Close"
-            gradientClass="settings-gradient"
-            className="rounded-3xl px-8 py-4 font-bold w-[80%]"
-            textClasses="font-extrabold  text-3xl"
-            onClick={onClose}
-          />
         </div>
       </div>
     </div>

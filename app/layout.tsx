@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Figtree, Geist, Geist_Mono, Mulish } from "next/font/google";
+import { Figtree, Geist, Geist_Mono, Manrope, Mulish } from "next/font/google";
 import "./globals.css";
 import Script from "next/script";
 
@@ -20,11 +20,11 @@ const figtree = Figtree({
   variable: "--font-figtree",
 });
 
-const mulish = Mulish({
+const mulish = Manrope({
   subsets: ["latin", 'cyrillic'],
-  weight: ["400", "600", "800", "900", "700"],
-  style: ["normal", "italic"],
-  variable: "--font-mulish",
+  weight: ["400", "600", "800",  "700"],
+  style: ["normal"],
+  variable: "--font-manrope",
 });
 
 export const metadata: Metadata = {

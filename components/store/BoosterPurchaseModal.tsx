@@ -12,6 +12,7 @@ interface BoosterPurchaseModalProps {
     description: string;
   };
   playerBalance: number;
+  onInsufficientFunds?: () => void;
 }
 
 const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
@@ -20,6 +21,7 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
   onConfirm,
   booster,
   playerBalance,
+  onInsufficientFunds,
 }) => {
   const maxQuantity = Math.floor(playerBalance / booster.price);
   const [quantity, setQuantity] = useState(maxQuantity);
@@ -39,6 +41,8 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
   const totalCost = quantity * booster.price;
 
   if (!isOpen) return null;
+
+  const isInsufficient = totalCost > playerBalance;
 
   return (
     <div 
@@ -109,10 +113,7 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
               onChange={(e) => setQuantity(parseInt(e.target.value))}
               className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer custom-range"
             />
-            <div className="flex justify-between text-xs text-white/60 mt-1">
-              <span>1</span>
-              <span>{maxQuantity}</span>
-            </div>
+           
           </div>
 
           {/* Максимальное количество */}
@@ -121,15 +122,29 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
           </div> */}
         </div>
 
-        {/* Кнопка покупки со стоимостью */}
-        <button
-          onClick={() => onConfirm(quantity)}
-          disabled={totalCost > playerBalance || quantity < 1}
-          className="w-full px-6 py-4 text-lg font-bold rounded-2xl transition-all bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-mulish flex items-center justify-center gap-3"
-        >
-          <img src="/crystal.svg" alt="crystal" className="w-8 h-8" />
-          <span className="text-2xl font-bold font-figtree">{totalCost}</span>
-        </button>
+        {/* Кнопка покупки или недостаточно средств */}
+        {isInsufficient ? (
+          <button
+            type="button"
+            onClick={() => {
+              if (onInsufficientFunds) onInsufficientFunds();
+              onClose();
+            }}
+            className="w-full px-6 py-4 text-lg font-bold rounded-2xl transition-all bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg hover:from-red-600 hover:to-red-700 flex items-center justify-center gap-3"
+          >
+            <img src="/crystal.svg" alt="crystal" className="w-8 h-8" />
+            <span className="text-2xl font-bold font-figtree">Недостаточно</span>
+          </button>
+        ) : (
+          <button
+            onClick={() => onConfirm(quantity)}
+            disabled={totalCost > playerBalance || quantity < 1}
+            className="w-full px-6 py-4 text-lg font-bold rounded-2xl transition-all bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-mulish flex items-center justify-center gap-3"
+          >
+            <img src="/crystal.svg" alt="crystal" className="w-8 h-8" />
+            <span className="text-2xl font-bold font-figtree">{totalCost}</span>
+          </button>
+        )}
       </div>
     </div>
   );

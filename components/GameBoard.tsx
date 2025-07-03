@@ -54,6 +54,7 @@ interface GameBoardProps {
   onBoardRectChange?: (rect: DOMRect | null) => void;
   clearedLine?: number | null;
   onGoHome?: () => void;
+  onOpenShop?: () => void;
 }
 
 // Тип для аргументов handlePiecePlacement
@@ -176,6 +177,7 @@ export const GameBoard: React.FC<
   onBoardRectChange,
   clearedLine,
   onGoHome,
+  onOpenShop,
 }) => {
   const {
     board,
@@ -1160,6 +1162,7 @@ export const GameBoard: React.FC<
           setIsSettingsOpen(false);
         }}
         onGoHome={onGoHome}
+        onOpenShop={onOpenShop}
       />
       <div
         className={`flex flex-col items-center gap-5 min-h-screen bg-[var(--game-background)] p-4 no-select will-change-auto`}
@@ -1189,6 +1192,7 @@ export const GameBoard: React.FC<
               />
             )}
           </div>
+          <div className="flex flex-row gap-2">
           <div
             className="cursor-pointer flex items-center justify-center "
             onClick={() => setIsSettingsOpen(true)}
@@ -1205,6 +1209,7 @@ export const GameBoard: React.FC<
                 backfaceVisibility: "hidden",
               }}
             />
+          </div>
           </div>
         </div>
 
