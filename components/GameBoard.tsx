@@ -297,6 +297,8 @@ export const GameBoard: React.FC<
     cellSize: number;
   }>(null);
 
+  const [isComboExploding, setIsComboExploding] = useState(false);
+
   useLayoutEffect(() => {
     function updateCoords() {
       if (scoreDisplayRef.current && boardRef.current) {
@@ -1230,7 +1232,7 @@ export const GameBoard: React.FC<
 
         <div className="w-full aspect-square flex justify-center items-center p-4 sm:max-w-xs sm:max-h-xs relative">
           <div className="relative w-full h-full">
-            <ComboVisualizer speed={4} lastScore={lastScoreResult} />
+            <ComboVisualizer speed={4} lastScore={lastScoreResult} onExplodeChange={setIsComboExploding} />
             {/* Неоновый контур потенциально очищаемых областей */}
             {potentialClearHighlight &&
               potentialClearHighlight.length > 0 &&

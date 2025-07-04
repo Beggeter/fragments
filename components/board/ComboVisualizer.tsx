@@ -2,16 +2,18 @@
 
 import { ScoreResult } from "@/lib/data/types";
 import { ColorTheme, colorThemes, getThemeByScore } from "../UI/colorThemes";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { animate, useMotionValue, motion } from "framer-motion";
 import { useGameStore } from "@/lib/state/store";
 import { vibrate } from "@/utils/helpers";
 import { useSettingsStore } from "@/lib/state/settings";
+import { PerimeterParticles } from "./PerimeterParticles";
 
 interface ComboVisualizerProps {
   speed?: number;
   className?: string;
   lastScore: ScoreResult | null;
+  onExplodeChange?: (isExploding: boolean) => void;
 }
 
 /**
@@ -38,6 +40,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   speed = 3,
   className = "",
   lastScore,
+  onExplodeChange,
 }) => {
   const theme = getThemeByScore(lastScore?.comboLevel);
   const blur = getBlur(lastScore?.movesSinceLastSuccess, lastScore?.comboLevel);
@@ -58,6 +61,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   const [isExploding, setIsExploding] = useState(false);
   const [showComboText, setShowComboText] = useState(false);
   const [showClearText, setShowClearText] = useState(false);
+  const [showParticles, setShowParticles] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [scorePluses, setScorePluses] = useState<
     {
@@ -71,21 +75,31 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   >([]);
 
   const scorePlusId = React.useRef(0);
+  const rootRef = React.useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
 
   // Handle combo level changes
   useEffect(() => {
     if (lastScore?.comboLevel) {
       setIsExploding(true);
+      if (typeof onExplodeChange === 'function') onExplodeChange(true);
       setShowComboText(true);
+      setShowParticles(true)
       setShowClearText(false);
       handleVibrate();
 
-      const explodeTimer = setTimeout(() => setIsExploding(false), 400);
+
+      const explodeTimer = setTimeout(() => {
+        setIsExploding(false);
+        if (typeof onExplodeChange === 'function') onExplodeChange(false);
+      }, 400);
       const textTimer = setTimeout(() => setShowComboText(false), 800);
+      const particlesTimer = setTimeout(() => setShowParticles(false), 1000);
 
       return () => {
         clearTimeout(explodeTimer);
         clearTimeout(textTimer);
+        clearTimeout(particlesTimer);
       };
     }
   }, [lastScore?.comboLevel]);
@@ -220,14 +234,34 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
     );
   };
 
+  useEffect(() => {
+    if (!rootRef.current) return;
+    function updateSize() {
+      const rect = rootRef.current?.getBoundingClientRect();
+      setSize({ width: rect?.width || 0, height: rect?.height || 0 });
+    }
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
+  }, []);
+
   return (
-    <>
+    <div ref={rootRef} className={"absolute inset-0 " + className} style={{ pointerEvents: "none" }}>
       <motion.div
         className={`absolute inset-0 p-2 -m-2 rounded-xl glowing-border ${
           isExploding ? "combo-explosion" : ""
         }`}
         style={borderStyle}
       />
+      {/* --- ПЕРИМЕТРАЛЬНЫЕ ЧАСТИЦЫ ПРИ КОМБО --- */}
+      {showParticles && size.width > 0 && size.height > 0 && (
+        <PerimeterParticles
+          width={size.width}
+          height={size.height}
+          visible={true}
+          color={theme.background}
+        />
+      )}
       {lastScore && lastScore.comboLevel > 0 && (
         <div
           className={`combo-text ${
@@ -240,7 +274,6 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
           }!`}
         </div>
       )}
-
       {showClearText && (
         <div
           className=" clear-text text-red-200  absolute flex items-center justify-center
@@ -249,8 +282,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
           Cleared!
         </div>
       )}
-
       {scorePluses.map((sp) => renderScorePlus(sp))}
-    </>
+    </div>
   );
 };
