@@ -82,16 +82,15 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   useEffect(() => {
     if (lastScore?.comboLevel) {
       setIsExploding(true);
-      if (typeof onExplodeChange === 'function') onExplodeChange(true);
+      if (typeof onExplodeChange === "function") onExplodeChange(true);
       setShowComboText(true);
-      setShowParticles(true)
+      setShowParticles(true);
       setShowClearText(false);
       handleVibrate();
 
-
       const explodeTimer = setTimeout(() => {
         setIsExploding(false);
-        if (typeof onExplodeChange === 'function') onExplodeChange(false);
+        if (typeof onExplodeChange === "function") onExplodeChange(false);
       }, 400);
       const textTimer = setTimeout(() => setShowComboText(false), 800);
       const particlesTimer = setTimeout(() => setShowParticles(false), 1000);
@@ -246,7 +245,11 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   }, []);
 
   return (
-    <div ref={rootRef} className={"absolute inset-0 " + className} style={{ pointerEvents: "none" }}>
+    <div
+      ref={rootRef}
+      className={"absolute inset-0 " + className}
+      style={{ pointerEvents: "none" }}
+    >
       <motion.div
         className={`absolute inset-0 p-2 -m-2 rounded-xl glowing-border ${
           isExploding ? "combo-explosion" : ""
@@ -259,7 +262,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
           width={size.width}
           height={size.height}
           visible={true}
-          color={theme.background}
+          // color={theme.background}
         />
       )}
       {lastScore && lastScore.comboLevel > 0 && (

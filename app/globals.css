@@ -311,9 +311,9 @@ body {
     conic-gradient(
         from var(--border-angle),
         var(--border-start) 10%,
-        var(--border-middle) 50%,
+        var(--border-middle) 60%,
         var(--border-end) 70%,
-        var(--border-middle) 94%,
+        var(--border-middle) 80%,
         var(--border-start)
       )
       border-box;
@@ -321,8 +321,8 @@ body {
   animation: border-rotate var(--animation-speed) linear infinite;
   will-change: filter, transform;
   filter: drop-shadow(0 0 var(--blur-type) var(--border-end))
-    drop-shadow(0 0 var(--blur-type) var(--border-start))
-    brightness(var(--brightness, 1));
+    /* drop-shadow(0 0 var(--blur-type) var(--border-start)) */
+    /* brightness(var(--brightness, 1)); */
 }
 
 @keyframes border-rotate {
