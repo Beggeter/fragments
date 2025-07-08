@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import GameBoard from "../components/GameBoard";
 import MainMenu from "@/components/MainMenu";
 import AdminLogin from "@/components/AdminLogin";
@@ -96,6 +96,14 @@ const HomePage: React.FC = () => {
   const [boardRect, setBoardRect] = useState<DOMRect | null>(null);
   const [clearedLine, setClearedLine] = useState<number | null>(null);
   const [particlesInit, setParticlesInit] = useState(false);
+
+  // Добавляем состояние для отслеживания намеренного перезапуска
+  const [isIntentionalRestart, setIsIntentionalRestart] = useState(false);
+
+  // Создаем стабильную функцию для завершения перезапуска
+  const handleRestartComplete = useCallback(() => {
+    setIsIntentionalRestart(false);
+  }, []);
 
   // --- tsparticles engine init ---
 
@@ -481,12 +489,15 @@ const HomePage: React.FC = () => {
           onBoardRectChange={setBoardRect}
           clearedLine={clearedLine}
           onGoHome={handleGoToMenu}
+          isIntentionalRestart={isIntentionalRestart}
+          onRestartComplete={handleRestartComplete}
         />
       )}
 
       {currentScreen === "gameover" && (
         <GameOver
           onPlayAgain={() => {
+            setIsIntentionalRestart(true); // Устанавливаем флаг перед сбросом
             setCurrentScreen("classic mode");
             useGameStore.getState().resetGame();
           }}

@@ -92,12 +92,12 @@ export class ScoreCalculator {
   }
 
   calculateScore(
-
     board: Matrix,
     clearedLines: number,
     cellsPlaced: number,
     cellsInLines: number,
-    block: Block
+    block: Block,
+    difficultyModifiers?: { scoreMultiplier: number; comboMultiplier: number }
   ): ScoreResult {
     // Базовые очки за размещенные клетки
     const placedBlocksPoints = cellsPlaced;
@@ -118,12 +118,17 @@ export class ScoreCalculator {
     const isBoardCleared = this.isBoardCleared(board);
     const boardClearBonus = isBoardCleared ? this.BOARD_CLEAR_BONUS : 0;
 
-    // Итоговый подсчет
-    const totalPoints = 
+    // Применяем множители сложности
+    const scoreMultiplier = difficultyModifiers?.scoreMultiplier || 1.0;
+    const comboMultiplier = difficultyModifiers?.comboMultiplier || 1.0;
+
+    // Итоговый подсчет с учетом множителей
+    const totalPoints = Math.floor((
       placedBlocksPoints + 
-      (clearedLinesPoints * comboBonus) + 
+      (clearedLinesPoints * comboBonus * comboMultiplier) + 
       clearedBlocksPoints + 
-      boardClearBonus;
+      boardClearBonus
+    ) * scoreMultiplier);
 
     const movesSinceLastSuccess = this.moveCounter - this.lastSuccessfulMove;
 
@@ -135,7 +140,7 @@ export class ScoreCalculator {
       clearedLinesPoints,
       clearedBlocksPoints,
       comboLevel: this.comboCounter,
-      comboBonus,
+      comboBonus: comboBonus * comboMultiplier,
       isBoardCleared,
       movesSinceLastSuccess
     };

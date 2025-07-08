@@ -53,6 +53,8 @@ interface GameBoardProps {
   onBoardRectChange?: (rect: DOMRect | null) => void;
   clearedLine?: number | null;
   onGoHome?: () => void;
+  isIntentionalRestart?: boolean;
+  onRestartComplete?: () => void;
 }
 
 // Тип для аргументов handlePiecePlacement
@@ -186,6 +188,8 @@ export const GameBoard: React.FC<
   onBoardRectChange,
   clearedLine,
   onGoHome,
+  isIntentionalRestart: externalIsIntentionalRestart,
+  onRestartComplete,
 }) => {
   const {
     board,
@@ -290,6 +294,17 @@ export const GameBoard: React.FC<
 
   const [boosters, setBoosters] = useState<any[]>([]);
 
+  // Добавляем состояние для отслеживания намеренного перезапуска
+  const [isIntentionalRestart, setIsIntentionalRestart] = useState(false);
+
+  // Создаем стабильную функцию для завершения перезапуска
+  const handleRestartComplete = useCallback(() => {
+    setIsIntentionalRestart(false);
+    if (onRestartComplete) {
+      onRestartComplete();
+    }
+  }, [onRestartComplete]);
+
   // --- Вынести fetchBoosters наружу, чтобы использовать в useBooster ---
   const fetchBoosters = useCallback(async () => {
     let tgid: number | undefined = user?.telegramId;
@@ -386,6 +401,14 @@ export const GameBoard: React.FC<
   useEffect(() => {
     const initializeGameWithSave = async () => {
       if (currentPieces.length === 0) {
+        // Если это намеренный перезапуск, не загружаем сохранение
+        if (isIntentionalRestart || externalIsIntentionalRestart) {
+          console.log('Intentional restart, starting new game');
+          initializeGame();
+          handleRestartComplete(); // Используем стабильную функцию
+          return;
+        }
+        
         // Пытаемся загрузить сохраненную игру
         const gameLoaded = await loadGame();
         
@@ -400,7 +423,7 @@ export const GameBoard: React.FC<
     };
 
     initializeGameWithSave();
-  }, [currentPieces.length, initializeGame, loadGame]);
+  }, [currentPieces.length, initializeGame, loadGame, isIntentionalRestart, externalIsIntentionalRestart, handleRestartComplete]);
 
   useEffect(() => {
     if (currentPieces.length > 0) {
@@ -1334,6 +1357,7 @@ export const GameBoard: React.FC<
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         onRestart={() => {
+          setIsIntentionalRestart(true); // Устанавливаем флаг перед сбросом
           resetGame();
           setIsSettingsOpen(false);
         }}
@@ -1393,6 +1417,7 @@ export const GameBoard: React.FC<
             moveScore={lastScoreResult}
           />
         </div>
+        
         <BoostersPanel
           boosters={boosters}
           onBoosterClick={handleBoosterClick}
