@@ -37,6 +37,7 @@ import { LoadingNumberAnimation } from "./LoadingNumberAnimation";
 import { motion } from "framer-motion";
 import { Piece } from "./pieces/Piece";
 import NeonGlowOutline from "./NeonGlowOutline";
+import { NeonGlowParticles } from "./board/NeonGlowParticles";
 import BoardClearAnimationsOverlay from "./board/BoardClearAnimationsOverlay";
 import { v4 as uuidv4 } from "uuid";
 
@@ -1613,6 +1614,11 @@ export const GameBoard: React.FC<
                             strokeWidth={12}
                             opacity={0.5}
                             style={{ width: "100%", height: "100%" }}
+                          />
+                          <NeonGlowParticles
+                            d={dPx}
+                            color={color}
+                            visible={true}
                           />
                         </div>
                       );

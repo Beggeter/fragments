@@ -1070,7 +1070,8 @@ input[type="range"].custom-range {
   .level-description {
     font-size: 11px;
   }
-  
+}
+
 .font-figtree-mulish {
   font-family: var(--font-figtree), var(--font-manrope), Arial, sans-serif;
 }
