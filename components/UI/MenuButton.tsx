@@ -100,7 +100,7 @@ const MenuButton: FC<MenuButtonProps> = ({
         {/* Текст или содержимое */}
         {text && (
           <span
-            className={`${textClasses} flex flex-col items-start  justify-center text-white font-figtree   menu-shadow min-h-[44px]`}
+            className={`${textClasses} flex flex-col items-start  justify-center text-white font-figtree-mulish   menu-shadow min-h-[44px]`}
           >
             {text}
           </span>
@@ -118,7 +118,7 @@ const MenuButton: FC<MenuButtonProps> = ({
       {notificationCount !== undefined && notificationCount > 0 && (
         <span
           className="absolute -top-4 -right-4 notif-gradient text-white text-md w-8 h-8
-         flex items-center justify-center rounded-full font-figtree font-bold text-[1.5rem] z-20"
+         flex items-center justify-center rounded-full font-figtree-mulish font-bold text-[1.5rem] z-20"
         >
           {notificationCount}
         </span>

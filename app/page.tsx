@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import GameBoard from "../components/GameBoard";
 import MainMenu from "@/components/MainMenu";
 import AdminLogin from "@/components/AdminLogin";
@@ -96,6 +96,8 @@ const HomePage: React.FC = () => {
   const [boardRect, setBoardRect] = useState<DOMRect | null>(null);
   const [clearedLine, setClearedLine] = useState<number | null>(null);
   const [particlesInit, setParticlesInit] = useState(false);
+  // Track where the shop was opened from
+  const [shopReturnTo, setShopReturnTo] = useState<Screen | null>(null);
 
   // --- tsparticles engine init ---
 
@@ -340,7 +342,24 @@ const HomePage: React.FC = () => {
     // НЕ устанавливаем currentScreen - пусть логика авторизации сама определит
   };
 
-  const handleOpenShop = () => setCurrentScreen("shop");
+  const handleOpenShop = useCallback(() => {
+    // Determine where to return after shop
+    if (currentScreen === "classic mode") {
+      setShopReturnTo("classic mode");
+    } else {
+      setShopReturnTo("main menu");
+    }
+    setCurrentScreen("shop");
+  }, [currentScreen]);
+
+  const handleShopBack = useCallback(() => {
+    if (shopReturnTo === "classic mode") {
+      setCurrentScreen("classic mode");
+    } else {
+      setCurrentScreen("main menu");
+    }
+    setShopReturnTo(null);
+  }, [shopReturnTo]);
 
   // Показываем загрузку ресурсов если они еще не загружены
   if (!resourcesLoaded) {
@@ -481,6 +500,7 @@ const HomePage: React.FC = () => {
           onBoardRectChange={setBoardRect}
           clearedLine={clearedLine}
           onGoHome={handleGoToMenu}
+          onOpenShop={handleOpenShop}
         />
       )}
 
@@ -494,7 +514,7 @@ const HomePage: React.FC = () => {
       )}
 
       {currentScreen === "shop" && (
-        <ShopScreen onBack={handleGoToMenu} />
+        <ShopScreen onBack={handleShopBack} />
       )}
 
       {/* Fallback для отладки */}

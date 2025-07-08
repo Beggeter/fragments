@@ -53,6 +53,7 @@ interface GameBoardProps {
   onBoardRectChange?: (rect: DOMRect | null) => void;
   clearedLine?: number | null;
   onGoHome?: () => void;
+  onOpenShop?: () => void;
 }
 
 // Тип для аргументов handlePiecePlacement
@@ -186,6 +187,7 @@ export const GameBoard: React.FC<
   onBoardRectChange,
   clearedLine,
   onGoHome,
+  onOpenShop,
 }) => {
   const {
     board,
@@ -339,6 +341,8 @@ export const GameBoard: React.FC<
     }[];
     cellSize: number;
   }>(null);
+
+  const [isComboExploding, setIsComboExploding] = useState(false);
 
   const potentialClearHighlight = useMemo(() => {
     if (!draggedPiece || !hoverCell) return [];
@@ -1338,6 +1342,7 @@ export const GameBoard: React.FC<
           setIsSettingsOpen(false);
         }}
         onGoHome={onGoHome}
+        onOpenShop={onOpenShop}
       />
       <div
         className={`flex flex-col items-center gap-5 min-h-screen bg-[var(--game-background)] p-4 no-select will-change-auto`}
@@ -1367,6 +1372,7 @@ export const GameBoard: React.FC<
               />
             )}
           </div>
+          <div className="flex flex-row gap-2">
           <div
             className="cursor-pointer flex items-center justify-center "
             onClick={() => setIsSettingsOpen(true)}
@@ -1383,6 +1389,7 @@ export const GameBoard: React.FC<
                 backfaceVisibility: "hidden",
               }}
             />
+          </div>
           </div>
         </div>
 
@@ -1407,7 +1414,7 @@ export const GameBoard: React.FC<
           <div className="glowing-border relative w-full h-full">
             <div className="relative w-full h-full">
               {/* Визуализатор комбо и анимаций очков теперь внутри поля */}
-              <ComboVisualizer lastScore={lastScoreResult} />
+              <ComboVisualizer lastScore={lastScoreResult} onExplodeChange={setIsComboExploding} />
               <BoardClearAnimationsOverlay
                 cells={clearAnimations}
                 cellSize={dynamicCellSize || DEFAULT_CELL_SIZE}
