@@ -878,3 +878,26 @@ input[type="range"].custom-range {
     filter: none !important;
   }
 }
+
+/* Анимации для счетчика комбо */
+@keyframes slideUp {
+  0% {
+    transform: translateY(54px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0px);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  0% {
+    transform: translateY(0px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-54px);
+    opacity: 0;
+  }
+}

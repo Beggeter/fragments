@@ -3,7 +3,7 @@
 import { ScoreResult } from "@/lib/data/types";
 import { ColorTheme, colorThemes, getThemeByScore } from "../UI/colorThemes";
 import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
-import { animate, useMotionValue, motion } from "framer-motion";
+import { animate, useMotionValue, motion, AnimatePresence } from "framer-motion";
 import { useGameStore } from "@/lib/state/store";
 import { vibrate } from "@/utils/helpers";
 import { useSettingsStore } from "@/lib/state/settings";
@@ -49,6 +49,76 @@ function useParentSize(ref: React.RefObject<HTMLElement | null>) {
   }, [ref]);
   return size;
 }
+
+// Компонент анимации барабана для счетчика комбо
+const ComboCounter: React.FC<{ value: number }> = ({ value }) => {
+  const [displayValue, setDisplayValue] = useState(value);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    if (value !== displayValue) {
+      // Небольшая задержка для более заметной анимации
+      const delayTimer = setTimeout(() => {
+        setIsAnimating(true);
+        
+        // Запускаем анимацию
+        const timer = setTimeout(() => {
+          setDisplayValue(value);
+          setIsAnimating(false);
+        }, 300); // Время анимации
+        
+        return () => clearTimeout(timer);
+      }, 50); // Задержка перед началом анимации
+      
+      return () => clearTimeout(delayTimer);
+    }
+  }, [value, displayValue]);
+
+  const numberStyle = {
+    fontFamily: "'Montserrat', Arial, sans-serif",
+    fontWeight: 900,
+    fontSize: 54,
+    stroke: "#2968EA",
+    strokeWidth: 6,
+    fill: "#FFD600",
+    paintOrder: "stroke" as const,
+    letterSpacing: 2,
+  };
+
+  return (
+    <g>
+      <AnimatePresence initial={false}>
+        {/* Текущее число */}
+        <motion.text
+          key={`current-${displayValue}`}
+          x={0}
+          y={0}
+          {...numberStyle}
+          initial={{ y: 0, opacity: 1 }}
+          animate={isAnimating ? { y: -54, opacity: 0 } : { y: 0, opacity: 1 }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+        >
+          {displayValue}
+        </motion.text>
+        
+        {/* Новое число (появляется снизу при анимации) */}
+        {isAnimating && (
+          <motion.text
+            key={`new-${value}`}
+            x={0}
+            y={0}
+            {...numberStyle}
+            initial={{ y: 54, opacity: 1 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+          >
+            {value}
+          </motion.text>
+        )}
+      </AnimatePresence>
+    </g>
+  );
+};
 
 /**
  * ComboVisualizer component displays a visual representation of combo levels
@@ -100,21 +170,27 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
 
   // Handle combo level changes
   useEffect(() => {
-    if (lastScore?.comboLevel) {
-      setIsExploding(true);
-      setShowComboText(true);
-      setShowClearText(false);
-      handleVibrate();
+    if (lastScore?.comboLevel !== undefined) {
+      if (lastScore.comboLevel > 0) {
+        setIsExploding(true);
+        setShowComboText(true);
+        setShowClearText(false);
+        handleVibrate();
 
-      const explodeTimer = setTimeout(() => setIsExploding(false), 400);
-      const textTimer = setTimeout(() => setShowComboText(false), 800);
+        const explodeTimer = setTimeout(() => setIsExploding(false), 400);
+        const textTimer = setTimeout(() => setShowComboText(false), 800);
 
-      return () => {
-        clearTimeout(explodeTimer);
-        clearTimeout(textTimer);
-      };
+        return () => {
+          clearTimeout(explodeTimer);
+          clearTimeout(textTimer);
+        };
+      } else {
+        // При сбросе комбо до 0 скрываем текст
+        setShowComboText(false);
+        setShowClearText(false);
+      }
     }
-  }, [lastScore?.comboLevel]);
+  }, [lastScore?.comboLevel, vibration]);
 
   // Показываем clearText после ComboText (если был) или сразу, если нет
   useEffect(() => {
@@ -341,7 +417,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
         (() => {
           const comboPos = getNearestPosition(lastScore.pixelPosition);
           // Смещаем надпись так, чтобы её центр совпадал с выбранной позицией
-          const left = comboPos.x - (comboWidth + (lastScore.comboLevel > 1 ? 70 : 0) + 24) / 2;
+          const left = comboPos.x - (comboWidth + 70 + 24) / 2;
           const top = comboPos.y - comboHeight / 2;
           return (
             <div
@@ -355,7 +431,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
               }}
             >
               <svg
-                width={comboWidth + (lastScore.comboLevel > 1 ? 70 : 0) + 24}
+                width={comboWidth + 70 + 24}
                 height={comboHeight}
                 style={{ display: "block" }}
               >
@@ -374,22 +450,9 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
                 >
                   Combo
                 </text>
-                {lastScore.comboLevel > 1 && (
-                  <text
-                    x={comboWidth + 16}
-                    y={comboHeight - 18}
-                    fontFamily="'Montserrat', Arial, sans-serif"
-                    fontWeight="900"
-                    fontSize="54"
-                    stroke="#2968EA"
-                    strokeWidth="6"
-                    fill="#FFD600"
-                    paintOrder="stroke"
-                    style={{ letterSpacing: 2 }}
-                  >
-                    {lastScore.comboLevel}
-                  </text>
-                )}
+                <g transform={`translate(${comboWidth + 16}, ${comboHeight - 18})`}>
+                  <ComboCounter value={lastScore.comboLevel} />
+                </g>
               </svg>
             </div>
           );

@@ -213,7 +213,7 @@ export class BlockGenerator {
     this.blockSetFinder = new BlockSetFinder(
       ALL_BLOCKS.map((matrix, index) => ({
         id: `block-${index}`,
-        uniqueId: `block-${index}_${Date.now()}`,
+        uniqueId: `block-${index}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name: `Block ${index + 1}`,
         matrix,
         difficulty: this.getDifficultyForIndex(index),
@@ -406,7 +406,7 @@ export class BlockGenerator {
   private fillBlockBag() {
     this.blockBag = ALL_BLOCKS.map((matrix, index) => ({
       id: `block-${index}`,
-      uniqueId: `block-${index}_${Date.now()}`,
+      uniqueId: `block-${index}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       name: `Block ${index + 1}`,
       matrix,
       difficulty: this.getDifficultyForIndex(index),
@@ -853,7 +853,7 @@ export class BlockGenerator {
       const selectedBlock = availableBlocks[selectedIndex];
       selectedBlocks.push({
         ...selectedBlock,
-        uniqueId: `${selectedBlock.id}_${Date.now()}_${selectedBlocks.length}`,
+        uniqueId: `${selectedBlock.id}_${Date.now()}_${selectedBlocks.length}_${Math.random().toString(36).substr(2, 9)}`,
         color: this.getRandomColor(),
       });
 

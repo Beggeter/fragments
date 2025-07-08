@@ -25,11 +25,26 @@ export const DraggablePiecesSection: React.FC<DraggablePiecesProps> = ({
 }) => {
   // Создаем массив с фиксированными позициями
   const piecesWithPositions = [0, 1, 2].map((index) => {
-    const piece = currentPieces.find(
-      (p) => p.uniqueId.split("_")[2] === String(index)
-    );
+    // Берем фигуру по индексу в массиве
+    const piece = currentPieces[index];
     return piece;
   });
+
+  // Отладочная информация
+  if (currentPieces.length > 0) {
+    console.log('DraggablePiecesSection pieces:', {
+      totalPieces: currentPieces.length,
+      piecesWithPositions: piecesWithPositions.map((p, i) => ({
+        index: i,
+        piece: p ? {
+          id: p.id,
+          uniqueId: p.uniqueId,
+          color: p.color,
+          matrixSize: `${p.matrix.length}x${p.matrix[0]?.length}`,
+        } : null,
+      })),
+    });
+  }
 
   const handleStart = (
     e: React.MouseEvent | React.TouchEvent,
