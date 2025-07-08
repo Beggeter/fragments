@@ -285,6 +285,30 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
 
   // 9 позиций внутри поля (с учётом размера надписи)
   function getPossiblePositions() {
+    // Проверяем, что размеры поля не нулевые
+    if (fieldWidth === 0 || fieldHeight === 0) {
+      // Fallback: используем размеры контейнера или фиксированные значения
+      const fallbackWidth = size.width || 400;
+      const fallbackHeight = size.height || 400;
+      const xs = [
+        fallbackWidth * 0.3,
+        fallbackWidth / 2,
+        fallbackWidth * 0.7
+      ];
+      const ys = [
+        fallbackHeight * 0.3,
+        fallbackHeight / 2,
+        fallbackHeight * 0.7
+      ];
+      const positions: { x: number; y: number }[] = [];
+      for (let i = 0; i < 3; i++) {
+        for (let j = 0; j < 3; j++) {
+          positions.push({ x: xs[j], y: ys[i] });
+        }
+      }
+      return positions;
+    }
+
     // Более кучные позиции: ближе к центру
     const marginX = Math.max(comboWidth / 4, 16);
     const marginY = Math.max(comboHeight / 2, 20);
@@ -404,13 +428,24 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
     return () => window.removeEventListener("resize", updateSize);
   }, []);
 
+  // Отладка: включить/выключить визуализацию позиций по нажатию D
+  useEffect(() => {
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'd' || e.key === 'D') {
+        setDebugMode(prev => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyPress);
+    return () => window.removeEventListener('keydown', handleKeyPress);
+  }, []);
+
   return (
     <div
       ref={containerRef}
       className="absolute inset-0 w-full h-full pointer-events-none"
     >
       {/* Визуализация возможных позиций для Combo (отладка) */}
-      {/* {getPossiblePositions().map((pos, idx) => (
+      {debugMode && getPossiblePositions().map((pos, idx) => (
         <div
           key={idx}
           style={{
@@ -429,7 +464,34 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
             opacity: 0.7,
           }}
         />
-      ))} */}
+      ))}
+      {debugMode && (
+        <div
+          style={{
+            position: "absolute",
+            top: 10,
+            left: 10,
+            background: "rgba(0,0,0,0.8)",
+            color: "white",
+            padding: "8px",
+            borderRadius: "4px",
+            fontSize: "12px",
+            zIndex: 3000,
+            fontFamily: "monospace",
+          }}
+        >
+          <div>fieldWidth: {fieldWidth}</div>
+          <div>fieldHeight: {fieldHeight}</div>
+          <div>size.width: {size.width}</div>
+          <div>size.height: {size.height}</div>
+          {lastScore?.pixelPosition && (
+            <>
+              <div>target.x: {lastScore.pixelPosition.x}</div>
+              <div>target.y: {lastScore.pixelPosition.y}</div>
+            </>
+          )}
+        </div>
+      )}
       <motion.div
         className={`absolute inset-0 p-2 -m-2 rounded-xl glowing-border ${
           isExploding ? "combo-explosion" : ""

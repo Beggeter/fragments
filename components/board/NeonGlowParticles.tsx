@@ -211,7 +211,7 @@ export const NeonGlowParticles: React.FC<NeonGlowParticlesProps> = React.memo(
        }
       
       // Добавляем небольшое случайное отклонение
-      angle += (Math.random() - 0.5) * 0.3; // ±15 градусов
+      angle += (Math.random() - 0.5) * 0.1; // ±5 градусов
       
       const endX = startPoint.x + Math.cos(angle) * distance;
       const endY = startPoint.y + Math.sin(angle) * distance;
@@ -324,12 +324,12 @@ export const NeonGlowParticles: React.FC<NeonGlowParticlesProps> = React.memo(
                 top: currentY,
                 pointerEvents: "none",
                 zIndex: 1,
-                transform: `rotate(${pt.randomRotation}deg) scale(${scale})`,
+                transform: `translateZ(0) rotate(${pt.randomRotation}deg) scale(${scale})`,
                 opacity,
                 willChange: "transform, opacity"
               }}
             >
-              {Math.random() > 0.5 ? (
+              {pt.id.length % 2 === 0 ? (
                 <rect x="20" y="20" width="60" height="60" 
                       fill="white" 
                       style={{
