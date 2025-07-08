@@ -2,16 +2,18 @@
 
 import { ScoreResult } from "@/lib/data/types";
 import { ColorTheme, colorThemes, getThemeByScore } from "../UI/colorThemes";
-import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
+import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from "react";
 import { animate, useMotionValue, motion, AnimatePresence } from "framer-motion";
 import { useGameStore } from "@/lib/state/store";
 import { vibrate } from "@/utils/helpers";
 import { useSettingsStore } from "@/lib/state/settings";
+import { PerimeterParticles } from "./PerimeterParticles";
 
 interface ComboVisualizerProps {
   speed?: number;
   className?: string;
   lastScore: ScoreResult | null;
+  onExplodeChange?: (isExploding: boolean) => void;
 }
 
 /**
@@ -128,6 +130,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   speed = 3,
   className = "",
   lastScore,
+  onExplodeChange,
 }) => {
   const theme = getThemeByScore(lastScore?.comboLevel);
   const blur = getBlur(lastScore?.movesSinceLastSuccess, lastScore?.comboLevel);
@@ -148,6 +151,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   const [isExploding, setIsExploding] = useState(false);
   const [showComboText, setShowComboText] = useState(false);
   const [showClearText, setShowClearText] = useState(false);
+  const [showParticles, setShowParticles] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [scorePluses, setScorePluses] = useState<
     {
@@ -167,22 +171,31 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
     useParentSize(containerRef);
   const [comboWidth, setComboWidth] = useState(0);
   const [comboHeight, setComboHeight] = useState(70); // svg высота по умолчанию
+  const rootRef = React.useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
 
   // Handle combo level changes
   useEffect(() => {
     if (lastScore?.comboLevel !== undefined) {
       if (lastScore.comboLevel > 0) {
         setIsExploding(true);
+      if (typeof onExplodeChange === "function") onExplodeChange(true);
         setShowComboText(true);
+      setShowParticles(true);
         setShowClearText(false);
         handleVibrate();
 
-        const explodeTimer = setTimeout(() => setIsExploding(false), 400);
-        const textTimer = setTimeout(() => setShowComboText(false), 800);
+      const explodeTimer = setTimeout(() => {
+        setIsExploding(false);
+        if (typeof onExplodeChange === "function") onExplodeChange(false);
+      }, 400);
+      const textTimer = setTimeout(() => setShowComboText(false), 800);
+      const particlesTimer = setTimeout(() => setShowParticles(false), 1000);
 
         return () => {
           clearTimeout(explodeTimer);
           clearTimeout(textTimer);
+        clearTimeout(particlesTimer);
         };
       } else {
         // При сбросе комбо до 0 скрываем текст
@@ -380,6 +393,17 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
     );
   };
 
+  useEffect(() => {
+    if (!containerRef.current) return;
+    function updateSize() {
+      const rect = containerRef.current?.getBoundingClientRect();
+      setSize({ width: rect?.width || 0, height: rect?.height || 0 });
+    }
+    updateSize();
+    window.addEventListener("resize", updateSize);
+    return () => window.removeEventListener("resize", updateSize);
+  }, []);
+
   return (
     <div
       ref={containerRef}
@@ -412,6 +436,27 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
         }`}
         style={borderStyle}
       />
+      {/* --- ПЕРИМЕТРАЛЬНЫЕ ЧАСТИЦЫ ПРИ КОМБО --- */}
+      {showParticles && size.width > 0 && size.height > 0 && (
+        <PerimeterParticles
+          width={size.width}
+          height={size.height}
+          visible={true}
+          // color={theme.background}
+        />
+      )}
+      {/* {lastScore && lastScore.comboLevel > 0 && (
+        <div
+          className={`combo-text ${
+            showComboText ? "show" : ""
+          } text-amber-100 absolute flex items-center justify-center inset-0
+           z-1000 font-figtree font-extrabold italic text-4xl  ]`}
+        >
+          {`Combo ${
+            lastScore.comboLevel > 1 ? `X${lastScore.comboLevel}` : ""
+          }!`}
+        </div>
+      )} */}
       {lastScore &&
         lastScore.comboLevel > 0 &&
         (() => {

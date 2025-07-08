@@ -96,6 +96,8 @@ const HomePage: React.FC = () => {
   const [boardRect, setBoardRect] = useState<DOMRect | null>(null);
   const [clearedLine, setClearedLine] = useState<number | null>(null);
   const [particlesInit, setParticlesInit] = useState(false);
+  // Track where the shop was opened from
+  const [shopReturnTo, setShopReturnTo] = useState<Screen | null>(null);
 
   // Добавляем состояние для отслеживания намеренного перезапуска
   const [isIntentionalRestart, setIsIntentionalRestart] = useState(false);
@@ -348,7 +350,24 @@ const HomePage: React.FC = () => {
     // НЕ устанавливаем currentScreen - пусть логика авторизации сама определит
   };
 
-  const handleOpenShop = () => setCurrentScreen("shop");
+  const handleOpenShop = useCallback(() => {
+    // Determine where to return after shop
+    if (currentScreen === "classic mode") {
+      setShopReturnTo("classic mode");
+    } else {
+      setShopReturnTo("main menu");
+    }
+    setCurrentScreen("shop");
+  }, [currentScreen]);
+
+  const handleShopBack = useCallback(() => {
+    if (shopReturnTo === "classic mode") {
+      setCurrentScreen("classic mode");
+    } else {
+      setCurrentScreen("main menu");
+    }
+    setShopReturnTo(null);
+  }, [shopReturnTo]);
 
   // Показываем загрузку ресурсов если они еще не загружены
   if (!resourcesLoaded) {
@@ -491,6 +510,7 @@ const HomePage: React.FC = () => {
           onGoHome={handleGoToMenu}
           isIntentionalRestart={isIntentionalRestart}
           onRestartComplete={handleRestartComplete}
+          onOpenShop={handleOpenShop}
         />
       )}
 
@@ -505,7 +525,7 @@ const HomePage: React.FC = () => {
       )}
 
       {currentScreen === "shop" && (
-        <ShopScreen onBack={handleGoToMenu} />
+        <ShopScreen onBack={handleShopBack} />
       )}
 
       {/* Fallback для отладки */}
