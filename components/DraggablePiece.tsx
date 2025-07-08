@@ -30,13 +30,13 @@ export const DraggablePiece: React.FC<DraggablePieceProps> = ({
   const pieceColor = piece.color || 'red';
 
   // Отладочная информация
-  console.log('DraggablePiece rendering:', {
-    pieceId: piece.id,
-    pieceColor,
-    matrixSize: `${piece.matrix.length}x${piece.matrix[0]?.length}`,
-    matrixSample: piece.matrix.slice(0, 2).map(row => row.slice(0, 2)),
-    hasValue1: piece.matrix.some(row => row.some(cell => cell.value === 1)),
-  });
+  // console.log('DraggablePiece rendering:', {
+  //   pieceId: piece.id,
+  //   pieceColor,
+  //   matrixSize: `${piece.matrix.length}x${piece.matrix[0]?.length}`,
+  //   matrixSample: piece.matrix.slice(0, 2).map(row => row.slice(0, 2)),
+  //   hasValue1: piece.matrix.some(row => row.some(cell => cell.value === 1)),
+  // });
 
   const baseClasses = `grid gap-0.5  ${
     isGhost ? "pointer-events-none drop-shadow-[5px_5px_2px_rgba(0,0,0,0.3)]" : "cursor-pointer drop-shadow-[5px_5px_2px_rgba(0,0,0,0.2)]"
