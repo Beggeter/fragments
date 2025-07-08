@@ -17,6 +17,7 @@ declare global {
         ready: () => void;
         expand: () => void;
         close: () => void;
+        openInvoice?: (...args: any[]) => void;
         MainButton: {
           text: string;
           color: string;
@@ -34,4 +35,4 @@ declare global {
   }
 }
 
-export {}; 
+export {};

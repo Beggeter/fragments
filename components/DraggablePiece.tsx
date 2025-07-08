@@ -22,8 +22,21 @@ export const DraggablePiece: React.FC<DraggablePieceProps> = ({
   onTransitionEnd,
 }) => {
   if (!piece || !piece.matrix) {
+    console.warn('DraggablePiece: missing piece or matrix', { piece });
     return null;
   }
+
+  // Убеждаемся, что у фигуры есть цвет
+  const pieceColor = piece.color || 'red';
+
+  // Отладочная информация
+  console.log('DraggablePiece rendering:', {
+    pieceId: piece.id,
+    pieceColor,
+    matrixSize: `${piece.matrix.length}x${piece.matrix[0]?.length}`,
+    matrixSample: piece.matrix.slice(0, 2).map(row => row.slice(0, 2)),
+    hasValue1: piece.matrix.some(row => row.some(cell => cell.value === 1)),
+  });
 
   const baseClasses = `grid gap-0.5  ${
     isGhost ? "pointer-events-none drop-shadow-[5px_5px_2px_rgba(0,0,0,0.3)]" : "cursor-pointer drop-shadow-[5px_5px_2px_rgba(0,0,0,0.2)]"
@@ -45,7 +58,7 @@ export const DraggablePiece: React.FC<DraggablePieceProps> = ({
               cell.value === 1 ? (
                 <Piece
                   key={`${x}-${y}`}
-                  color={piece.color}
+                  color={pieceColor}
                   size={isGhost ? ghostSize : originalSize}
                 />
               ) : (

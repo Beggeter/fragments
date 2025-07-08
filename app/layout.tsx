@@ -62,6 +62,14 @@ export default function RootLayout({
           src="https://telegram.org/js/telegram-web-app.js"
           strategy="beforeInteractive"
         />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&family=Fredoka:wght@700&display=swap"
+          rel="stylesheet"
+        ></link>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Montserrat:wght@900&display=swap"
+          rel="stylesheet"
+        ></link>
       </head>
       <body>{children}</body>
     </html>

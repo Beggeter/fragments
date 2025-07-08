@@ -333,7 +333,7 @@ body {
 
 .combo-text {
   opacity: 0;
-  transform: translateX(-10vw);
+  transform: scale(0.6);
   transition: opacity 0.8s ease-in-out, transform 0.8s ease-in-out;
   will-change: opacity, transform;
   pointer-events: none;
@@ -342,27 +342,21 @@ body {
 .combo-text.show {
   text-shadow: 3px 0px 10px rgba(255, 255, 255, 0.5),
     3px 0px 5px rgba(0, 0, 0, 0.8);
-  animation: combo-text-show 0.8s ease-in-out;
+  animation: combo-text-show 0.8s cubic-bezier(0.23, 1.12, 0.32, 1) forwards;
 }
 
 @keyframes combo-text-show {
   0% {
-    transform: translateX(-10vw);
     opacity: 0;
+    transform: scale(0.6);
   }
   40% {
-    transform: translateX(0);
     opacity: 1;
-    scale: 1.2;
-  }
-  60% {
-    transform: translateX(0);
-    opacity: 1;
-    scale: 1.1;
+    transform: scale(1);
   }
   100% {
-    transform: translateX(10vw);
     opacity: 0;
+    transform: scale(1);
   }
 }
 
@@ -892,6 +886,35 @@ input[type="range"].custom-range {
 
 .store-scroll{
   scrollbar-width: none;
+}
+
+@media (max-width: 600px) {
+  .glowing-border {
+    filter: none !important;
+  }
+}
+
+/* Анимации для счетчика комбо */
+@keyframes slideUp {
+  0% {
+    transform: translateY(54px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0px);
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  0% {
+    transform: translateY(0px);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-54px);
+    opacity: 0;
+  }
 }
 
 .font-figtree-mulish {

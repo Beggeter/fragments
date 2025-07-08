@@ -1,4 +1,6 @@
-export const SHARD_PACKS = [
+import { ShardPack } from "@/types/shop";
+
+export const SHARD_PACKS: ShardPack[] = [
   {
     amount: 2500,
     price: 800,
@@ -13,10 +15,18 @@ export const SHARD_PACKS = [
     labelType: "discount",
     icon: "/4crystals.svg",
   },
-  { amount: 400, price: 140, label: null, icon: "/3crystals.svg" },
-  { amount: 150, price: 60, label: null, icon: "/2crystals.svg" },
-  { amount: 60, price: 25, label: null, icon: "/crystal.svg" },
-  { amount: 20, price: 10, label: null, icon: "/crystal.svg" },
+  {
+    amount: 400,
+    price: 140,
+    icon: "/3crystals.svg",
+  },
+  {
+    amount: 150,
+    price: 60,
+    icon: "/2crystals.svg",
+  },
+  { amount: 60, price: 25, icon: "/crystal.svg" },
+  { amount: 20, price: 10, icon: "/crystal.svg" },
 ];
 
 export const BOOSTERS = [

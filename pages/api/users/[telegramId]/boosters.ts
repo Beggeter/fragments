@@ -8,8 +8,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'Telegram ID is required' });
   }
 
+  const isDev = process.env.NODE_ENV === 'development';
+  const adminMode = req.cookies?.adminMode === 'true';
+  let effectiveTelegramId = telegramId;
+  if (isDev && adminMode) {
+    // Разрешаем админ-доступ к любому пользователю (например, 610936383)
+    effectiveTelegramId = telegramId;
+  }
+
   try {
-    const user = await UserService.getUserByTelegramId(telegramId);
+    const user = await UserService.getUserByTelegramId(effectiveTelegramId);
     if (!user) {
       return res.status(404).json({ error: 'User not found' });
     }

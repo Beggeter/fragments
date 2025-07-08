@@ -31,6 +31,13 @@ export interface ExtendedGameState extends GameState {
   scoreDisplayCoords?: { x: number; y: number } | null;
   onGameOver: (() => void) | null;
   setOnGameOver: (callback: (() => void) | null) => void;
+  restoreGameState: (state: {
+    board: Cell[][];
+    currentPieces: Block[];
+    score: number;
+    combo: number;
+    placedPiecesCount: number;
+  }) => void;
 }
 
 const scoreCalculator = new ScoreCalculator();
@@ -239,9 +246,14 @@ export const useGameStore = create<
       const newRound = piecesPlaced + 1 >= 3 ? round + 1 : round;
       const newPiecesPlaced = piecesPlaced + 1 >= 3 ? 0 : piecesPlaced + 1;
 
+      console.log('Removing piece with uniqueId:', draggedPiece.uniqueId);
+      console.log('Current pieces before removal:', currentPieces.map(p => ({ id: p.id, uniqueId: p.uniqueId })));
+      
       const newCurrentPieces = currentPieces.filter(
         (p) => p.uniqueId !== draggedPiece.uniqueId
       );
+      
+      console.log('Current pieces after removal:', newCurrentPieces.map(p => ({ id: p.id, uniqueId: p.uniqueId })));
 
       // Первое обновление с размещенной фигурой, но без очистки линий
       set({
@@ -259,18 +271,16 @@ export const useGameStore = create<
 
       // Если есть линии для очистки, обновляем доску после анимации
       if (hasCellsToClear) {
-        setTimeout(() => {
-          set({
-            board: boardAfterClearing,
-            isAnimating: false,
-          });
+        set({
+          board: boardAfterClearing,
+          isAnimating: false,
+        });
 
-          // Проверяем завершение игры ПОСЛЕ очистки линий
-          if (checkGameOver(boardAfterClearing, newCurrentPieces)) {
-            handleGameOver();
-            return;
-          }
-        }, 300); // Соответствует длительности анимации из CSS
+        // Проверяем завершение игры ПОСЛЕ очистки линий
+        if (checkGameOver(boardAfterClearing, newCurrentPieces)) {
+          handleGameOver();
+          return;
+        }
       } else {
         // Если нет линий для очистки, проверяем Game Over сразу
         if (checkGameOver(newBoard, newCurrentPieces)) {
@@ -294,6 +304,7 @@ export const useGameStore = create<
           return;
         }
 
+        console.log('Generated new blocks:', newBlocks.map(b => ({ id: b.id, uniqueId: b.uniqueId })));
         set({
           currentPieces: newBlocks,
           previewBlock: blockGenerator.getPreviewBlock(),
@@ -328,5 +339,29 @@ export const useGameStore = create<
     onGameOver: null,
     setOnGameOver: (callback: (() => void) | null) =>
       set({ onGameOver: callback }),
+    
+    restoreGameState: (state) => {
+      // Board уже содержит Cell[][] с цветами, используем как есть
+      const boardWithColors = state.board;
+      
+      // Убеждаемся, что у всех фигур есть правильные цвета и uniqueId
+      const fixedPieces = state.currentPieces.map((piece, index) => ({
+        ...piece,
+        color: piece.color || 'red', // fallback цвет если цвет потерялся
+        uniqueId: piece.uniqueId || `${piece.id}_${Date.now()}_${index}`,
+      }));
+      
+      set({
+        board: boardWithColors,
+        currentPieces: fixedPieces,
+        score: state.score,
+        piecesPlaced: state.placedPiecesCount,
+        gameOver: false,
+        draggedPiece: null,
+        dragPosition: null,
+        hoverCell: null,
+        lastScoreResult: null,
+      });
+    },
   };
 });

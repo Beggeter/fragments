@@ -5,6 +5,8 @@ import BoosterPurchaseModal from "./store/BoosterPurchaseModal";
 import ZenPurchaseModal from "./store/ZenPurchaseModal";
 import { LoadingNumberAnimation } from "./LoadingNumberAnimation";
 import { BOOSTERS, SHARD_PACKS, ZEN_SUBS } from "./store/storeItems";
+import ShardPurchaseModal from "./store/ShardPurchaseModal";
+import { ShardPack } from "@/types/shop";
 import ClickEffect from "./ClickEffect";
 
 interface ShopScreenProps {
@@ -270,6 +272,11 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack }) => {
   const { user } = useUser();
   const balance = user?.currency ?? 0;
 
+  const [selectedShardPack, setSelectedShardPack] = useState<ShardPack | null>(
+    null
+  );
+  const [isShardModalOpen, setIsShardModalOpen] = useState(false);
+
   // Функция для скролла к подпискам только внутри store-scroll
   const scrollToSubscriptions = () => {
     if (storeScrollRef.current && subscriptionsContainerRef.current) {
@@ -490,6 +497,21 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack }) => {
           onConfirm={handleZenPurchaseConfirm}
           subscription={selectedSub}
           playerBalanceCrystals={isAdmin ? adminBalance ?? 333 : balance}
+        />
+      )}
+      {selectedShardPack && (
+        <ShardPurchaseModal
+          isOpen={isShardModalOpen}
+          onClose={() => {
+            setIsShardModalOpen(false);
+            setSelectedShardPack(null);
+          }}
+          pack={selectedShardPack}
+          userId={user?.id}
+          onSuccess={() => {
+            setIsShardModalOpen(false);
+            setSelectedShardPack(null); /* обновить баланс, если нужно */
+          }}
         />
       )}
     </div>

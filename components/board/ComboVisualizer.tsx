@@ -2,8 +2,8 @@
 
 import { ScoreResult } from "@/lib/data/types";
 import { ColorTheme, colorThemes, getThemeByScore } from "../UI/colorThemes";
-import React, { useState, useEffect, useMemo } from "react";
-import { animate, useMotionValue, motion } from "framer-motion";
+import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from "react";
+import { animate, useMotionValue, motion, AnimatePresence } from "framer-motion";
 import { useGameStore } from "@/lib/state/store";
 import { vibrate } from "@/utils/helpers";
 import { useSettingsStore } from "@/lib/state/settings";
@@ -25,11 +25,101 @@ const getBlur = (
   comboLevel: number | undefined
 ): [number, number] => {
   if (!comboLevel || comboLevel < 1) return [0.5, 0.5];
-  if (!moves || moves === 0) return [25, 1];
-  if (moves === 1) return [15, 2];
-  if (moves === 2) return [5, 3];
+  if (!moves || moves === 0) return [8, 1];
+  if (moves === 1) return [6, 2];
+  if (moves === 2) return [3, 3];
   if (moves >= 3) return [1, 8];
   return [0.5, 0.5];
+};
+
+// Новый хук для получения размеров поля
+function useParentSize(ref: React.RefObject<HTMLElement | null>) {
+  const [size, setSize] = useState<{ width: number; height: number }>({
+    width: 0,
+    height: 0,
+  });
+  useLayoutEffect(() => {
+    function update() {
+      if (ref.current) {
+        const rect = ref.current.getBoundingClientRect();
+        setSize({ width: rect.width, height: rect.height });
+      }
+    }
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, [ref]);
+  return size;
+}
+
+// Компонент анимации барабана для счетчика комбо
+const ComboCounter: React.FC<{ value: number }> = ({ value }) => {
+  const [displayValue, setDisplayValue] = useState(value);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    if (value !== displayValue) {
+      // Небольшая задержка для более заметной анимации
+      const delayTimer = setTimeout(() => {
+        setIsAnimating(true);
+        
+        // Запускаем анимацию
+        const timer = setTimeout(() => {
+          setDisplayValue(value);
+          setIsAnimating(false);
+        }, 300); // Время анимации
+        
+        return () => clearTimeout(timer);
+      }, 50); // Задержка перед началом анимации
+      
+      return () => clearTimeout(delayTimer);
+    }
+  }, [value, displayValue]);
+
+  const numberStyle = {
+    fontFamily: "'Montserrat', Arial, sans-serif",
+    fontWeight: 900,
+    fontSize: 54,
+    stroke: "#2968EA",
+    strokeWidth: 6,
+    fill: "#FFD600",
+    paintOrder: "stroke" as const,
+    letterSpacing: 2,
+  };
+
+  return (
+    <g>
+      <AnimatePresence initial={false}>
+        {/* Текущее число */}
+        <motion.text
+          key={`current-${displayValue}`}
+          x={0}
+          y={0}
+          {...numberStyle}
+          initial={{ y: 0, opacity: 1 }}
+          animate={isAnimating ? { y: -54, opacity: 0 } : { y: 0, opacity: 1 }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+        >
+          {displayValue}
+        </motion.text>
+        
+        {/* Новое число (появляется снизу при анимации) */}
+        {isAnimating && (
+          <motion.text
+            key={`new-${value}`}
+            x={0}
+            y={0}
+            {...numberStyle}
+            initial={{ y: 54, opacity: 1 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+          >
+            {value}
+          </motion.text>
+        )}
+      </AnimatePresence>
+    </g>
+  );
 };
 
 /**
@@ -75,18 +165,25 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   >([]);
 
   const scorePlusId = React.useRef(0);
+  const comboRef = useRef<SVGTextElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const { width: fieldWidth, height: fieldHeight } =
+    useParentSize(containerRef);
+  const [comboWidth, setComboWidth] = useState(0);
+  const [comboHeight, setComboHeight] = useState(70); // svg высота по умолчанию
   const rootRef = React.useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
 
   // Handle combo level changes
   useEffect(() => {
-    if (lastScore?.comboLevel) {
-      setIsExploding(true);
+    if (lastScore?.comboLevel !== undefined) {
+      if (lastScore.comboLevel > 0) {
+        setIsExploding(true);
       if (typeof onExplodeChange === "function") onExplodeChange(true);
-      setShowComboText(true);
+        setShowComboText(true);
       setShowParticles(true);
-      setShowClearText(false);
-      handleVibrate();
+        setShowClearText(false);
+        handleVibrate();
 
       const explodeTimer = setTimeout(() => {
         setIsExploding(false);
@@ -95,13 +192,18 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
       const textTimer = setTimeout(() => setShowComboText(false), 800);
       const particlesTimer = setTimeout(() => setShowParticles(false), 1000);
 
-      return () => {
-        clearTimeout(explodeTimer);
-        clearTimeout(textTimer);
+        return () => {
+          clearTimeout(explodeTimer);
+          clearTimeout(textTimer);
         clearTimeout(particlesTimer);
-      };
+        };
+      } else {
+        // При сбросе комбо до 0 скрываем текст
+        setShowComboText(false);
+        setShowClearText(false);
+      }
     }
-  }, [lastScore?.comboLevel]);
+  }, [lastScore?.comboLevel, vibration]);
 
   // Показываем clearText после ComboText (если был) или сразу, если нет
   useEffect(() => {
@@ -165,13 +267,69 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
     animate(borderEnd, t.borderEnd, { duration: 0.7 });
 
     if (isExploding) {
-      animate(blurValue, `${b[0] * 1.6}px`, { duration: 0.4 });
-      animate(brightnessValue, 1.4, { duration: 0.4 }); // Добавляем анимацию brightness
+      animate(blurValue, `${Math.min(b[0] * 1.6, 12)}px`, { duration: 0.4 });
+      animate(brightnessValue, 1.15, { duration: 0.4 });
     } else {
       animate(blurValue, `${b[0]}px`, { duration: 0.7 });
-      animate(brightnessValue, 1, { duration: 0.4 }); // Возвращаем к нормальному brightness
+      animate(brightnessValue, 1, { duration: 0.4 });
     }
   }, [theme, blur, currentTheme, currentBlur, debugMode]);
+
+  useLayoutEffect(() => {
+    if (comboRef.current) {
+      const bbox = comboRef.current.getBBox();
+      setComboWidth(bbox.width);
+      setComboHeight(bbox.height + 20); // запас
+    }
+  }, [lastScore?.comboLevel, showComboText]);
+
+  // 9 позиций внутри поля (с учётом размера надписи)
+  function getPossiblePositions() {
+    // Более кучные позиции: ближе к центру
+    const marginX = Math.max(comboWidth / 4, 16);
+    const marginY = Math.max(comboHeight / 2, 20);
+    const xs = [
+      fieldWidth * 0.3,
+      fieldWidth / 2,
+      fieldWidth * 0.7
+    ];
+    const ys = [
+      fieldHeight * 0.3,
+      fieldHeight / 2,
+      fieldHeight * 0.7
+    ];
+    const positions: { x: number; y: number }[] = [];
+    for (let i = 0; i < 3; i++) {
+      for (let j = 0; j < 3; j++) {
+        positions.push({ x: xs[j], y: ys[i] });
+      }
+    }
+    return positions;
+  }
+
+  // Функция поиска ближайшей позиции
+  function getNearestPosition(
+    target: { x: number; y: number } | undefined | null
+  ) {
+    const positions = getPossiblePositions();
+    if (!target) return positions[4]; // центр
+    let minDist = Infinity;
+    let best: { x: number; y: number }[] = [];
+    for (const pos of positions) {
+      const dx = pos.x - target.x;
+      const dy = pos.y - target.y;
+      const d = Math.sqrt(dx * dx + dy * dy);
+      if (d < minDist - 1e-3) {
+        minDist = d;
+        best = [pos];
+      } else if (Math.abs(d - minDist) < 1e-3) {
+        best.push(pos);
+      }
+    }
+    // Если несколько — выбираем более правую, если x совпадает — более высокую (меньше y)
+    best.sort((a, b) => b.x - a.x || a.y - b.y);
+    return best[0];
+  }
 
   const borderStyle = {
     "--border-angle": "0deg",
@@ -204,7 +362,8 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
               "--scoreplus-y-to": `${sp.to.y}px`,
               pointerEvents: "none",
               color: sp.color,
-              textShadow: "0 0 8px #000, 0 0 2px #fff",
+              WebkitTextStroke: "1.2px #38BDF8",
+              textShadow: undefined,
               position: "absolute",
             } as React.CSSProperties
           }
@@ -223,20 +382,21 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
           top: sp.y,
           pointerEvents: "none",
           color: sp.color,
-          textShadow: "0 0 8px #000, 0 0 2px #fff",
+          WebkitTextStroke: "1.2px #38BDF8",
+          textShadow: undefined,
           position: "absolute",
         }}
         className="text-4xl z-2000 font-extrabold font-figtree"
       >
-        +{sp.value}
+        {sp.value}
       </div>
     );
   };
 
   useEffect(() => {
-    if (!rootRef.current) return;
+    if (!containerRef.current) return;
     function updateSize() {
-      const rect = rootRef.current?.getBoundingClientRect();
+      const rect = containerRef.current?.getBoundingClientRect();
       setSize({ width: rect?.width || 0, height: rect?.height || 0 });
     }
     updateSize();
@@ -246,10 +406,30 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
 
   return (
     <div
-      ref={rootRef}
-      className={"absolute inset-0 " + className}
-      style={{ pointerEvents: "none" }}
+      ref={containerRef}
+      className="absolute inset-0 w-full h-full pointer-events-none"
     >
+      {/* Визуализация возможных позиций для Combo (отладка) */}
+      {/* {getPossiblePositions().map((pos, idx) => (
+        <div
+          key={idx}
+          style={{
+            position: "absolute",
+            left: pos.x,
+            top: pos.y,
+            width: 14,
+            height: 14,
+            background: "#38BDF8",
+            borderRadius: "50%",
+            border: "2px solid #fff",
+            boxShadow: "0 0 8px 2px #38BDF8",
+            transform: "translate(-50%, -50%)",
+            zIndex: 2000,
+            pointerEvents: "none",
+            opacity: 0.7,
+          }}
+        />
+      ))} */}
       <motion.div
         className={`absolute inset-0 p-2 -m-2 rounded-xl glowing-border ${
           isExploding ? "combo-explosion" : ""
@@ -265,7 +445,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
           // color={theme.background}
         />
       )}
-      {lastScore && lastScore.comboLevel > 0 && (
+      {/* {lastScore && lastScore.comboLevel > 0 && (
         <div
           className={`combo-text ${
             showComboText ? "show" : ""
@@ -276,7 +456,52 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
             lastScore.comboLevel > 1 ? `X${lastScore.comboLevel}` : ""
           }!`}
         </div>
-      )}
+      )} */}
+      {lastScore &&
+        lastScore.comboLevel > 0 &&
+        (() => {
+          const comboPos = getNearestPosition(lastScore.pixelPosition);
+          // Смещаем надпись так, чтобы её центр совпадал с выбранной позицией
+          const left = comboPos.x - (comboWidth + 70 + 24) / 2;
+          const top = comboPos.y - comboHeight / 2;
+          return (
+            <div
+              className={`combo-text ${showComboText ? "show" : ""} absolute flex items-center justify-center z-1000`}
+              style={{
+                position: "absolute",
+                left,
+                top,
+                pointerEvents: "none",
+                zIndex: 1000,
+              }}
+            >
+              <svg
+                width={comboWidth + 70 + 24}
+                height={comboHeight}
+                style={{ display: "block" }}
+              >
+                <text
+                  ref={comboRef}
+                  x={10}
+                  y={comboHeight - 18}
+                  fontFamily="'Montserrat', Arial, sans-serif"
+                  fontWeight="900"
+                  fontSize="48"
+                  stroke="#2968EA"
+                  strokeWidth="6"
+                  fill="#fff"
+                  paintOrder="stroke"
+                  style={{ letterSpacing: 2 }}
+                >
+                  Combo
+                </text>
+                <g transform={`translate(${comboWidth + 16}, ${comboHeight - 18})`}>
+                  <ComboCounter value={lastScore.comboLevel} />
+                </g>
+              </svg>
+            </div>
+          );
+        })()}
       {showClearText && (
         <div
           className=" clear-text text-red-200  absolute flex items-center justify-center

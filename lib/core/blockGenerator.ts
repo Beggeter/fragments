@@ -213,7 +213,7 @@ export class BlockGenerator {
     this.blockSetFinder = new BlockSetFinder(
       ALL_BLOCKS.map((matrix, index) => ({
         id: `block-${index}`,
-        uniqueId: `block-${index}_${Date.now()}`,
+        uniqueId: `block-${index}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         name: `Block ${index + 1}`,
         matrix,
         difficulty: this.getDifficultyForIndex(index),
@@ -406,7 +406,7 @@ export class BlockGenerator {
   private fillBlockBag() {
     this.blockBag = ALL_BLOCKS.map((matrix, index) => ({
       id: `block-${index}`,
-      uniqueId: `block-${index}_${Date.now()}`,
+      uniqueId: `block-${index}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       name: `Block ${index + 1}`,
       matrix,
       difficulty: this.getDifficultyForIndex(index),
@@ -768,8 +768,6 @@ export class BlockGenerator {
 
       // Проверяем, можно ли разместить все блоки
       if (this.canPlaceAllBlocks(board, blocks)) {
-        // Логируем успешную генерацию
-        this.logGameState(board, blocks, 0, 0);
         return blocks;
       }
 
@@ -778,7 +776,6 @@ export class BlockGenerator {
 
     // Если не удалось найти подходящий набор, возвращаем случайные блоки
     const fallbackBlocks = this.generateWeightedRandomBlocks(board);
-    this.logGameState(board, fallbackBlocks, 0, 0);
     return fallbackBlocks;
   }
 
@@ -856,7 +853,7 @@ export class BlockGenerator {
       const selectedBlock = availableBlocks[selectedIndex];
       selectedBlocks.push({
         ...selectedBlock,
-        uniqueId: `${selectedBlock.id}_${Date.now()}_${selectedBlocks.length}`,
+        uniqueId: `${selectedBlock.id}_${Date.now()}_${selectedBlocks.length}_${Math.random().toString(36).substr(2, 9)}`,
         color: this.getRandomColor(),
       });
 
@@ -865,31 +862,6 @@ export class BlockGenerator {
     }
 
     return selectedBlocks;
-  }
-
-  private async logGameState(
-    board: Matrix,
-    blocks: Block[],
-    score: number,
-    linesCleared: number
-  ) {
-    try {
-      await fetch("/api/game-logs", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          board,
-          blocks,
-          score,
-          linesCleared,
-          gameState: "block_generation",
-        }),
-      });
-    } catch (error) {
-      console.error("Failed to log game state:", error);
-    }
   }
 
   private findBestBlockPlacement(

@@ -19,7 +19,7 @@ export const useGameOver = ({
   const { setOnGameOver } = useGameStore();
 
   useEffect(() => {
-    setOnGameOver(() => {
+    const gameOverHandler = () => {
       const { board } = useGameStore.getState();
 
       // Находим все пустые клетки
@@ -66,7 +66,9 @@ export const useGameOver = ({
 
         currentIndex++;
       }, CELL_FILL_INTERVAL); // Интервал между добавлением клеток
-    });
+    };
+
+    setOnGameOver(gameOverHandler);
 
     return () => {
       setOnGameOver(null);
