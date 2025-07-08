@@ -3,7 +3,6 @@ import { Block, GameState, GameSettings } from '../types/game';
 import { BlockGenerator } from '../utils/BlockGenerator';
 import { ScoreCalculator } from '../utils/ScoreCalculator';
 import { DifficultyEvaluator } from '../utils/DifficultyEvaluator';
-import { useGameLogger } from '../hooks/useGameLogger';
 
 // Функция для проверки валидности размещения блока
 function isValidPlacement(board: number[][], block: Block, x: number, y: number): boolean {
@@ -66,13 +65,19 @@ interface GameStore extends GameState {
   setPreviewBlock: (block: Block | null) => void;
   onGameOver: (() => void) | null;
   setOnGameOver: (callback: (() => void) | null) => void;
+  restoreGameState: (state: {
+    board: number[][];
+    currentPieces: Block[];
+    score: number;
+    combo: number;
+    placedPiecesCount: number;
+  }) => void;
 }
 
 export const useGameStore = create<GameStore>((set, get) => {
   const blockGenerator = new BlockGenerator();
   const scoreCalculator = new ScoreCalculator();
   const difficultyEvaluator = new DifficultyEvaluator();
-  const { logEvent } = useGameLogger();
 
   const initializeGame = () => {
     const { width, height, initialPieces } = DEFAULT_SETTINGS;
@@ -309,5 +314,19 @@ export const useGameStore = create<GameStore>((set, get) => {
     setPreviewBlock: (block: Block | null) => set({ previewBlock: block }),
     onGameOver: null,
     setOnGameOver: (callback: (() => void) | null) => set({ onGameOver: callback }),
+    restoreGameState: (state) => {
+      set({
+        board: state.board,
+        currentPieces: state.currentPieces,
+        score: state.score,
+        combo: state.combo,
+        placedPiecesCount: state.placedPiecesCount,
+        draggedPiece: null,
+        dragPosition: null,
+        hoverCell: null,
+        lastScoreResult: null,
+        validPositions: [],
+      });
+    },
   };
 }); 

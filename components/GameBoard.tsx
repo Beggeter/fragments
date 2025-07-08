@@ -28,6 +28,7 @@ import settings from "@/public/settings.svg";
 import { playPlacePiece } from "@/lib/utils/sound";
 import { useUser } from "@/hooks/useUser";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { useGameSave } from "@/hooks/useGameSave";
 import trophyImg from "@/public/record.png";
 import Particles from "@tsparticles/react";
 import { getThemeByScore } from "./UI/colorThemes";
@@ -285,6 +286,7 @@ export const GameBoard: React.FC<
 
   const { user } = useUser();
   const { isAdmin } = useAdminAuth();
+  const { loadGame, forceSave, saveAfterAction, clearSaves } = useGameSave();
 
   const [boosters, setBoosters] = useState<any[]>([]);
 
@@ -382,10 +384,23 @@ export const GameBoard: React.FC<
   }, [isAnimating]);
 
   useEffect(() => {
-    if (currentPieces.length === 0) {
-      initializeGame();
-    }
-  }, [currentPieces.length, initializeGame]);
+    const initializeGameWithSave = async () => {
+      if (currentPieces.length === 0) {
+        // Пытаемся загрузить сохраненную игру
+        const gameLoaded = await loadGame();
+        
+        if (!gameLoaded) {
+          // Если сохраненной игры нет, начинаем новую
+          console.log('No saved game found, starting new game');
+          initializeGame();
+        } else {
+          console.log('Saved game loaded successfully');
+        }
+      }
+    };
+
+    initializeGameWithSave();
+  }, [currentPieces.length, initializeGame, loadGame]);
 
   useEffect(() => {
     if (currentPieces.length > 0) {
@@ -515,9 +530,16 @@ export const GameBoard: React.FC<
     lastHighlightedPosition,
   ]);
 
+  // Создаем стабильную функцию для game over
+  const handleGameOver = useCallback(() => {
+    // Очищаем все сохранения при проигрыше
+    clearSaves();
+    onGameOver();
+  }, [clearSaves, onGameOver]);
+
   // Устанавливаем onGameOver callback в store
   useGameOver({
-    onGameOver,
+    onGameOver: handleGameOver,
     width,
     height,
   });
@@ -535,7 +557,26 @@ export const GameBoard: React.FC<
         .catch(() => {
           setAdminRecord(0);
           setIsRecordLoading(false);
-        });
+        });[
+    {
+        "id": "block-25",
+        "uniqueId": "block-25_1751917052455_0",
+        "color": "blue",
+        "matrixSize": "2x3"
+    },
+    {
+        "id": "block-2",
+        "uniqueId": "block-2_1751917052455_1",
+        "color": "green",
+        "matrixSize": "1x4"
+    },
+    {
+        "id": "block-7",
+        "uniqueId": "block-7_1751917052455_2",
+        "color": "yellow",
+        "matrixSize": "5x1"
+    }
+]
     } else {
       setAdminRecord(null);
       setIsRecordLoading(false);
@@ -567,6 +608,9 @@ export const GameBoard: React.FC<
         piecesPlaced: piecesPlaced,
       },
     ]);
+    
+    // Сохраняем игру после использования лазера
+    saveAfterAction();
   };
 
   // Новый обработчик undo
@@ -694,6 +738,8 @@ export const GameBoard: React.FC<
       setTimeout(() => setExplodingCells(null), 500);
       // --- Списываем бустер только после успешного применения ---
       await useBooster('bomb');
+      // Сохраняем игру после использования бомбы
+      saveAfterAction();
     }
     setBombMode(false);
     setBombCenter(null);
@@ -777,10 +823,85 @@ export const GameBoard: React.FC<
       setTimeout(() => setExplodingCells(null), 500);
       // --- Списываем бустер только после успешного применения ---
       await useBooster('bomb');
+      // Сохраняем игру после использования бомбы
+      saveAfterAction();
     }
     setBombMode(false);
     setBombCenter(null);
   };
+
+  // Функция для добавления анимаций очистки
+  const addClearAnimations = useCallback((
+    board: any[][],
+    cellsToClear: boolean[][],
+    placedPieceColor?: BlockColor
+  ) => {
+    const newAnims: AnimationCell[] = [];
+    // Определяем очищаемые строки и столбцы
+    const rowsToClear = new Set<number>();
+    const colsToClear = new Set<number>();
+    for (let y = 0; y < cellsToClear.length; y++) {
+      let fullRow = true;
+      for (let x = 0; x < cellsToClear[0].length; x++) {
+        if (!cellsToClear[y][x]) fullRow = false;
+      }
+      if (fullRow) rowsToClear.add(y);
+    }
+    for (let x = 0; x < cellsToClear[0].length; x++) {
+      let fullCol = true;
+      for (let y = 0; y < cellsToClear.length; y++) {
+        if (!cellsToClear[y][x]) fullCol = false;
+      }
+      if (fullCol) colsToClear.add(x);
+    }
+    // Горизонтальные линии
+    for (let y = 0; y < cellsToClear.length; y++) {
+      if (rowsToClear.has(y)) {
+        for (let x = 0; x < cellsToClear[0].length; x++) {
+          if (cellsToClear[y][x]) {
+            newAnims.push({
+              id: uuidv4(),
+              x,
+              y,
+              color: usePlacedPieceColorInClearAnim
+                ? placedPieceColor
+                : board[y][x]?.color || placedPieceColor,
+              delay: (cellsToClear[0].length - 1 - x) * 0.03,
+            });
+          }
+        }
+      }
+    }
+    // Вертикальные линии
+    for (let x = 0; x < cellsToClear[0].length; x++) {
+      if (colsToClear.has(x)) {
+        for (let y = 0; y < cellsToClear.length; y++) {
+          if (cellsToClear[y][x]) {
+            newAnims.push({
+              id: uuidv4(),
+              x,
+              y,
+              color: usePlacedPieceColorInClearAnim
+                ? placedPieceColor
+                : board[y][x]?.color || placedPieceColor,
+              delay: y * 0.03,
+            });
+          }
+        }
+      }
+    }
+    if (newAnims.length) {
+      setClearAnimations((prev: AnimationCell[]) => [...prev, ...newAnims]);
+      // Учитываем максимальный delay и длительность анимации взрыва (0.55s), плюс запас
+      const ANIMATION_DURATION = 0.55; // должно совпадать с BoardClearAnimationsOverlay
+      const maxDelay = Math.max(...newAnims.map((a) => a.delay ?? 0));
+      setTimeout(() => {
+        setClearAnimations((prev: AnimationCell[]) =>
+          prev.filter((cell) => !newAnims.some((anim) => anim.id === cell.id))
+        );
+      }, (maxDelay + ANIMATION_DURATION) * 1000 + 80);
+    }
+  }, []);
 
   // Функция-обёртка для размещения фигуры с сохранением истории и рекорда
   const onPiecePlaced = useCallback(
@@ -800,10 +921,13 @@ export const GameBoard: React.FC<
               piecesPlaced,
             },
           ]);
+          
+          // Сохраняем игру после размещения фигуры
+          saveAfterAction();
         },
       });
     },
-    [setHistory]
+    [setHistory, saveAfterAction, addClearAnimations]
   );
 
   useEffect(() => {
@@ -1176,78 +1300,6 @@ export const GameBoard: React.FC<
     return path;
   }
 
-  function addClearAnimations(
-    board: any[][],
-    cellsToClear: boolean[][],
-    placedPieceColor?: BlockColor
-  ) {
-    const newAnims: AnimationCell[] = [];
-    // Определяем очищаемые строки и столбцы
-    const rowsToClear = new Set<number>();
-    const colsToClear = new Set<number>();
-    for (let y = 0; y < cellsToClear.length; y++) {
-      let fullRow = true;
-      for (let x = 0; x < cellsToClear[0].length; x++) {
-        if (!cellsToClear[y][x]) fullRow = false;
-      }
-      if (fullRow) rowsToClear.add(y);
-    }
-    for (let x = 0; x < cellsToClear[0].length; x++) {
-      let fullCol = true;
-      for (let y = 0; y < cellsToClear.length; y++) {
-        if (!cellsToClear[y][x]) fullCol = false;
-      }
-      if (fullCol) colsToClear.add(x);
-    }
-    // Горизонтальные линии
-    for (let y = 0; y < cellsToClear.length; y++) {
-      if (rowsToClear.has(y)) {
-        for (let x = 0; x < cellsToClear[0].length; x++) {
-          if (cellsToClear[y][x]) {
-            newAnims.push({
-              id: uuidv4(),
-              x,
-              y,
-              color: usePlacedPieceColorInClearAnim
-                ? placedPieceColor
-                : board[y][x]?.color || placedPieceColor,
-              delay: (cellsToClear[0].length - 1 - x) * 0.03,
-            });
-          }
-        }
-      }
-    }
-    // Вертикальные линии
-    for (let x = 0; x < cellsToClear[0].length; x++) {
-      if (colsToClear.has(x)) {
-        for (let y = 0; y < cellsToClear.length; y++) {
-          if (cellsToClear[y][x]) {
-            newAnims.push({
-              id: uuidv4(),
-              x,
-              y,
-              color: usePlacedPieceColorInClearAnim
-                ? placedPieceColor
-                : board[y][x]?.color || placedPieceColor,
-              delay: y * 0.03,
-            });
-          }
-        }
-      }
-    }
-    if (newAnims.length) {
-      setClearAnimations((prev: AnimationCell[]) => [...prev, ...newAnims]);
-      // Учитываем максимальный delay и длительность анимации взрыва (0.55s), плюс запас
-      const ANIMATION_DURATION = 0.55; // должно совпадать с BoardClearAnimationsOverlay
-      const maxDelay = Math.max(...newAnims.map((a) => a.delay ?? 0));
-      setTimeout(() => {
-        setClearAnimations((prev: AnimationCell[]) =>
-          prev.filter((cell) => !newAnims.some((anim) => anim.id === cell.id))
-        );
-      }, (maxDelay + ANIMATION_DURATION) * 1000 + 80);
-    }
-  }
-
   // --- Обработчик клика по бустеру ---
   const handleBoosterClick = async (boosterId: string) => {
     if (boosterId === 'bomb') {
@@ -1261,6 +1313,9 @@ export const GameBoard: React.FC<
       handleUndo();
     }
     // ... другие действия для других бустеров ...
+    
+    // Сохраняем игру после использования бустера
+    forceSave();
   };
 
   // --- iOS viewport width fix ---
