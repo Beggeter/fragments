@@ -41,12 +41,17 @@ export const useUser = () => {
       return;
     }
 
+    console.log("Checking user session...");
+
     // --- Admin mode (dev only) ---
     const adminMode = localStorage.getItem('adminMode');
+    console.log("Admin mode:", adminMode, "NODE_ENV:", process.env.NODE_ENV);
     if (adminMode === 'true' && process.env.NODE_ENV === 'development') {
+      console.log("Using admin mode, fetching user 610936383");
       try {
         const res = await fetch('/api/users/610936383');
         const user = await res.json();
+        console.log("Admin user loaded:", user);
         setUserState({
           user,
           sessionToken: null,
@@ -55,6 +60,7 @@ export const useUser = () => {
         });
         return;
       } catch (e) {
+        console.error("Error loading admin user:", e);
         setUserState(prev => ({ ...prev, isLoading: false }));
         return;
       }
@@ -63,15 +69,22 @@ export const useUser = () => {
     try {
       const sessionToken = localStorage.getItem('sessionToken');
       const userData = localStorage.getItem('userData');
+      
+      console.log("Session token:", sessionToken ? "exists" : "missing");
+      console.log("User data:", userData ? "exists" : "missing");
 
       if (sessionToken && userData) {
         const user = JSON.parse(userData);
+        console.log("Parsed user data:", user);
         
         // Проверяем, не истек ли токен (простая проверка)
         const tokenData = JSON.parse(atob(sessionToken));
         const now = Math.floor(Date.now() / 1000);
         
+        console.log("Token expiry:", tokenData.exp, "Current time:", now);
+        
         if (tokenData.exp > now) {
+          console.log("Token is valid, setting user state");
           setUserState({
             user,
             sessionToken,
@@ -80,9 +93,12 @@ export const useUser = () => {
           });
           return;
         } else {
+          console.log("Token expired, logging out");
           // Токен истек, очищаем данные
           logout();
         }
+      } else {
+        console.log("No session token or user data found");
       }
     } catch (error) {
       console.error('Error checking user session:', error);

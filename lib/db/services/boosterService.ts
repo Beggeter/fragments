@@ -12,7 +12,10 @@ export class BoosterService {
 
   // Получение всех типов бустеров
   static async getAllBoosterTypes(): Promise<BoosterType[]> {
-    return await db.select().from(boosterTypes).where(eq(boosterTypes.isActive, true));
+    console.log("Getting all booster types");
+    const result = await db.select().from(boosterTypes).where(eq(boosterTypes.isActive, true));
+    console.log("All booster types:", result);
+    return result;
   }
 
   // Получение типа бустера по ID
@@ -113,7 +116,8 @@ export class BoosterService {
 
   // Получение всех бустеров пользователя с информацией о типах
   static async getUserBoostersWithInfo(userId: number): Promise<(UserBooster & { boosterType: BoosterType })[]> {
-    return await db
+    console.log("Getting user boosters for user ID:", userId);
+    const result = await db
       .select({
         userId: userBoosters.userId,
         boosterTypeId: userBoosters.boosterTypeId,
@@ -133,6 +137,9 @@ export class BoosterService {
       .from(userBoosters)
       .innerJoin(boosterTypes, eq(userBoosters.boosterTypeId, boosterTypes.id))
       .where(eq(userBoosters.userId, userId));
+    
+    console.log("User boosters result:", result);
+    return result;
   }
 
   // Проверка, может ли пользователь использовать бустер

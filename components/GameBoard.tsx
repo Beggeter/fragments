@@ -324,12 +324,18 @@ export const GameBoard: React.FC<
   // --- Вынести fetchBoosters наружу, чтобы использовать в useBooster ---
   const fetchBoosters = useCallback(async () => {
     let tgid: number | undefined = user?.telegramId;
-    if (isAdmin && process.env.NODE_ENV === "development") {
+    // Только для админа в режиме разработки используем тестовый ID
+    if (isAdmin && process.env.NODE_ENV === "development" && !user?.telegramId) {
       tgid = 610936383;
     }
-    if (!tgid) return;
+    if (!tgid) {
+      console.log("No telegram ID available for fetching boosters");
+      return;
+    }
+    console.log("Fetching boosters for telegram ID:", tgid);
     const res = await fetch(`/api/users/${tgid}/boosters`);
     const data = await res.json();
+    console.log("Boosters API response:", data);
     const boostersForPanel = (data.availableBoosters as Array<any>).map(
       (booster: any) => {
         const userBooster = (data.userBoosters as Array<any>).find(
@@ -348,10 +354,13 @@ export const GameBoard: React.FC<
         };
       }
     );
+    console.log("Processed boosters:", boostersForPanel);
     setBoosters(boostersForPanel);
   }, [user?.telegramId, isAdmin]);
 
   useEffect(() => {
+    console.log("useEffect triggered for fetchBoosters, user:", user, "isAdmin:", isAdmin);
+    console.log("Admin mode in localStorage:", typeof window !== 'undefined' ? localStorage.getItem('adminMode') : 'N/A');
     fetchBoosters();
   }, [fetchBoosters]);
 
@@ -683,14 +692,25 @@ export const GameBoard: React.FC<
   const useBooster = async (boosterName: string) => {
     let boosterTypeId: number | undefined;
     const booster = boosters.find((b) => b.id === boosterName);
-    if (!booster) return;
+    if (!booster) {
+      console.log("Booster not found:", boosterName);
+      return false;
+    }
     boosterTypeId = booster.boosterTypeId || booster.id;
-    if (!boosterTypeId) return;
+    if (!boosterTypeId) {
+      console.log("No boosterTypeId for booster:", boosterName);
+      return false;
+    }
     let tgid: number | undefined = user?.telegramId;
-    if (isAdmin && process.env.NODE_ENV === "development") {
+    // Только для админа в режиме разработки используем тестовый ID
+    if (isAdmin && process.env.NODE_ENV === "development" && !user?.telegramId) {
       tgid = 610936383;
     }
-    if (!tgid) return;
+    if (!tgid) {
+      console.log("No telegram ID available for using booster");
+      return false;
+    }
+    console.log("Using booster:", boosterName, "for telegram ID:", tgid);
     const res = await fetch(`/api/users/${tgid}/boosters`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -702,9 +722,11 @@ export const GameBoard: React.FC<
     });
     const data = await res.json();
     if (!res.ok) {
+      console.error("Booster use error:", data.error);
       alert(data.error || "Ошибка списания бустера");
       return false;
     }
+    console.log("Booster used successfully:", data);
     await fetchBoosters();
     return true;
   };
