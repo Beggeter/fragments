@@ -99,6 +99,14 @@ const HomePage: React.FC = () => {
   // Track where the shop was opened from
   const [shopReturnTo, setShopReturnTo] = useState<Screen | null>(null);
 
+  // Добавляем состояние для отслеживания намеренного перезапуска
+  const [isIntentionalRestart, setIsIntentionalRestart] = useState(false);
+
+  // Создаем стабильную функцию для завершения перезапуска
+  const handleRestartComplete = useCallback(() => {
+    setIsIntentionalRestart(false);
+  }, []);
+
   // --- tsparticles engine init ---
 
   const particlesOptions = useMemo(() => ({
@@ -500,6 +508,8 @@ const HomePage: React.FC = () => {
           onBoardRectChange={setBoardRect}
           clearedLine={clearedLine}
           onGoHome={handleGoToMenu}
+          isIntentionalRestart={isIntentionalRestart}
+          onRestartComplete={handleRestartComplete}
           onOpenShop={handleOpenShop}
         />
       )}
@@ -507,6 +517,7 @@ const HomePage: React.FC = () => {
       {currentScreen === "gameover" && (
         <GameOver
           onPlayAgain={() => {
+            setIsIntentionalRestart(true); // Устанавливаем флаг перед сбросом
             setCurrentScreen("classic mode");
             useGameStore.getState().resetGame();
           }}

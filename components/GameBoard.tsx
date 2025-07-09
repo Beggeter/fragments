@@ -37,6 +37,7 @@ import { LoadingNumberAnimation } from "./LoadingNumberAnimation";
 import { motion } from "framer-motion";
 import { Piece } from "./pieces/Piece";
 import NeonGlowOutline from "./NeonGlowOutline";
+import { NeonGlowParticles } from "./board/NeonGlowParticles";
 import BoardClearAnimationsOverlay from "./board/BoardClearAnimationsOverlay";
 import { v4 as uuidv4 } from "uuid";
 import ClickEffect from "./ClickEffect";
@@ -54,6 +55,8 @@ interface GameBoardProps {
   onBoardRectChange?: (rect: DOMRect | null) => void;
   clearedLine?: number | null;
   onGoHome?: () => void;
+  isIntentionalRestart?: boolean;
+  onRestartComplete?: () => void;
   onOpenShop?: () => void;
 }
 
@@ -188,6 +191,8 @@ export const GameBoard: React.FC<
   onBoardRectChange,
   clearedLine,
   onGoHome,
+  isIntentionalRestart: externalIsIntentionalRestart,
+  onRestartComplete,
   onOpenShop,
 }) => {
   const {
@@ -305,6 +310,17 @@ export const GameBoard: React.FC<
   ];
   const [boosters, setBoosters] = useState<any[]>(defaultBoosters);
 
+  // Добавляем состояние для отслеживания намеренного перезапуска
+  const [isIntentionalRestart, setIsIntentionalRestart] = useState(false);
+
+  // Создаем стабильную функцию для завершения перезапуска
+  const handleRestartComplete = useCallback(() => {
+    setIsIntentionalRestart(false);
+    if (onRestartComplete) {
+      onRestartComplete();
+    }
+  }, [onRestartComplete]);
+
   // --- Вынести fetchBoosters наружу, чтобы использовать в useBooster ---
   const fetchBoosters = useCallback(async () => {
     let tgid: number | undefined = user?.telegramId;
@@ -405,6 +421,14 @@ export const GameBoard: React.FC<
   useEffect(() => {
     const initializeGameWithSave = async () => {
       if (currentPieces.length === 0) {
+        // Если это намеренный перезапуск, не загружаем сохранение
+        if (isIntentionalRestart || externalIsIntentionalRestart) {
+          console.log('Intentional restart, starting new game');
+          initializeGame();
+          handleRestartComplete(); // Используем стабильную функцию
+          return;
+        }
+        
         // Пытаемся загрузить сохраненную игру
         const gameLoaded = await loadGame();
 
@@ -419,7 +443,7 @@ export const GameBoard: React.FC<
     };
 
     initializeGameWithSave();
-  }, [currentPieces.length, initializeGame, loadGame]);
+  }, [currentPieces.length, initializeGame, loadGame, isIntentionalRestart, externalIsIntentionalRestart, handleRestartComplete]);
 
   useEffect(() => {
     if (currentPieces.length > 0) {
@@ -1302,6 +1326,7 @@ export const GameBoard: React.FC<
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         onRestart={() => {
+          setIsIntentionalRestart(true); // Устанавливаем флаг перед сбросом
           resetGame();
           setIsSettingsOpen(false);
         }}
@@ -1364,6 +1389,7 @@ export const GameBoard: React.FC<
             moveScore={lastScoreResult}
           />
         </div>
+        
         <BoostersPanel
           boosters={boosters}
           onBoosterClick={handleBoosterClick}
@@ -1569,6 +1595,11 @@ export const GameBoard: React.FC<
                             strokeWidth={12}
                             opacity={0.5}
                             style={{ width: "100%", height: "100%" }}
+                          />
+                          <NeonGlowParticles
+                            d={dPx}
+                            color={color}
+                            visible={true}
                           />
                         </div>
                       );

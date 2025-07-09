@@ -17,6 +17,7 @@ import { calculateValidPositions } from "../core/positions";
 import { ScoreCalculator } from "../core/score";
 import { BlockGenerator } from "../core/blockGenerator";
 import { DifficultyEvaluator } from "../core/difficulty";
+import { DifficultyManager } from "../core/difficultyManager";
 
 export interface ExtendedGameState extends GameState {
   round: number;
@@ -38,11 +39,29 @@ export interface ExtendedGameState extends GameState {
     combo: number;
     placedPiecesCount: number;
   }) => void;
+  // Новые поля для системы сложности
+  playerRecord: number;
+  currentLevel: number;
+  levelName: string;
+  levelDescription: string;
+  progressToNextLevel: number;
+  nextLevelThreshold: number;
+  isRecordBreakerMode: boolean;
+  updatePlayerRecord: (newRecord: number) => void;
+  getLevelInfo: () => {
+    level: number;
+    name: string;
+    description: string;
+    progress: number;
+    nextThreshold: number;
+    isRecordBreaker: boolean;
+  };
 }
 
 const scoreCalculator = new ScoreCalculator();
 const blockGenerator = new BlockGenerator();
 const difficultyEvaluator = new DifficultyEvaluator();
+const difficultyManager = new DifficultyManager();
 
 const placePieceOnBoard = (
   board: Matrix,
@@ -97,12 +116,19 @@ const calculateScore = (
     );
   }, 0);
 
+  // Получаем модификаторы сложности
+  const modifiers = difficultyManager.getModifiers();
+
   return scoreCalculator.calculateScore(
     clearedBoard,
     clearedLines,
     cellsPlaced,
     cellsInLines,
-    piece
+    piece,
+    {
+      scoreMultiplier: modifiers.scoreMultiplier,
+      comboMultiplier: modifiers.comboMultiplier
+    }
   );
 };
 
@@ -206,8 +232,27 @@ export const useGameStore = create<
     isAnimating: false,
     setAnimating: (isAnimating) => set({ isAnimating }),
 
+    // Поля для системы сложности
+    playerRecord: 0,
+    currentLevel: 1,
+    levelName: "Новичок",
+    levelDescription: "Простое начало для изучения механик",
+    progressToNextLevel: 0,
+    nextLevelThreshold: 10000,
+    isRecordBreakerMode: false,
+
     setCurrentPieces: (pieces) => set({ currentPieces: pieces }),
     setPreviewBlock: (block) => set({ previewBlock: block }),
+
+    updatePlayerRecord: (newRecord: number) => {
+      difficultyManager.updatePlayerRecord(newRecord);
+      set({ playerRecord: newRecord });
+    },
+
+    getLevelInfo: () => {
+      const { score } = get();
+      return difficultyManager.getLevelInfo(score);
+    },
 
     initializeGame: () => {
       const blocksWithInitialIndex = blockGenerator.generateNextBlocks(
@@ -256,6 +301,12 @@ export const useGameStore = create<
       console.log('Current pieces after removal:', newCurrentPieces.map(p => ({ id: p.id, uniqueId: p.uniqueId })));
 
       // Первое обновление с размещенной фигурой, но без очистки линий
+      const newScore = get().score + scoreResult.totalPoints;
+      
+      // Обновляем сложность на основе новых очков
+      const levelChanged = blockGenerator.updateDifficulty(newScore);
+      const levelInfo = difficultyManager.getLevelInfo(newScore);
+      
       set({
         board: newBoard, // Используем newBoard вместо boardAfterClearing
         currentPieces: newCurrentPieces,
@@ -264,9 +315,16 @@ export const useGameStore = create<
         hoverCell: null,
         round: newRound,
         piecesPlaced: newPiecesPlaced,
-        score: get().score + scoreResult.totalPoints,
+        score: newScore,
         lastScoreResult: scoreResult,
         isAnimating: hasCellsToClear, // Устанавливаем состояние анимации если есть линии для очистки
+        // Обновляем информацию о сложности
+        currentLevel: levelInfo.level,
+        levelName: levelInfo.name,
+        levelDescription: levelInfo.description,
+        progressToNextLevel: levelInfo.progress,
+        nextLevelThreshold: levelInfo.nextThreshold,
+        isRecordBreakerMode: levelInfo.isRecordBreaker,
       });
 
       // Если есть линии для очистки, обновляем доску после анимации
@@ -313,6 +371,10 @@ export const useGameStore = create<
     },
 
     resetGame: () => {
+      // Сбрасываем сложность
+      blockGenerator.updateDifficulty(0);
+      const levelInfo = difficultyManager.getLevelInfo(0);
+      
       set({
         board: Array(8)
           .fill(0)
@@ -328,6 +390,13 @@ export const useGameStore = create<
         lastScoreResult: null,
         previewBlock: null,
         blockEvaluations: [],
+        // Сбрасываем информацию о сложности
+        currentLevel: levelInfo.level,
+        levelName: levelInfo.name,
+        levelDescription: levelInfo.description,
+        progressToNextLevel: levelInfo.progress,
+        nextLevelThreshold: levelInfo.nextThreshold,
+        isRecordBreakerMode: levelInfo.isRecordBreaker,
       });
       scoreCalculator.resetCombo();
     },
@@ -351,6 +420,10 @@ export const useGameStore = create<
         uniqueId: piece.uniqueId || `${piece.id}_${Date.now()}_${index}`,
       }));
       
+      // Обновляем сложность на основе восстановленных очков
+      blockGenerator.updateDifficulty(state.score);
+      const levelInfo = difficultyManager.getLevelInfo(state.score);
+      
       set({
         board: boardWithColors,
         currentPieces: fixedPieces,
@@ -361,6 +434,13 @@ export const useGameStore = create<
         dragPosition: null,
         hoverCell: null,
         lastScoreResult: null,
+        // Восстанавливаем информацию о сложности
+        currentLevel: levelInfo.level,
+        levelName: levelInfo.name,
+        levelDescription: levelInfo.description,
+        progressToNextLevel: levelInfo.progress,
+        nextLevelThreshold: levelInfo.nextThreshold,
+        isRecordBreakerMode: levelInfo.isRecordBreaker,
       });
     },
   };

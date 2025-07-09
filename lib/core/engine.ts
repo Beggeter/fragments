@@ -96,19 +96,29 @@ export function clearLines(board: Matrix): {
 } {
   const cellsToClear = findCellsToClear(board);
 
-  // Подсчитываем количество очищенных клеток
-  const clearedCells = cellsToClear.reduce(
-    (sum, row) => sum + row.filter((cell) => cell).length,
-    0
-  );
+  // Подсчитываем количество очищенных линий правильно
+  const height = board.length;
+  const width = board[0].length;
+  let clearedLines = 0;
+
+  // Проверяем горизонтальные линии
+  for (let y = 0; y < height; y++) {
+    if (board[y].every((cell) => cell.value === 1)) {
+      clearedLines++;
+    }
+  }
+
+  // Проверяем вертикальные линии
+  for (let x = 0; x < width; x++) {
+    if (board.every((row) => row[x].value === 1)) {
+      clearedLines++;
+    }
+  }
 
   // Создаем новую доску, очищая помеченные клетки
   const newBoard = board.map((row, y) =>
     row.map((cell, x) => (cellsToClear[y][x] ? { value: 0 } : cell))
   );
-
-  // Подсчитываем количество очищенных линий
-  const clearedLines = Math.floor(clearedCells / board[0].length);
 
   return {
     newBoard,

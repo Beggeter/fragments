@@ -9,6 +9,7 @@ import {
 import { DifficultyEvaluator } from "./difficulty";
 import { findAllValidPositions } from "./positions";
 import { BlockSetFinder } from "./blockSetFinder";
+import { DifficultyManager, DifficultyModifiers } from "./difficultyManager";
 
 // Все возможные варианты фигур
 const ALL_BLOCKS: Matrix[] = [
@@ -182,18 +183,30 @@ ALL_BLOCKS.forEach((matrix, index) => {
 
 // Группируем фигуры по сложности
 const BLOCKS_BY_DIFFICULTY = {
-  easy: [0, 1, 2, 24, 25], // I, O (2x2), 2x3, 3x3
+  // Простые: большие фигуры (4-5 клеток) и простые линии
+  easy: [
+    0, 1, 2, 3, 4, 5, 6, 7,  // Горизонтальные и вертикальные линии (2-5 клеток)
+    8, 9,                     // Квадраты 2x2 и 3x3
+    24, 25,                   // Прямоугольники 2x3
+  ],
+  // Средние: угловые фигуры, L-образные, T-образные
   medium: [
-    3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23,
-  ], // T, L, J, S, Z
+    10, 11, 12, 13,          // Угловые фигуры 2x2
+    14, 15, 16, 17,          // Угловые фигуры 3x3
+    18, 19, 20, 21,          // L-образные фигуры
+    26, 27, 28, 29,          // T-образные фигуры
+  ],
+  // Сложные: S-образные и диагональные фигуры
   hard: [
-    26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43,
-  ], // остальные
+    30, 31, 32, 33,          // S-образные фигуры
+    34, 35, 36, 37, 38, 39, 40, 41, 42, 43, // Диагональные фигуры
+  ],
 };
 
 export class BlockGenerator {
   private readonly evaluator: DifficultyEvaluator;
   private readonly blockSetFinder: BlockSetFinder;
+  private readonly difficultyManager: DifficultyManager;
   private lastGeneratedBlocks: Block[] = [];
   private blockBag: Block[] = [];
   private previewBlock: Block | null = null;
@@ -208,8 +221,9 @@ export class BlockGenerator {
     other: 1.0, // Остальные фигуры
   };
 
-  constructor() {
+  constructor(initialScore: number = 0, playerRecord: number = 0) {
     this.evaluator = new DifficultyEvaluator();
+    this.difficultyManager = new DifficultyManager(initialScore, playerRecord);
     this.blockSetFinder = new BlockSetFinder(
       ALL_BLOCKS.map((matrix, index) => ({
         id: `block-${index}`,
@@ -221,6 +235,31 @@ export class BlockGenerator {
       }))
     );
     this.fillBlockBag();
+  }
+
+  // Обновляем сложность на основе текущих очков
+  updateDifficulty(score: number): boolean {
+    return this.difficultyManager.updateLevel(score);
+  }
+
+  // Получаем текущие модификаторы сложности
+  getDifficultyModifiers(): DifficultyModifiers {
+    return this.difficultyManager.getModifiers();
+  }
+
+  // Получаем информацию о текущем уровне
+  getLevelInfo() {
+    return this.difficultyManager.getLevelInfo();
+  }
+
+  // Обновляем рекорд игрока
+  updatePlayerRecord(newRecord: number): void {
+    this.difficultyManager.updatePlayerRecord(newRecord);
+  }
+
+  // Проверяем, активен ли режим преодоления рекорда
+  isRecordBreakerActive(): boolean {
+    return this.difficultyManager.isRecordBreakerActive();
   }
 
   private getDifficultyForIndex(index: number): "easy" | "medium" | "hard" {
@@ -759,12 +798,13 @@ export class BlockGenerator {
   }
 
   public generateNextBlocks(board: Matrix): Block[] {
+    const modifiers = this.getDifficultyModifiers();
     let attempts = 0;
-    const maxAttempts = 10;
+    const maxAttempts = modifiers.maxPlacementAttempts;
 
     while (attempts < maxAttempts) {
-      // Генерируем набор блоков
-      const blocks = this.generateWeightedRandomBlocks(board);
+      // Генерируем набор блоков с учетом сложности
+      const blocks = this.generateWeightedRandomBlocksWithDifficulty(board, modifiers);
 
       // Проверяем, можно ли разместить все блоки
       if (this.canPlaceAllBlocks(board, blocks)) {
@@ -774,8 +814,106 @@ export class BlockGenerator {
       attempts++;
     }
 
-    // Если не удалось найти подходящий набор, возвращаем случайные блоки
-    const fallbackBlocks = this.generateWeightedRandomBlocks(board);
+    // Если не удалось найти подходящий набор, возвращаем простые блоки
+    const fallbackBlocks = this.generateFallbackBlocks(board, modifiers);
+    return fallbackBlocks;
+  }
+
+  private generateWeightedRandomBlocksWithDifficulty(board: Matrix, modifiers: DifficultyModifiers): Block[] {
+    const selectedBlocks: Block[] = [];
+    const availableBlocks = [...this.blockBag];
+
+    while (selectedBlocks.length < 3 && availableBlocks.length > 0) {
+      // Фильтруем блоки по сложности
+      const filteredBlocks = availableBlocks.filter(block => {
+        const difficulty = this.getDifficultyForIndex(parseInt(block.id.split('-')[1]));
+        const random = Math.random();
+        
+        switch (difficulty) {
+          case 'easy':
+            return random < modifiers.easyBlockChance;
+          case 'medium':
+            return random < modifiers.mediumBlockChance;
+          case 'hard':
+            return random < modifiers.hardBlockChance;
+          default:
+            return true;
+        }
+      });
+
+      // Если нет подходящих блоков, используем все доступные
+      const candidates = filteredBlocks.length > 0 ? filteredBlocks : availableBlocks;
+
+      // Вычисляем веса для каждого блока
+      const weights = candidates.map((block) => {
+        const blockType = this.getBlockType(block);
+        const typeWeight = this.blockTypeWeights[blockType] || 1.0;
+        const { score } = this.findBestBlockPlacement(board, block);
+        return typeWeight * (score + 1); // +1 чтобы избежать нулевых весов
+      });
+
+      // Выбираем блок с учетом весов
+      const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
+      let random = Math.random() * totalWeight;
+      let selectedIndex = 0;
+
+      for (let i = 0; i < weights.length; i++) {
+        random -= weights[i];
+        if (random <= 0) {
+          selectedIndex = i;
+          break;
+        }
+      }
+
+      const selectedBlock = candidates[selectedIndex];
+      selectedBlocks.push({
+        ...selectedBlock,
+        uniqueId: `${selectedBlock.id}_${Date.now()}_${selectedBlocks.length}_${Math.random().toString(36).substr(2, 9)}`,
+        color: this.getRandomColor(),
+      });
+
+      // Удаляем выбранный блок из доступных
+      const blockIndex = availableBlocks.findIndex(b => b.id === selectedBlock.id);
+      if (blockIndex !== -1) {
+        availableBlocks.splice(blockIndex, 1);
+      }
+    }
+
+    return selectedBlocks;
+  }
+
+  private generateFallbackBlocks(board: Matrix, modifiers: DifficultyModifiers): Block[] {
+    // Генерируем простые блоки для fallback
+    const fallbackBlocks: Block[] = [];
+    const easyBlocks = this.blockBag.filter(block => 
+      this.getDifficultyForIndex(parseInt(block.id.split('-')[1])) === 'easy'
+    );
+
+    while (fallbackBlocks.length < 3 && easyBlocks.length > 0) {
+      const randomIndex = Math.floor(Math.random() * easyBlocks.length);
+      const selectedBlock = easyBlocks[randomIndex];
+      
+      fallbackBlocks.push({
+        ...selectedBlock,
+        uniqueId: `${selectedBlock.id}_${Date.now()}_${fallbackBlocks.length}_${Math.random().toString(36).substr(2, 9)}`,
+        color: this.getRandomColor(),
+      });
+
+      easyBlocks.splice(randomIndex, 1);
+    }
+
+    // Если не хватает блоков, добавляем любые доступные
+    while (fallbackBlocks.length < 3 && this.blockBag.length > 0) {
+      const randomIndex = Math.floor(Math.random() * this.blockBag.length);
+      const selectedBlock = this.blockBag[randomIndex];
+      
+      fallbackBlocks.push({
+        ...selectedBlock,
+        uniqueId: `${selectedBlock.id}_${Date.now()}_${fallbackBlocks.length}_${Math.random().toString(36).substr(2, 9)}`,
+        color: this.getRandomColor(),
+      });
+    }
+
     return fallbackBlocks;
   }
 
@@ -822,46 +960,6 @@ export class BlockGenerator {
       .filter(({ linesToClear }) => linesToClear >= this.minLinesToClear)
       .map(({ block }) => block)
       .slice(0, 3);
-  }
-
-  private generateWeightedRandomBlocks(board: Matrix): Block[] {
-    const selectedBlocks: Block[] = [];
-    const availableBlocks = [...this.blockBag];
-
-    while (selectedBlocks.length < 3 && availableBlocks.length > 0) {
-      // Вычисляем веса для каждого блока
-      const weights = availableBlocks.map((block) => {
-        const blockType = this.getBlockType(block);
-        const typeWeight = this.blockTypeWeights[blockType] || 1.0;
-        const { score } = this.findBestBlockPlacement(board, block);
-        return typeWeight * (score + 1); // +1 чтобы избежать нулевых весов
-      });
-
-      // Выбираем блок с учетом весов
-      const totalWeight = weights.reduce((sum, weight) => sum + weight, 0);
-      let random = Math.random() * totalWeight;
-      let selectedIndex = 0;
-
-      for (let i = 0; i < weights.length; i++) {
-        random -= weights[i];
-        if (random <= 0) {
-          selectedIndex = i;
-          break;
-        }
-      }
-
-      const selectedBlock = availableBlocks[selectedIndex];
-      selectedBlocks.push({
-        ...selectedBlock,
-        uniqueId: `${selectedBlock.id}_${Date.now()}_${selectedBlocks.length}_${Math.random().toString(36).substr(2, 9)}`,
-        color: this.getRandomColor(),
-      });
-
-      // Удаляем выбранный блок из доступных
-      availableBlocks.splice(selectedIndex, 1);
-    }
-
-    return selectedBlocks;
   }
 
   private findBestBlockPlacement(
