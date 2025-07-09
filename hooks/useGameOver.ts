@@ -11,6 +11,7 @@ interface UseGameOverProps {
 
 const CELL_FILL_INTERVAL = 40;
 
+
 export const useGameOver = ({
   onGameOver,
   width = 8,
@@ -43,7 +44,7 @@ export const useGameOver = ({
           setTimeout(() => {
             playGameOver();
             onGameOver();
-          }, 800);
+          }, 300);
 
           return;
         }

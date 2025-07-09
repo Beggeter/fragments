@@ -507,18 +507,6 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
           // color={theme.background}
         />
       )}
-      {/* {lastScore && lastScore.comboLevel > 0 && (
-        <div
-          className={`combo-text ${
-            showComboText ? "show" : ""
-          } text-amber-100 absolute flex items-center justify-center inset-0
-           z-1000 font-figtree font-extrabold italic text-4xl  ]`}
-        >
-          {`Combo ${
-            lastScore.comboLevel > 1 ? `X${lastScore.comboLevel}` : ""
-          }!`}
-        </div>
-      )} */}
       {lastScore &&
         lastScore.comboLevel > 0 &&
         (() => {

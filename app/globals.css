@@ -1075,3 +1075,29 @@ input[type="range"].custom-range {
 .font-figtree-mulish {
   font-family: var(--font-figtree), var(--font-manrope), Arial, sans-serif;
 }
+
+/* --- Bomb highlight styles --- */
+.potential-bomb-highlight {
+  box-shadow: 0 0 0 1px #ff0033, 0 0 4px 1px #ff003388;
+  z-index: 20;
+}
+.animate-pulse-bomb {
+  animation: pulse-bomb 0.5s  alternate;
+}
+@keyframes pulse-bomb {
+  0% { box-shadow: 0 0 0 1px #ff0033, 0 0 4px 1px #ff003388; }
+  100% { box-shadow: 0 0 0 4px #ff0033, 0 0 10px 6px #ff0033aa; }
+}
+
+@keyframes bomb-shake {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-2px, 1px); }
+  40% { transform: translate(2px, -1px); }
+  60% { transform: translate(-1px, 2px); }
+  80% { transform: translate(1px, -2px); }
+  100% { transform: translate(0, 0); }
+}
+.bomb-shake {
+  animation: bomb-shake 0.25s infinite linear;
+}
+

@@ -40,6 +40,7 @@ import NeonGlowOutline from "./NeonGlowOutline";
 import { NeonGlowParticles } from "./board/NeonGlowParticles";
 import BoardClearAnimationsOverlay from "./board/BoardClearAnimationsOverlay";
 import { v4 as uuidv4 } from "uuid";
+import ClickEffect from "./ClickEffect";
 
 const DEFAULT_CELL_SIZE = 43.75;
 const GAP_SIZE_PX = 2; // Исходя из gap-0.5 в TailwindCSS (0.125rem * 16px)
@@ -272,6 +273,8 @@ export const GameBoard: React.FC<
   const [bombCenter, setBombCenter] = useState<{ x: number; y: number } | null>(
     null
   );
+  const [bombHoldTimer, setBombHoldTimer] = useState<NodeJS.Timeout | null>(null);
+  const [bombHoldActive, setBombHoldActive] = useState(false);
 
   // История ходов для undo (board, score, currentPieces, piecesPlaced)
   const [history, setHistory] = useState<
@@ -295,7 +298,17 @@ export const GameBoard: React.FC<
   const { isAdmin } = useAdminAuth();
   const { loadGame, forceSave, saveAfterAction, clearSaves } = useGameSave();
 
-  const [boosters, setBoosters] = useState<any[]>([]);
+  const defaultBoosters = [
+    { id: "undo", name: "undo", icon: "/boosters/back.png", quantity: 0 },
+    { id: "bomb", name: "bomb", icon: "/boosters/bomb.svg", quantity: 0 },
+    {
+      id: "whirlwind",
+      name: "whirlwind",
+      icon: "/boosters/whirlwind.svg",
+      quantity: 0,
+    },
+  ];
+  const [boosters, setBoosters] = useState<any[]>(defaultBoosters);
 
   // Добавляем состояние для отслеживания намеренного перезапуска
   const [isIntentionalRestart, setIsIntentionalRestart] = useState(false);
@@ -311,28 +324,30 @@ export const GameBoard: React.FC<
   // --- Вынести fetchBoosters наружу, чтобы использовать в useBooster ---
   const fetchBoosters = useCallback(async () => {
     let tgid: number | undefined = user?.telegramId;
-    if (isAdmin && process.env.NODE_ENV === 'development') {
+    if (isAdmin && process.env.NODE_ENV === "development") {
       tgid = 610936383;
     }
     if (!tgid) return;
     const res = await fetch(`/api/users/${tgid}/boosters`);
     const data = await res.json();
-    const boostersForPanel = (data.availableBoosters as Array<any>).map((booster: any) => {
-      const userBooster = (data.userBoosters as Array<any>).find(
-        (ub: any) => ub.boosterTypeId === booster.id
-      );
-      let icon = '';
-      if (booster.name === 'undo') icon = '/boosters/back.png';
-      if (booster.name === 'bomb') icon = '/boosters/bomb.svg';
-      if (booster.name === 'whirlwind') icon = '/boosters/spinner.png';
-      return {
-        id: booster.name,
-        name: booster.name,
-        icon,
-        quantity: userBooster ? userBooster.quantity : 0,
-        boosterTypeId: booster.id,
-      };
-    });
+    const boostersForPanel = (data.availableBoosters as Array<any>).map(
+      (booster: any) => {
+        const userBooster = (data.userBoosters as Array<any>).find(
+          (ub: any) => ub.boosterTypeId === booster.id
+        );
+        let icon = "";
+        if (booster.name === "undo") icon = "/boosters/back.png";
+        if (booster.name === "bomb") icon = "/boosters/bomb.svg";
+        if (booster.name === "whirlwind") icon = "/boosters/whirlwind.svg";
+        return {
+          id: booster.name,
+          name: booster.name,
+          icon,
+          quantity: userBooster ? userBooster.quantity : 0,
+          boosterTypeId: booster.id,
+        };
+      }
+    );
     setBoosters(boostersForPanel);
   }, [user?.telegramId, isAdmin]);
 
@@ -416,13 +431,13 @@ export const GameBoard: React.FC<
         
         // Пытаемся загрузить сохраненную игру
         const gameLoaded = await loadGame();
-        
+
         if (!gameLoaded) {
           // Если сохраненной игры нет, начинаем новую
-          console.log('No saved game found, starting new game');
+          console.log("No saved game found, starting new game");
           initializeGame();
         } else {
-          console.log('Saved game loaded successfully');
+          console.log("Saved game loaded successfully");
         }
       }
     };
@@ -585,26 +600,27 @@ export const GameBoard: React.FC<
         .catch(() => {
           setAdminRecord(0);
           setIsRecordLoading(false);
-        });[
-    {
-        "id": "block-25",
-        "uniqueId": "block-25_1751917052455_0",
-        "color": "blue",
-        "matrixSize": "2x3"
-    },
-    {
-        "id": "block-2",
-        "uniqueId": "block-2_1751917052455_1",
-        "color": "green",
-        "matrixSize": "1x4"
-    },
-    {
-        "id": "block-7",
-        "uniqueId": "block-7_1751917052455_2",
-        "color": "yellow",
-        "matrixSize": "5x1"
-    }
-]
+        });
+      [
+        {
+          id: "block-25",
+          uniqueId: "block-25_1751917052455_0",
+          color: "blue",
+          matrixSize: "2x3",
+        },
+        {
+          id: "block-2",
+          uniqueId: "block-2_1751917052455_1",
+          color: "green",
+          matrixSize: "1x4",
+        },
+        {
+          id: "block-7",
+          uniqueId: "block-7_1751917052455_2",
+          color: "yellow",
+          matrixSize: "5x1",
+        },
+      ];
     } else {
       setAdminRecord(null);
       setIsRecordLoading(false);
@@ -636,7 +652,7 @@ export const GameBoard: React.FC<
         piecesPlaced: piecesPlaced,
       },
     ]);
-    
+
     // Сохраняем игру после использования лазера
     saveAfterAction();
   };
@@ -671,22 +687,22 @@ export const GameBoard: React.FC<
     boosterTypeId = booster.boosterTypeId || booster.id;
     if (!boosterTypeId) return;
     let tgid: number | undefined = user?.telegramId;
-    if (isAdmin && process.env.NODE_ENV === 'development') {
+    if (isAdmin && process.env.NODE_ENV === "development") {
       tgid = 610936383;
     }
     if (!tgid) return;
     const res = await fetch(`/api/users/${tgid}/boosters`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        action: 'use',
+        action: "use",
         boosterTypeId,
         quantity: 1,
       }),
     });
     const data = await res.json();
     if (!res.ok) {
-      alert(data.error || 'Ошибка списания бустера');
+      alert(data.error || "Ошибка списания бустера");
       return false;
     }
     await fetchBoosters();
@@ -694,242 +710,207 @@ export const GameBoard: React.FC<
   };
 
   // --- В обработчиках применения бомбы ---
-  const handleBombMouseUp = async (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!bombMode || bombCenter === null) return;
-    const cell = getCellFromPointer(e.clientX, e.clientY);
-    if (cell) {
-      const gridW = board[0].length;
-      const gridH = board.length;
-      const cx = clamp(cell.x, 1, gridW - 2);
-      const cy = clamp(cell.y, 1, gridH - 2);
-      const cellSize = boardRef.current ? boardRef.current.offsetWidth / gridW : 40;
-      const cells = [];
-      const maxDist = 120;
-      const minDist = 80;
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
-          const x = cx + dx;
-          const y = cy + dy;
-          if (x >= 0 && x < gridW && y >= 0 && y < gridH) {
-            const cellData = board[y][x];
-            if (cellData.value) {
-              // Вектор от центра к клетке
-              const vecX = x - cx;
-              const vecY = y - cy;
-              let dxx, dyy;
-              if (vecX === 0 && vecY === 0) {
-                const angle = Math.random() * 2 * Math.PI;
-                const dist = minDist + Math.random() * (maxDist - minDist);
-                dxx = Math.cos(angle) * dist;
-                dyy = Math.sin(angle) * dist;
-              } else {
-                const len = Math.sqrt(vecX * vecX + vecY * vecY) || 1;
-                const normX = vecX / len;
-                const normY = vecY / len;
-                const dist = minDist + Math.random() * (maxDist - minDist);
-                dxx = normX * dist;
-                dyy = normY * dist;
-              }
-              const rot = (Math.random() - 0.5) * 60;
-              cells.push({
-                x,
-                y,
-                color: String(cellData.color || "gray"),
-                dx: dxx,
-                dy: dyy,
-                rot,
-              });
+  const handleBombExplode = async (cell: { x: number; y: number }) => {
+    const gridW = board[0].length;
+    const gridH = board.length;
+    const cx = clamp(cell.x, 1, gridW - 2);
+    const cy = clamp(cell.y, 1, gridH - 2);
+    const cellSize = boardRef.current ? boardRef.current.offsetWidth / gridW : 40;
+    const cells = [];
+    const maxDist = 120;
+    const minDist = 80;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const x = cx + dx;
+        const y = cy + dy;
+        if (x >= 0 && x < gridW && y >= 0 && y < gridH) {
+          const cellData = board[y][x];
+          if (cellData.value) {
+            // Вектор от центра к клетке
+            const vecX = x - cx;
+            const vecY = y - cy;
+            let dxx, dyy;
+            if (vecX === 0 && vecY === 0) {
+              const angle = Math.random() * 2 * Math.PI;
+              const dist = minDist + Math.random() * (maxDist - minDist);
+              dxx = Math.cos(angle) * dist;
+              dyy = Math.sin(angle) * dist;
+            } else {
+              const len = Math.sqrt(vecX * vecX + vecY * vecY) || 1;
+              const normX = vecX / len;
+              const normY = vecY / len;
+              const dist = minDist + Math.random() * (maxDist - minDist);
+              dxx = normX * dist;
+              dyy = normY * dist;
             }
+            const rot = (Math.random() - 0.5) * 60;
+            cells.push({
+              x,
+              y,
+              color: String(cellData.color || "gray"),
+              dx: dxx,
+              dy: dyy,
+              rot,
+            });
           }
         }
       }
-      setExplodingCells({ cells, cellSize });
-      // Очищаем клетки с поля
-      const newBoard = board.map((row, rowIdx) =>
-        row.map((cell, colIdx) => {
-          if (Math.abs(rowIdx - cy) <= 1 && Math.abs(colIdx - cx) <= 1) {
-            return { ...cell, value: 0 };
-          }
-          return cell;
-        })
-      );
-      useGameStore.setState({ board: newBoard });
-      setHistory((prev) => [
-        ...prev,
-        {
-          board: newBoard.map((row) => row.map((cell) => ({ ...cell }))),
-          score,
-          currentPieces: currentPieces.map((piece) => ({ ...piece })),
-          piecesPlaced: piecesPlaced,
-        },
-      ]);
-      setTimeout(() => setExplodingCells(null), 500);
+    }
+    setExplodingCells({ cells, cellSize });
+    // Очищаем клетки сразу!
+    const newBoard = board.map((row, rowIdx) =>
+      row.map((cell, colIdx) => {
+        if (Math.abs(rowIdx - cy) <= 1 && Math.abs(colIdx - cx) <= 1) {
+          return { ...cell, value: 0 };
+        }
+        return cell;
+      })
+    );
+    useGameStore.setState({ board: newBoard });
+    setHistory((prev) => [
+      ...prev,
+      {
+        board: newBoard.map((row) => row.map((cell) => ({ ...cell }))),
+        score,
+        currentPieces: currentPieces.map((piece) => ({ ...piece })),
+        piecesPlaced: piecesPlaced,
+      },
+    ]);
+    // Анимация разлёта будет проигрываться 500 мс
+    setTimeout(async () => {
+      setExplodingCells(null);
       // --- Списываем бустер только после успешного применения ---
-      await useBooster('bomb');
+      await useBooster("bomb");
       // Сохраняем игру после использования бомбы
       saveAfterAction();
-    }
+    }, 500);
     setBombMode(false);
     setBombCenter(null);
   };
 
-  const handleBombTouchEnd = async (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!bombMode || bombCenter === null) return;
-    const touch = e.changedTouches[0];
-    if (!touch) {
+  // --- Новые обработчики для удержания ---
+  const handleBombMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!bombMode) return;
+    const cell = getCellFromPointer(e.clientX, e.clientY);
+    if (!cell) return;
+    setBombCenter(cell);
+    setBombHoldActive(true);
+    const timer = setTimeout(() => {
+      setBombHoldActive(false);
+      handleBombExplode(cell);
       setBombMode(false);
       setBombCenter(null);
-      return;
+    }, 700);
+    setBombHoldTimer(timer);
+  };
+
+  const handleBombMouseUp = () => {
+    if (bombHoldTimer) {
+      clearTimeout(bombHoldTimer);
+      setBombHoldTimer(null);
     }
+    setBombHoldActive(false);
+    // setBombMode(false);
+    setBombCenter(null);
+  };
+
+  const handleBombMouseLeave = handleBombMouseUp;
+
+  const handleBombTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!bombMode) return;
+    const touch = e.touches[0];
+    if (!touch) return;
     const cell = getCellFromPointer(touch.clientX, touch.clientY);
-    if (cell) {
-      const gridW = board[0].length;
-      const gridH = board.length;
-      const cx = clamp(cell.x, 1, gridW - 2);
-      const cy = clamp(cell.y, 1, gridH - 2);
-      const cellSize = boardRef.current ? boardRef.current.offsetWidth / gridW : 40;
-      const cells = [];
-      const maxDist = 120;
-      const minDist = 80;
-      for (let dy = -1; dy <= 1; dy++) {
-        for (let dx = -1; dx <= 1; dx++) {
-          const x = cx + dx;
-          const y = cy + dy;
-          if (x >= 0 && x < gridW && y >= 0 && y < gridH) {
-            const cellData = board[y][x];
-            if (cellData.value) {
-              // Вектор от центра к клетке
-              const vecX = x - cx;
-              const vecY = y - cy;
-              let dxx, dyy;
-              if (vecX === 0 && vecY === 0) {
-                const angle = Math.random() * 2 * Math.PI;
-                const dist = minDist + Math.random() * (maxDist - minDist);
-                dxx = Math.cos(angle) * dist;
-                dyy = Math.sin(angle) * dist;
-              } else {
-                const len = Math.sqrt(vecX * vecX + vecY * vecY) || 1;
-                const normX = vecX / len;
-                const normY = vecY / len;
-                const dist = minDist + Math.random() * (maxDist - minDist);
-                dxx = normX * dist;
-                dyy = normY * dist;
-              }
-              const rot = (Math.random() - 0.5) * 60;
-              cells.push({
+    if (!cell) return;
+    setBombCenter(cell);
+    setBombHoldActive(true);
+    const timer = setTimeout(() => {
+      setBombHoldActive(false);
+      handleBombExplode(cell);
+      setBombMode(false);
+      setBombCenter(null);
+    }, 500);
+    setBombHoldTimer(timer);
+  };
+
+  const handleBombTouchEnd = handleBombMouseUp;
+  const handleBombTouchCancel = handleBombMouseUp;
+
+  // Функция для добавления анимаций очистки
+  const addClearAnimations = useCallback(
+    (
+      board: any[][],
+      cellsToClear: boolean[][],
+      placedPieceColor?: BlockColor
+    ) => {
+      const newAnims: AnimationCell[] = [];
+      // Определяем очищаемые строки и столбцы
+      const rowsToClear = new Set<number>();
+      const colsToClear = new Set<number>();
+      for (let y = 0; y < cellsToClear.length; y++) {
+        let fullRow = true;
+        for (let x = 0; x < cellsToClear[0].length; x++) {
+          if (!cellsToClear[y][x]) fullRow = false;
+        }
+        if (fullRow) rowsToClear.add(y);
+      }
+      for (let x = 0; x < cellsToClear[0].length; x++) {
+        let fullCol = true;
+        for (let y = 0; y < cellsToClear.length; y++) {
+          if (!cellsToClear[y][x]) fullCol = false;
+        }
+        if (fullCol) colsToClear.add(x);
+      }
+      // Горизонтальные линии
+      for (let y = 0; y < cellsToClear.length; y++) {
+        if (rowsToClear.has(y)) {
+          for (let x = 0; x < cellsToClear[0].length; x++) {
+            if (cellsToClear[y][x]) {
+              newAnims.push({
+                id: uuidv4(),
                 x,
                 y,
-                color: String(cellData.color || "gray"),
-                dx: dxx,
-                dy: dyy,
-                rot,
+                color: usePlacedPieceColorInClearAnim
+                  ? placedPieceColor
+                  : board[y][x]?.color || placedPieceColor,
+                delay: (cellsToClear[0].length - 1 - x) * 0.03,
               });
             }
           }
         }
       }
-      setExplodingCells({ cells, cellSize });
-      // Очищаем клетки с поля
-      const newBoard = board.map((row, rowIdx) =>
-        row.map((cell, colIdx) => {
-          if (Math.abs(rowIdx - cy) <= 1 && Math.abs(colIdx - cx) <= 1) {
-            return { ...cell, value: 0 };
-          }
-          return cell;
-        })
-      );
-      useGameStore.setState({ board: newBoard });
-      setHistory((prev) => [
-        ...prev,
-        {
-          board: newBoard.map((row) => row.map((cell) => ({ ...cell }))),
-          score,
-          currentPieces: currentPieces.map((piece) => ({ ...piece })),
-          piecesPlaced: piecesPlaced,
-        },
-      ]);
-      setTimeout(() => setExplodingCells(null), 500);
-      // --- Списываем бустер только после успешного применения ---
-      await useBooster('bomb');
-      // Сохраняем игру после использования бомбы
-      saveAfterAction();
-    }
-    setBombMode(false);
-    setBombCenter(null);
-  };
-
-  // Функция для добавления анимаций очистки
-  const addClearAnimations = useCallback((
-    board: any[][],
-    cellsToClear: boolean[][],
-    placedPieceColor?: BlockColor
-  ) => {
-    const newAnims: AnimationCell[] = [];
-    // Определяем очищаемые строки и столбцы
-    const rowsToClear = new Set<number>();
-    const colsToClear = new Set<number>();
-    for (let y = 0; y < cellsToClear.length; y++) {
-      let fullRow = true;
+      // Вертикальные линии
       for (let x = 0; x < cellsToClear[0].length; x++) {
-        if (!cellsToClear[y][x]) fullRow = false;
-      }
-      if (fullRow) rowsToClear.add(y);
-    }
-    for (let x = 0; x < cellsToClear[0].length; x++) {
-      let fullCol = true;
-      for (let y = 0; y < cellsToClear.length; y++) {
-        if (!cellsToClear[y][x]) fullCol = false;
-      }
-      if (fullCol) colsToClear.add(x);
-    }
-    // Горизонтальные линии
-    for (let y = 0; y < cellsToClear.length; y++) {
-      if (rowsToClear.has(y)) {
-        for (let x = 0; x < cellsToClear[0].length; x++) {
-          if (cellsToClear[y][x]) {
-            newAnims.push({
-              id: uuidv4(),
-              x,
-              y,
-              color: usePlacedPieceColorInClearAnim
-                ? placedPieceColor
-                : board[y][x]?.color || placedPieceColor,
-              delay: (cellsToClear[0].length - 1 - x) * 0.03,
-            });
+        if (colsToClear.has(x)) {
+          for (let y = 0; y < cellsToClear.length; y++) {
+            if (cellsToClear[y][x]) {
+              newAnims.push({
+                id: uuidv4(),
+                x,
+                y,
+                color: usePlacedPieceColorInClearAnim
+                  ? placedPieceColor
+                  : board[y][x]?.color || placedPieceColor,
+                delay: y * 0.03,
+              });
+            }
           }
         }
       }
-    }
-    // Вертикальные линии
-    for (let x = 0; x < cellsToClear[0].length; x++) {
-      if (colsToClear.has(x)) {
-        for (let y = 0; y < cellsToClear.length; y++) {
-          if (cellsToClear[y][x]) {
-            newAnims.push({
-              id: uuidv4(),
-              x,
-              y,
-              color: usePlacedPieceColorInClearAnim
-                ? placedPieceColor
-                : board[y][x]?.color || placedPieceColor,
-              delay: y * 0.03,
-            });
-          }
-        }
+      if (newAnims.length) {
+        setClearAnimations((prev: AnimationCell[]) => [...prev, ...newAnims]);
+        // Учитываем максимальный delay и длительность анимации взрыва (0.55s), плюс запас
+        const ANIMATION_DURATION = 0.3; // должно совпадать с BoardClearAnimationsOverlay
+        const maxDelay = Math.max(...newAnims.map((a) => a.delay ?? 0));
+        setTimeout(() => {
+          setClearAnimations((prev: AnimationCell[]) =>
+            prev.filter((cell) => !newAnims.some((anim) => anim.id === cell.id))
+          );
+        }, (maxDelay + ANIMATION_DURATION) * 1000 + 80);
       }
-    }
-    if (newAnims.length) {
-      setClearAnimations((prev: AnimationCell[]) => [...prev, ...newAnims]);
-      // Учитываем максимальный delay и длительность анимации взрыва (0.55s), плюс запас
-      const ANIMATION_DURATION = 0.55; // должно совпадать с BoardClearAnimationsOverlay
-      const maxDelay = Math.max(...newAnims.map((a) => a.delay ?? 0));
-      setTimeout(() => {
-        setClearAnimations((prev: AnimationCell[]) =>
-          prev.filter((cell) => !newAnims.some((anim) => anim.id === cell.id))
-        );
-      }, (maxDelay + ANIMATION_DURATION) * 1000 + 80);
-    }
-  }, []);
+    },
+    []
+  );
 
   // Функция-обёртка для размещения фигуры с сохранением истории и рекорда
   const onPiecePlaced = useCallback(
@@ -949,7 +930,7 @@ export const GameBoard: React.FC<
               piecesPlaced,
             },
           ]);
-          
+
           // Сохраняем игру после размещения фигуры
           saveAfterAction();
         },
@@ -1088,46 +1069,6 @@ export const GameBoard: React.FC<
     if (x < 0 || y < 0 || x >= board[0].length || y >= board.length)
       return null;
     return { x, y };
-  };
-
-  // Mouse events
-  const handleBombMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!bombMode) return;
-    const cell = getCellFromPointer(e.clientX, e.clientY);
-    if (!cell) return;
-    setBombCenter(cell);
-  };
-  const handleBombMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!bombMode || bombCenter === null) return;
-    const cell = getCellFromPointer(e.clientX, e.clientY);
-    setBombCenter(cell);
-  };
-  const handleBombMouseLeave = () => {
-    if (!bombMode || bombCenter === null) return;
-    setBombMode(false);
-    setBombCenter(null);
-  };
-
-  // Touch events
-  const handleBombTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!bombMode) return;
-    const touch = e.touches[0];
-    if (!touch) return;
-    const cell = getCellFromPointer(touch.clientX, touch.clientY);
-    if (!cell) return;
-    setBombCenter(cell);
-  };
-  const handleBombTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (!bombMode || bombCenter === null) return;
-    const touch = e.touches[0];
-    if (!touch) return;
-    const cell = getCellFromPointer(touch.clientX, touch.clientY);
-    setBombCenter(cell);
-  };
-  const handleBombTouchCancel = () => {
-    if (!bombMode || bombCenter === null) return;
-    setBombMode(false);
-    setBombCenter(null);
   };
 
   function getBorderSides(
@@ -1330,18 +1271,18 @@ export const GameBoard: React.FC<
 
   // --- Обработчик клика по бустеру ---
   const handleBoosterClick = async (boosterId: string) => {
-    if (boosterId === 'bomb') {
-      setBombMode(true);
-      setBombCenter(null);
+    if (boosterId === "bomb") {
+      setBombMode((prev) => !prev);
+            setBombCenter(null);
       return;
     }
     const ok = await useBooster(boosterId);
     if (!ok) return;
-    if (boosterId === 'undo') {
+    if (boosterId === "undo") {
       handleUndo();
     }
     // ... другие действия для других бустеров ...
-    
+
     // Сохраняем игру после использования бустера
     forceSave();
   };
@@ -1349,12 +1290,35 @@ export const GameBoard: React.FC<
   // --- iOS viewport width fix ---
   useEffect(() => {
     const setVw = () => {
-      document.documentElement.style.setProperty('--app-vw', `${window.innerWidth}px`);
+      document.documentElement.style.setProperty(
+        "--app-vw",
+        `${window.innerWidth}px`
+      );
     };
     setVw();
-    window.addEventListener('resize', setVw);
-    return () => window.removeEventListener('resize', setVw);
+    window.addEventListener("resize", setVw);
+    return () => window.removeEventListener("resize", setVw);
   }, []);
+
+  // --- вычисление потенциально взрываемых клеток (3x3 вокруг bombCenter) ---
+  const bombArea: boolean[][] = useMemo(() => {
+    if (!bombMode || !bombCenter) return Array.from({ length: board.length }, () => Array(board[0].length).fill(false));
+    const gridW = board[0].length;
+    const gridH = board.length;
+    const { cx, cy } = getBombHighlightCenter(bombCenter, gridW, gridH) || { cx: -1, cy: -1 };
+    const area = Array.from({ length: gridH }, () => Array(gridW).fill(false));
+    if (cx === -1 || cy === -1) return area;
+    for (let dy = -1; dy <= 1; dy++) {
+      for (let dx = -1; dx <= 1; dx++) {
+        const x = cx + dx;
+        const y = cy + dy;
+        if (x >= 0 && x < gridW && y >= 0 && y < gridH) {
+          area[y][x] = true;
+        }
+      }
+    }
+    return area;
+  }, [bombMode, bombCenter, board.length, board[0].length]);
 
   return (
     <div className="relative">
@@ -1398,23 +1362,23 @@ export const GameBoard: React.FC<
             )}
           </div>
           <div className="flex flex-row gap-2">
-          <div
-            className="cursor-pointer flex items-center justify-center "
-            onClick={() => setIsSettingsOpen(true)}
-          >
-            <img
-              src={settings.src || settings}
-              alt="settings"
-              className="w-10 h-10 drop-shadow-lg clickable"
-              style={{
-                zIndex: 30,
-                WebkitTransform: "translateZ(0)",
-                transform: "translateZ(0)",
-                WebkitBackfaceVisibility: "hidden",
-                backfaceVisibility: "hidden",
-              }}
-            />
-          </div>
+            <ClickEffect
+              className="cursor-pointer flex items-center justify-center "
+              onClick={() => setIsSettingsOpen(true)}
+            >
+              <img
+                src={settings.src || settings}
+                alt="settings"
+                className="w-8 h-8 drop-shadow-lg clickable"
+                style={{
+                  zIndex: 0,
+                  WebkitTransform: "translateZ(0)",
+                  transform: "translateZ(0)",
+                  WebkitBackfaceVisibility: "hidden",
+                  backfaceVisibility: "hidden",
+                }}
+              />
+            </ClickEffect>
           </div>
         </div>
 
@@ -1429,18 +1393,35 @@ export const GameBoard: React.FC<
         <BoostersPanel
           boosters={boosters}
           onBoosterClick={handleBoosterClick}
-          className="-mb-9"
+          className="-mb-11 -z-10"
           comboLevel={lastScoreResult?.comboLevel}
+          activeBooster={bombMode ? "bomb" : undefined}
+          gameOver={gameOver}
         />
+        {bombMode && (
+          <span
+            className="absolute left-0 top-0 bg-black/30 backdrop-blur-sm w-full h-full"
+            onClick={(e) => e.stopPropagation()}
+          ></span>
+        )}
+
         {/* Визуализатор комбо и анимаций очков */}
         <div
-          className="flex justify-center items-center p-4 sm:max-w-xs sm:max-h-xs relative"
-          style={{ width: 'var(--app-vw)', height: 'var(--app-vw)', maxWidth: '100vw', maxHeight: '100vw' }}
+          className="flex justify-center items-center p-4 sm:max-w-xs sm:max-h-xs relative z-10"
+          style={{
+            width: "var(--app-vw)",
+            height: "var(--app-vw)",
+            maxWidth: "100vw",
+            maxHeight: "100vw",
+          }}
         >
           <div className="glowing-border relative w-full h-full">
             <div className="relative w-full h-full">
               {/* Визуализатор комбо и анимаций очков теперь внутри поля */}
-              <ComboVisualizer lastScore={lastScoreResult} onExplodeChange={setIsComboExploding} />
+              <ComboVisualizer
+                lastScore={lastScoreResult}
+                onExplodeChange={setIsComboExploding}
+              />
               <BoardClearAnimationsOverlay
                 cells={clearAnimations}
                 cellSize={dynamicCellSize || DEFAULT_CELL_SIZE}
@@ -1673,13 +1654,13 @@ export const GameBoard: React.FC<
                 id="game-board-grid"
                 className="relative z-10 grid grid-cols-8 grid-rows-8 gap-0.5 w-full h-full bg-gray-800 p-1 rounded-lg will-change-transform "
                 onMouseDown={bombMode ? handleBombMouseDown : undefined}
-                onMouseMove={bombMode ? handleBombMouseMove : undefined}
                 onMouseUp={bombMode ? handleBombMouseUp : undefined}
                 onMouseLeave={bombMode ? handleBombMouseLeave : undefined}
                 onTouchStart={bombMode ? handleBombTouchStart : undefined}
-                onTouchMove={bombMode ? handleBombTouchMove : undefined}
                 onTouchEnd={bombMode ? handleBombTouchEnd : undefined}
                 onTouchCancel={bombMode ? handleBombTouchCancel : undefined}
+                  onContextMenu={bombMode ? e => e.preventDefault() : undefined}
+
               >
                 {board.map((row, y) => (
                   <React.Fragment key={y}>
@@ -1701,6 +1682,9 @@ export const GameBoard: React.FC<
                         clearingHorizontalLines,
                         clearingVerticalLines,
                       });
+
+                      // Новый проп: потенциально взрываемая клетка
+                      const isPotentiallyBombed = bombArea[y][x];
 
                       return (
                         <BoardCell
@@ -1729,13 +1713,15 @@ export const GameBoard: React.FC<
                               ? () => handleLaserCellClick(y, x)
                               : undefined
                           }
+                          isPotentiallyBombed={isPotentiallyBombed}
+                          isBombShaking={bombMode && bombHoldActive && isPotentiallyBombed}
                         />
                       );
                     })}
                   </React.Fragment>
                 ))}
               </div>
-              {bombMode &&
+              {/* {bombMode &&
                 bombCenter &&
                 (() => {
                   const gridW = board[0].length;
@@ -1765,7 +1751,7 @@ export const GameBoard: React.FC<
                       }}
                     />
                   );
-                })()}
+                })()} */}
               {/* Анимация взрыва бомбы теперь внутри поля */}
               {explodingCells && (
                 <div
@@ -1816,17 +1802,22 @@ export const GameBoard: React.FC<
           </div>
         </div>
 
-        {/* Панель бустеров под игровым полем */}
 
         {/* Draggable Pieces */}
-        <DraggablePiecesSection
-          currentPieces={currentPieces}
-          draggedPiece={draggedPiece}
-          dragPosition={dragPosition}
-          dynamicCellSize={dynamicCellSize}
-          calculateDynamicOffset={calculateDynamicOffset}
-          onPieceStart={handlePieceStart}
-        />
+        {bombMode ? (
+          <span className="z-10 font-figtree-mulish text-xl">
+            {bombHoldActive ? "Держите для взрыва..." : "Нажмите и удерживайте для взрыва!"}
+          </span>
+        ) : (
+          <DraggablePiecesSection
+            currentPieces={currentPieces}
+            draggedPiece={draggedPiece}
+            dragPosition={dragPosition}
+            dynamicCellSize={dynamicCellSize}
+            calculateDynamicOffset={calculateDynamicOffset}
+            onPieceStart={handlePieceStart}
+          />
+        )}
       </div>
     </div>
   );
