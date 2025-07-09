@@ -121,11 +121,21 @@ const HomePage: React.FC = () => {
     fullScreen: { enable: false },
   }), []);
 
-  const handleLineBreakpoint = (lineIdx: number) => {
+  const handleLineBreakpoint = useCallback((lineIdx: number) => {
     setClearedLine(Math.abs(7 - lineIdx));
     // Сбросить после короткой задержки, чтобы не очищать повторно
     setTimeout(() => setClearedLine(null), 100);
-  };
+  }, []);
+
+  // функция для запуска спиннера
+  const handleShowSpinnerAnimation = useCallback(() => {
+    setShowSpinnerAnimation(true);
+  }, []);
+
+  // функция для завершения анимации спиннера
+  const handleSpinnerFinish = useCallback(() => {
+    setShowSpinnerAnimation(false);
+  }, []);
 
   const {
     isAdmin,
@@ -407,11 +417,6 @@ const HomePage: React.FC = () => {
     );
   }
 
-  // функция для запуска спиннера
-  const handleShowSpinnerAnimation = () => {
-    setShowSpinnerAnimation(true);
-  };
-
   return (
     <div className="min-h-screen bg-blue-900">
       {/* Overlay spinner */}
@@ -433,7 +438,7 @@ const HomePage: React.FC = () => {
           <LoadingSpinner
             width={boardRect.width}
             height={boardRect.height}
-            onFinish={() => setShowSpinnerAnimation(false)}
+            onFinish={handleSpinnerFinish}
             onLineBreakpoint={handleLineBreakpoint}
           />
         </div>

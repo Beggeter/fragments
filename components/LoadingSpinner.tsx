@@ -168,7 +168,12 @@ const Line = ({
       }}
       initial={false}
       animate={false}
-      onAnimationComplete={onFinish}
+      onAnimationComplete={() => {
+        // Используем setTimeout чтобы избежать вызова setState во время рендеринга
+        setTimeout(() => {
+          onFinish();
+        }, 0);
+      }}
     >
       {cells.map((cell, i) => (
         <motion.img
@@ -267,7 +272,10 @@ export const LoadingSpinner = ({
     setFinishedCount((prev) => {
       const next = prev + 1;
       if (next === 8 && onFinish) {
-        onFinish();
+        // Используем setTimeout чтобы избежать вызова setState во время рендеринга
+        setTimeout(() => {
+          onFinish();
+        }, 0);
       }
       return next;
     });

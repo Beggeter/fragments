@@ -49,7 +49,7 @@ export const BOOSTERS = [
   {
     id: "whirlwind",
     name: "Whirlwind",
-    icon: "/boosters/spinner.png",
+    icon: "/boosters/whirlwind.svg",
     price: 120,
     description:
       "Полный хаос! Очищает всё поле и даёт +300 очков за круговорот удачи!",

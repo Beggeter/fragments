@@ -3,8 +3,8 @@ import React from "react";
 
 const boosterIcons = [
   { src: "/boosters/back.png", alt: "Undo" },
-  { src: "/boosters/laser.png", alt: "Laser" },
-  { src: "/boosters/spinner.png", alt: "Spinner" },
+  { src: "/boosters/bomb.svg", alt: "Bomb" },
+  { src: "/boosters/whirlwind.svg", alt: "Whirlwind" },
 ];
 
 export const BoostersPanelSimple: React.FC = () => (

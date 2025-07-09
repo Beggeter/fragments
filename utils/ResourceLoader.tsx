@@ -72,10 +72,8 @@ export const ResourceLoader: React.FC<ResourceLoaderProps> = ({
         ...colors.map((color) => `/${color}.svg`),
         // Бустеры
         "/boosters/back.png",
-        "/boosters/laser.png",
-        "/boosters/spinner.png",
-        "/boosters/bomb.png",
         "/boosters/bomb.svg",
+        "/boosters/whirlwind.svg",
         // Магазин
         "/crystal.svg",
         "/2crystals.svg",

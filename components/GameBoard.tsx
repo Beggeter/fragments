@@ -1273,13 +1273,40 @@ export const GameBoard: React.FC<
   const handleBoosterClick = async (boosterId: string) => {
     if (boosterId === "bomb") {
       setBombMode((prev) => !prev);
-            setBombCenter(null);
+      setBombCenter(null);
       return;
     }
     const ok = await useBooster(boosterId);
     if (!ok) return;
     if (boosterId === "undo") {
       handleUndo();
+    } else if (boosterId === "whirlwind") {
+      // Очищаем всё поле и добавляем бонусные очки
+      const newBoard = board.map((row) =>
+        row.map((cell) => ({ ...cell, value: 0 }))
+      );
+      const newScore = score + 300;
+      
+      useGameStore.setState({ 
+        board: newBoard,
+        score: newScore 
+      });
+      
+      // Сохраняем в историю для undo
+      setHistory((prev) => [
+        ...prev,
+        {
+          board: newBoard.map((row) => row.map((cell) => ({ ...cell }))),
+          score: newScore,
+          currentPieces: currentPieces.map((piece) => ({ ...piece })),
+          piecesPlaced: piecesPlaced,
+        },
+      ]);
+      
+      // Запускаем анимацию спиннера
+      if (onShowSpinner) {
+        onShowSpinner();
+      }
     }
     // ... другие действия для других бустеров ...
 
