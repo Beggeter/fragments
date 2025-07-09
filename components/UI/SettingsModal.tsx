@@ -3,9 +3,7 @@
 import React from "react";
 import SettingsButton from "@/components/UI/SettingsButton";
 import { useSettingsStore } from "@/lib/state/settings";
-import cart from "@/public/cart.svg";
-import home from "@/public/home.svg";
-import replay from "@/public/replay.svg";
+import ClickEffect from "../ClickEffect";
 
 interface ToggleSwitchProps {
   isEnabled: boolean;
@@ -80,7 +78,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div
+    <ClickEffect
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
       style={{ zIndex: 9999 }}
       onClick={onClose}
@@ -89,13 +87,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         className="relative fade-in-animation-fast bg-blue-600/20 backdrop-blur-md rounded-3xl shadow-2xl border border-white/20 p-8 max-w-md w-full mx-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <button
-          className="absolute top-4 right-6 text-5xl z-2 text-white hover:text-gray-300 "
-          onClick={onClose}
-          aria-label="Close settings"
-        >
-          ×
-        </button>
+        <ClickEffect>
+          <button
+            className="absolute top-4 right-6 text-5xl z-2 text-white hover:text-gray-300 "
+            onClick={onClose}
+            aria-label="Close settings"
+          >
+            ×
+          </button>
+        </ClickEffect>
         <h2 className="mb-6 text-4xl z-1 font-bold tracking-wide text-white font-figtree-mulish menu-shadow">
           Настройки
         </h2>
@@ -180,7 +180,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           )}
         </div>
       </div>
-    </div>
+    </ClickEffect>
   );
 };
 

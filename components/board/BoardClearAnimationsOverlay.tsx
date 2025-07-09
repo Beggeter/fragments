@@ -17,7 +17,7 @@ interface BoardClearAnimationsOverlayProps {
   boardRect: DOMRect | null;
 }
 
-const ANIMATION_DURATION = 0.45; // seconds
+const ANIMATION_DURATION = 0.3; // seconds
 const EXPLODE_DISTANCE = 1; // 35% от размера клетки
 const MINI_SIZES = [0.22, 0.28, 0.33, 0.35]; // разные размеры осколков, не более 35%
 

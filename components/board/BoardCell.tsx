@@ -15,6 +15,8 @@ const BoardCell = React.memo<{
   isFirst: boolean;
   cellRef: React.RefObject<HTMLDivElement | null>;
   onClick?: () => void;
+  isPotentiallyBombed?: boolean; 
+  isBombShaking?: boolean; 
 }>(
   ({
     cell,
@@ -29,10 +31,12 @@ const BoardCell = React.memo<{
     isFirst,
     cellRef,
     onClick,
+    isPotentiallyBombed,
+    isBombShaking,
   }) => {
     // Определяем цвет для отображения фигуры
     let displayColor = cell.color;
-    
+
     // Если фигура в линии для очистки и есть цвет размещаемой фигуры, используем его
     if (isPotentiallyCleared && potentialClearColor && cell.value === 1) {
       displayColor = potentialClearColor;
@@ -44,21 +48,25 @@ const BoardCell = React.memo<{
         ref={isFirst ? cellRef : undefined}
         className={`rounded-[3px] relative ${
           cell.value ? "bg-gray-900" : "bg-gray-900"
-        } ${
-          isPotentiallyCleared ? "potential-clear-highlight" : ""
-        }`}
+        } ${isPotentiallyCleared ? "potential-clear-highlight" : ""} 
+        ${
+          isPotentiallyBombed
+            ? "potential-bomb-highlight animate-pulse-bomb"
+            : ""
+        } 
+        ${cell.value && isBombShaking ? "bomb-shake" : ""}`}
         onClick={onClick}
       >
         {cell.value === 1 && displayColor && (
           <Piece color={displayColor} size="100%" isClearing={false} />
         )}
-        
+
         {/* Показываем полупрозрачную фигуру-превью */}
         {showPreviewPiece && previewPieceColor && (
           <div className="absolute inset-0 z-10">
-            <Piece 
-              color={previewPieceColor as BlockColor} 
-              size="100%" 
+            <Piece
+              color={previewPieceColor as BlockColor}
+              size="100%"
               isClearing={false}
               isPreview={true}
             />

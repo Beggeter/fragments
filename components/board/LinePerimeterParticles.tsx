@@ -34,8 +34,8 @@ const CONFETTI_COLORS = [
 ];
 
 const MIN_PARTICLE_SIZE = 2;
-const EXPLODE_DURATION = 600; // Время "взрыва"
-const BOUNCE_DURATION = 4000; // Время покачивания
+const EXPLODE_DURATION = 500; // Время "взрыва"
+const BOUNCE_DURATION = 2500; // Время покачивания
 
 // Функция для расчета количества частиц на основе размера стороны
 const getParticleCount = (sideLength: number, cellSize: number): number => {
@@ -159,9 +159,9 @@ export const LinePerimeterParticles: React.FC<LinePerimeterParticlesProps> = Rea
           // Используем стабильный seed для генерации параметров
           const particleSeed = areaSeed + ptIndex * 7;
           const baseDist = 1.5;
-          const randomDist = baseDist + seededRandom(particleSeed) * 4;
-          const randomAngle = (seededRandom(particleSeed + 1) - 0.5) * 1.5;
-          const randomDelay = seededRandom(particleSeed + 2) * 100;
+          const randomDist = baseDist + seededRandom(particleSeed) * 8;
+          const randomAngle = (seededRandom(particleSeed + 1) - 0.5) * 2.5;
+          const randomDelay = seededRandom(particleSeed + 2) * 500;
           const randomSize = MIN_PARTICLE_SIZE + seededRandom(particleSeed + 3) * 3;
           const randomRotation = seededRandom(particleSeed + 4) * 120;
           const randomColorIndex = Math.floor(seededRandom(particleSeed + 5) * CONFETTI_COLORS.length);
@@ -232,27 +232,21 @@ export const LinePerimeterParticles: React.FC<LinePerimeterParticlesProps> = Rea
           @keyframes line-perimeter-particle-explode {
             0% { 
               opacity: 0; 
-              transform: translate(0, 0);
             }
             10% { 
               opacity: 0.2; 
-              transform: translate(0, 0);
             }
             20% { 
               opacity: 0.4; 
-              transform: translate(0, 0);
             }
             40% { 
               opacity: 0.8; 
-              transform: var(--particle-transform);
             }
             60% { 
               opacity: 1; 
-              transform: var(--particle-transform);
             }
             80% { 
               opacity: 1; 
-              transform: var(--particle-transform);
             }
             100% { 
               opacity: 1; 
@@ -263,18 +257,24 @@ export const LinePerimeterParticles: React.FC<LinePerimeterParticlesProps> = Rea
           @keyframes line-perimeter-particle-bounce {
             0% { 
               transform: var(--particle-transform) translate(var(--bounce-x), var(--bounce-y));
+               opacity: 1; 
             }
             25% { 
               transform: var(--particle-transform) translate(calc(var(--bounce-x) * -0.5), calc(var(--bounce-y) * -0.5));
+              
+               opacity: 0.6; 
             }
             50% { 
               transform: var(--particle-transform) translate(var(--bounce-x), var(--bounce-y));
+               opacity: 1; 
             }
             75% { 
               transform: var(--particle-transform) translate(calc(var(--bounce-x) * -0.5), calc(var(--bounce-y) * -0.5));
+               opacity: 0.5; 
             }
             100% { 
               transform: var(--particle-transform) translate(var(--bounce-x), var(--bounce-y));
+               opacity: 1; 
             }
           }
         `}</style>
@@ -304,18 +304,25 @@ export const LinePerimeterParticles: React.FC<LinePerimeterParticlesProps> = Rea
             }}
           >
             {i % 2 === 0 ? (
-              <rect x="20" y="20" width="60" height="60" 
-                    fill="white" 
-                    style={{
-                      filter: "drop-shadow(0 0 8px #ffff00)"
-                    }}
+              // <rect x="20" y="20" width="60" height="60" 
+              //       fill="white" 
+              //       style={{
+              //         filter: "drop-shadow(0 0 8px #ffff00)"
+              //       }}
+              // />
+              <path 
+              d="M43 0.573095C36.2804 28.3069 27.5969 38.2595 0.573593 42.9995C28.493 47.8597 38.3632 56.5588 43 85.4259C46.4865 56.5515 55.2865 46.0561 85.4264 42.9995C58.0896 38.1858 48.6892 29.0552 43 0.573095Z"
+              fill="white" 
+              style={{
+                filter: "drop-shadow(0 0 16px #fff700)"
+              }}
               />
             ) : (
               <path 
                 d="M43 0.573095C36.2804 28.3069 27.5969 38.2595 0.573593 42.9995C28.493 47.8597 38.3632 56.5588 43 85.4259C46.4865 56.5515 55.2865 46.0561 85.4264 42.9995C58.0896 38.1858 48.6892 29.0552 43 0.573095Z"
                 fill="white" 
                 style={{
-                  filter: "drop-shadow(0 0 8px #ffff00)"
+                  filter: "drop-shadow(0 0 16px #fff700)"
                 }}
               />
             )}
