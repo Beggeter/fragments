@@ -9,11 +9,13 @@ import ShardPurchaseModal from "./store/ShardPurchaseModal";
 import { ShardPack } from "@/types/shop";
 import ClickEffect from "./ClickEffect";
 
+const TABS = ["Осколки", "Бустеры", "ZEN"] as const;
+
 interface ShopScreenProps {
   onBack: () => void;
+  initialTab?: typeof TABS[number];
 }
 
-const TABS = ["Осколки", "Бустеры", "ZEN"];
 
 function ShardPackCard({ amount, price, label, labelType, icon, onBuy }: any) {
   return (
@@ -253,8 +255,8 @@ function handleShardPurchase({
   // await buyShards({ userId, amount, price })
 }
 
-const ShopScreen: React.FC<ShopScreenProps> = ({ onBack }) => {
-  const [tab, setTab] = useState("Осколки");
+const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
+  const [tab, setTab] = useState(initialTab);
   const [adminBalance, setAdminBalance] = useState<number | null>(null);
   const [isBalanceLoading, setIsBalanceLoading] = useState(true);
   const [selectedBooster, setSelectedBooster] = useState<any>(null);

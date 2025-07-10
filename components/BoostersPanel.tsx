@@ -16,6 +16,7 @@ interface BoostersPanelProps {
   comboLevel?: number;
   activeBooster?: string;
   gameOver?: boolean;
+  onOpenShop?: () => void;
 }
 
 export const BoostersPanel: React.FC<BoostersPanelProps> = ({
@@ -25,6 +26,7 @@ export const BoostersPanel: React.FC<BoostersPanelProps> = ({
   comboLevel,
   activeBooster,
   gameOver,
+  onOpenShop,
 }) => {
   const theme = getThemeByScore(comboLevel);
 
@@ -44,6 +46,7 @@ export const BoostersPanel: React.FC<BoostersPanelProps> = ({
           const isDisabled =
             booster.quantity === 0 ||
             (!!activeBooster && activeBooster !== booster.name);
+          const isAvailable = booster.quantity > 0;
           // Цвета для пузырика
           // let bubbleColor = "#2868C3";
           // let bubbleBorder = "#3AA3FB";
@@ -63,39 +66,35 @@ export const BoostersPanel: React.FC<BoostersPanelProps> = ({
                 type="button"
                 style={{ padding: 0 }}
                 onClick={() =>
-                  booster.quantity > 0 && onBoosterClick(booster.id)
+                  isAvailable ? onBoosterClick(booster.id) : onOpenShop?.()
                 }
-                disabled={isDisabled || gameOver}
+                disabled={gameOver}
               >
                 <span
-                  className={`
-    absolute right-0 top-0 translate-x-1/5 -translate-y-1/5
-    text-white text-[11px] font-bold
-    rounded-full px-1 py-0.5
-    transition-all duration-200
-    border-2 border-gray-700
-   
-    select-none
-  `}
+                  className={`absolute right-0 top-0 flex items-center justify-center
+                     translate-x-1/5 -translate-y-1/5 text-white font-bold rounded-full
+                      transition-all duration-200 border-2 border-gray-700 select-none  tracking-wider ${
+                        isAvailable
+                          ? "font-figtree min-w-[16px] min-h-[16px] px-1 py-0.5 text-[11px] leading-[14px]"
+                          : "w-[20px] h-[20px] font-black text-[16px] leading-none"
+                      } `}
                   style={{
-                    minWidth: 16,
-                    minHeight: 16,
-                    lineHeight: "14px",
                     pointerEvents: "none",
-                    background: `#1e2939 `,
+                    background: isAvailable ? `#1e2939 ` : "#16a34a",
                     boxShadow: "0 1px 4px 0 rgba(0,0,0,0.18)",
-                    fontSize: 11,
                     textShadow: "0 1px 2px rgba(0,0,0,0.18)",
                     zIndex: 2,
                   }}
                 >
-                  {booster.quantity}
+                  <span className="-mb-[1px]">
+                    {booster.quantity === 0 ? "+" : booster.quantity}
+                  </span>
                 </span>
                 <img
                   src={booster.icon}
                   alt={booster.name}
                   className={`w-9 h-9 ${
-                    gameOver || isDisabled ? "opacity-40 grayscale" : ""
+                    gameOver ? "opacity-40 grayscale" : ""
                   }`}
                   draggable={false}
                 />

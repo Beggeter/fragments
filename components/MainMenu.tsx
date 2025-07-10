@@ -33,7 +33,7 @@ const MainMenu: FC<MainMenuProps> = ({ onStartClassic, onOpenShop }) => {
             fade-in-menu${fadeIn ? "fade-in-menu--visible" : ""}`}
       >
         <BackgroundAnimation className="overflow-x-hidden absolute inset-0 px-4 -top-15" />
-        <span className="absolute top-4 right-4 text-3xl menu-shadow">
+        {/* <span className="absolute top-4 right-4 text-3xl menu-shadow">
           <img
             src={settings.src}
             alt="settings"
@@ -45,7 +45,7 @@ const MainMenu: FC<MainMenuProps> = ({ onStartClassic, onOpenShop }) => {
               backfaceVisibility: "hidden",
             }}
           />
-        </span>
+        </span> */}
         <main className="flex flex-col gap-[15vh] items-center">
           <TopButtons onOpenShop={onOpenShop} />
           <img

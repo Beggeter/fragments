@@ -273,7 +273,9 @@ export const GameBoard: React.FC<
   const [bombCenter, setBombCenter] = useState<{ x: number; y: number } | null>(
     null
   );
-  const [bombHoldTimer, setBombHoldTimer] = useState<NodeJS.Timeout | null>(null);
+  const [bombHoldTimer, setBombHoldTimer] = useState<NodeJS.Timeout | null>(
+    null
+  );
   const [bombHoldActive, setBombHoldActive] = useState(false);
 
   // История ходов для undo (board, score, currentPieces, piecesPlaced)
@@ -325,7 +327,11 @@ export const GameBoard: React.FC<
   const fetchBoosters = useCallback(async () => {
     let tgid: number | undefined = user?.telegramId;
     // Только для админа в режиме разработки используем тестовый ID
-    if (isAdmin && process.env.NODE_ENV === "development" && !user?.telegramId) {
+    if (
+      isAdmin &&
+      process.env.NODE_ENV === "development" &&
+      !user?.telegramId
+    ) {
       tgid = 610936383;
     }
     if (!tgid) {
@@ -359,8 +365,16 @@ export const GameBoard: React.FC<
   }, [user?.telegramId, isAdmin]);
 
   useEffect(() => {
-    console.log("useEffect triggered for fetchBoosters, user:", user, "isAdmin:", isAdmin);
-    console.log("Admin mode in localStorage:", typeof window !== 'undefined' ? localStorage.getItem('adminMode') : 'N/A');
+    console.log(
+      "useEffect triggered for fetchBoosters, user:",
+      user,
+      "isAdmin:",
+      isAdmin
+    );
+    console.log(
+      "Admin mode in localStorage:",
+      typeof window !== "undefined" ? localStorage.getItem("adminMode") : "N/A"
+    );
     fetchBoosters();
   }, [fetchBoosters]);
 
@@ -432,12 +446,12 @@ export const GameBoard: React.FC<
       if (currentPieces.length === 0) {
         // Если это намеренный перезапуск, не загружаем сохранение
         if (isIntentionalRestart || externalIsIntentionalRestart) {
-          console.log('Intentional restart, starting new game');
+          console.log("Intentional restart, starting new game");
           initializeGame();
           handleRestartComplete(); // Используем стабильную функцию
           return;
         }
-        
+
         // Пытаемся загрузить сохраненную игру
         const gameLoaded = await loadGame();
 
@@ -452,7 +466,14 @@ export const GameBoard: React.FC<
     };
 
     initializeGameWithSave();
-  }, [currentPieces.length, initializeGame, loadGame, isIntentionalRestart, externalIsIntentionalRestart, handleRestartComplete]);
+  }, [
+    currentPieces.length,
+    initializeGame,
+    loadGame,
+    isIntentionalRestart,
+    externalIsIntentionalRestart,
+    handleRestartComplete,
+  ]);
 
   useEffect(() => {
     if (currentPieces.length > 0) {
@@ -703,7 +724,11 @@ export const GameBoard: React.FC<
     }
     let tgid: number | undefined = user?.telegramId;
     // Только для админа в режиме разработки используем тестовый ID
-    if (isAdmin && process.env.NODE_ENV === "development" && !user?.telegramId) {
+    if (
+      isAdmin &&
+      process.env.NODE_ENV === "development" &&
+      !user?.telegramId
+    ) {
       tgid = 610936383;
     }
     if (!tgid) {
@@ -737,7 +762,9 @@ export const GameBoard: React.FC<
     const gridH = board.length;
     const cx = clamp(cell.x, 1, gridW - 2);
     const cy = clamp(cell.y, 1, gridH - 2);
-    const cellSize = boardRef.current ? boardRef.current.offsetWidth / gridW : 40;
+    const cellSize = boardRef.current
+      ? boardRef.current.offsetWidth / gridW
+      : 40;
     const cells = [];
     const maxDist = 120;
     const minDist = 80;
@@ -1308,12 +1335,12 @@ export const GameBoard: React.FC<
         row.map((cell) => ({ ...cell, value: 0 }))
       );
       const newScore = score + 300;
-      
-      useGameStore.setState({ 
+
+      useGameStore.setState({
         board: newBoard,
-        score: newScore 
+        score: newScore,
       });
-      
+
       // Сохраняем в историю для undo
       setHistory((prev) => [
         ...prev,
@@ -1324,7 +1351,7 @@ export const GameBoard: React.FC<
           piecesPlaced: piecesPlaced,
         },
       ]);
-      
+
       // Запускаем анимацию спиннера
       if (onShowSpinner) {
         onShowSpinner();
@@ -1351,10 +1378,16 @@ export const GameBoard: React.FC<
 
   // --- вычисление потенциально взрываемых клеток (3x3 вокруг bombCenter) ---
   const bombArea: boolean[][] = useMemo(() => {
-    if (!bombMode || !bombCenter) return Array.from({ length: board.length }, () => Array(board[0].length).fill(false));
+    if (!bombMode || !bombCenter)
+      return Array.from({ length: board.length }, () =>
+        Array(board[0].length).fill(false)
+      );
     const gridW = board[0].length;
     const gridH = board.length;
-    const { cx, cy } = getBombHighlightCenter(bombCenter, gridW, gridH) || { cx: -1, cy: -1 };
+    const { cx, cy } = getBombHighlightCenter(bombCenter, gridW, gridH) || {
+      cx: -1,
+      cy: -1,
+    };
     const area = Array.from({ length: gridH }, () => Array(gridW).fill(false));
     if (cx === -1 || cy === -1) return area;
     for (let dy = -1; dy <= 1; dy++) {
@@ -1438,7 +1471,7 @@ export const GameBoard: React.FC<
             moveScore={lastScoreResult}
           />
         </div>
-        
+
         <BoostersPanel
           boosters={boosters}
           onBoosterClick={handleBoosterClick}
@@ -1446,6 +1479,7 @@ export const GameBoard: React.FC<
           comboLevel={lastScoreResult?.comboLevel}
           activeBooster={bombMode ? "bomb" : undefined}
           gameOver={gameOver}
+          onOpenShop={onOpenShop}
         />
         {bombMode && (
           <span
@@ -1708,8 +1742,7 @@ export const GameBoard: React.FC<
                 onTouchStart={bombMode ? handleBombTouchStart : undefined}
                 onTouchEnd={bombMode ? handleBombTouchEnd : undefined}
                 onTouchCancel={bombMode ? handleBombTouchCancel : undefined}
-                  onContextMenu={bombMode ? e => e.preventDefault() : undefined}
-
+                onContextMenu={bombMode ? (e) => e.preventDefault() : undefined}
               >
                 {board.map((row, y) => (
                   <React.Fragment key={y}>
@@ -1763,7 +1796,9 @@ export const GameBoard: React.FC<
                               : undefined
                           }
                           isPotentiallyBombed={isPotentiallyBombed}
-                          isBombShaking={bombMode && bombHoldActive && isPotentiallyBombed}
+                          isBombShaking={
+                            bombMode && bombHoldActive && isPotentiallyBombed
+                          }
                         />
                       );
                     })}
@@ -1851,11 +1886,16 @@ export const GameBoard: React.FC<
           </div>
         </div>
 
-
         {/* Draggable Pieces */}
         {bombMode ? (
-          <span className="z-10 font-figtree-mulish text-xl">
-            {bombHoldActive ? "Держите для взрыва..." : "Нажмите и удерживайте для взрыва!"}
+          <span
+            className={`${
+              bombHoldActive ? "bomb-shake" : ""
+            } z-10 font-figtree-mulish text-xl font-normal text-white`}
+          >
+            {bombHoldActive
+              ? "Держите для взрыва..."
+              : "Нажмите и удерживайте для взрыва!"}
           </span>
         ) : (
           <DraggablePiecesSection

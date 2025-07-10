@@ -109,17 +109,20 @@ const HomePage: React.FC = () => {
 
   // --- tsparticles engine init ---
 
-  const particlesOptions = useMemo(() => ({
-    particles: {
-      number: { value: 100 },
-      color: { value: "#f00" },
-      shape: { type: "square" },
-      size: { value: { min: 10, max: 20 } },
-      move: { enable: false },
-    },
-    detectRetina: true,
-    fullScreen: { enable: false },
-  }), []);
+  const particlesOptions = useMemo(
+    () => ({
+      particles: {
+        number: { value: 100 },
+        color: { value: "#f00" },
+        shape: { type: "square" },
+        size: { value: { min: 10, max: 20 } },
+        move: { enable: false },
+      },
+      detectRetina: true,
+      fullScreen: { enable: false },
+    }),
+    []
+  );
 
   const handleLineBreakpoint = useCallback((lineIdx: number) => {
     setClearedLine(Math.abs(7 - lineIdx));
@@ -500,8 +503,13 @@ const HomePage: React.FC = () => {
       )}
 
       {/* MainMenu теперь скрывается через CSS, а не размонтируется хззззззз*/}
-      <div style={{ display: currentScreen === "main menu" ? "block" : "none" }}>
-        <MainMenu onStartClassic={hadleStartClassic} onOpenShop={handleOpenShop} />
+      <div
+        style={{ display: currentScreen === "main menu" ? "block" : "none" }}
+      >
+        <MainMenu
+          onStartClassic={hadleStartClassic}
+          onOpenShop={handleOpenShop}
+        />
       </div>
 
       {currentScreen === "classic mode" && (
@@ -530,7 +538,10 @@ const HomePage: React.FC = () => {
       )}
 
       {currentScreen === "shop" && (
-        <ShopScreen onBack={handleShopBack} />
+        <ShopScreen
+          onBack={handleShopBack}
+          initialTab={shopReturnTo === "classic mode" ? "Бустеры" : "Осколки"}
+        />
       )}
 
       {/* Fallback для отладки */}
