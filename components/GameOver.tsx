@@ -72,7 +72,7 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain }) => {
               {t('game_over.high_score')}
             </p>
             {isRecordLoading ? (
-              <div className="text-5xl font-extrabold font-figtree text-amber-400 mb-4 menu-shadow">
+              <div className="text-4xl font-extrabold font-figtree text-amber-400 mb-4 menu-shadow">
                 <LoadingNumberAnimation
                   isLoading={true}
                   minDigits={4}

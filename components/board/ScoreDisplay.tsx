@@ -24,7 +24,6 @@ export const ScoreDisplay = forwardRef<HTMLDivElement, ScoreDisplayProps>(
       className = "",
       variant = "score",
       showAnimation = true,
-      isFirstMount
     },
     ref
   ) => {
@@ -59,7 +58,7 @@ export const ScoreDisplay = forwardRef<HTMLDivElement, ScoreDisplayProps>(
 
         setIsAnimating(true);
         let animationDuration: number;
-        if (endScore === 0 || isFirstMount) {
+        if (endScore === 0 || startScore === 0) {
           animationDuration = 1000;
         } else {
           // Базовое время анимации

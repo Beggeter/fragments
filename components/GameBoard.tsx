@@ -326,11 +326,6 @@ export const GameBoard: React.FC<
     }
   }, [onRestartComplete]);
 
-  const [isFirstMount, setIsFirstMount] = useState(true);
-
-  useEffect(() => {
-    setIsFirstMount(false);
-  }, []);
 
   // --- Вынести fetchBoosters наружу, чтобы использовать в useBooster ---
   const fetchBoosters = useCallback(async () => {
@@ -1478,7 +1473,6 @@ export const GameBoard: React.FC<
             ref={scoreDisplayRef}
             newScore={score}
             moveScore={lastScoreResult}
-            isFirstMount={isFirstMount}
           />
         </div>
 
