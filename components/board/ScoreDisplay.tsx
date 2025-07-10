@@ -13,6 +13,7 @@ interface ScoreDisplayProps {
   className?: string;
   variant?: "score" | "record";
   showAnimation?: boolean;
+  isFirstMount?: boolean;
 }
 
 export const ScoreDisplay = forwardRef<HTMLDivElement, ScoreDisplayProps>(
@@ -23,6 +24,7 @@ export const ScoreDisplay = forwardRef<HTMLDivElement, ScoreDisplayProps>(
       className = "",
       variant = "score",
       showAnimation = true,
+      isFirstMount
     },
     ref
   ) => {
@@ -57,7 +59,7 @@ export const ScoreDisplay = forwardRef<HTMLDivElement, ScoreDisplayProps>(
 
         setIsAnimating(true);
         let animationDuration: number;
-        if (endScore === 0) {
+        if (endScore === 0 || isFirstMount) {
           animationDuration = 1000;
         } else {
           // Базовое время анимации

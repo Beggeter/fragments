@@ -35,44 +35,43 @@ export const BOOSTERS = [
     name: "Undo",
     icon: "/boosters/back.png",
     price: 20,
-    description:
-      "Отмените последний ход и исправьте ошибку! Идеально для стратегических решений.",
+    // Описание брать через t('shop.booster_undo_desc')
   },
   {
     id: "bomb",
     name: "Bomb",
     icon: "/boosters/bomb.svg",
     price: 60,
-    description:
-      "Мощный взрыв! Уничтожает все блоки в зоне 3×3, открывая новые комбинации.",
+    // Описание брать через t('shop.booster_bomb_desc')
   },
   {
     id: "whirlwind",
     name: "Whirlwind",
     icon: "/boosters/whirlwind.svg",
     price: 120,
-    description:
-      "Полный хаос! Очищает всё поле и даёт +300 очков за круговорот удачи!",
+    // Описание брать через t('shop.booster_whirlwind_desc')
   },
 ];
 
 export const ZEN_SUBS = [
   {
-    period: "1 месяц",
+    period: "1m",
     priceCrystals: 320,
     priceStars: 120,
     percent: null,
     bonuses: [{ count: 2, name: "Undo" }],
+    // Период брать через t('shop.zen_period_1m')
   },
   {
-    period: "3 месяца",
+    period: "3m",
     priceCrystals: 850,
     priceStars: 320,
     percent: "-11%",
     bonuses: [{ count: 2, name: "Bomb" }],
+    // Период брать через t('shop.zen_period_3m')
   },
   {
-    period: "6 месяцев",
+    period: "6m",
     priceCrystals: 1550,
     priceStars: 580,
     percent: "-19%",
@@ -80,9 +79,10 @@ export const ZEN_SUBS = [
       { count: 2, name: "Bomb" },
       { count: 1, name: "Undo" },
     ],
+    // Период брать через t('shop.zen_period_6m')
   },
   {
-    period: "12 месяцев",
+    period: "12m",
     priceCrystals: 2880,
     priceStars: 1090,
     percent: "-25%",
@@ -90,5 +90,6 @@ export const ZEN_SUBS = [
       { count: 2, name: "Whirlwind" },
       { count: 1, name: "Bomb" },
     ],
+    // Период брать через t('shop.zen_period_12m')
   },
 ];

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 
 interface BoosterPurchaseModalProps {
   isOpen: boolean;
@@ -25,7 +26,7 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
 }) => {
   const maxQuantity = Math.floor(playerBalance / booster.price);
   const [quantity, setQuantity] = useState(maxQuantity);
-
+  const {t} = useTranslation()
   useEffect(() => {
     if (isOpen) {
       setQuantity(maxQuantity);
@@ -73,7 +74,7 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
               {booster.name}
             </div>
             <div className="text-sm text-white/80 font-mulish">
-              {booster.description}
+              {t(`shop.booster_${booster.id}_desc`)}
             </div>
           </div>
         </div>
@@ -81,7 +82,7 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
         {/* Выбор количества */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-lg font-bold text-white font-mulish">Количество:</span>
+            <span className="text-lg font-bold text-white font-mulish">{t("shop.quantity")}:</span>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => handleQuantityChange(quantity - 1)}

@@ -203,7 +203,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
         setShowClearText(false);
       }
     }
-  }, [lastScore?.comboLevel, vibration]);
+  }, [lastScore?.comboLevel]);
 
   // Показываем clearText после ComboText (если был) или сразу, если нет
   useEffect(() => {

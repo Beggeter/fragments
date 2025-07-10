@@ -41,6 +41,7 @@ import { NeonGlowParticles } from "./board/NeonGlowParticles";
 import BoardClearAnimationsOverlay from "./board/BoardClearAnimationsOverlay";
 import { v4 as uuidv4 } from "uuid";
 import ClickEffect from "./ClickEffect";
+import { useTranslation } from "react-i18next";
 
 const DEFAULT_CELL_SIZE = 43.75;
 const GAP_SIZE_PX = 2; // Исходя из gap-0.5 в TailwindCSS (0.125rem * 16px)
@@ -228,6 +229,8 @@ export const GameBoard: React.FC<
     calculateDynamicOffset,
   } = useDnDLogic();
 
+  const { t } = useTranslation();
+
   const [clearingCells, setClearingCells] = useState<boolean[][]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
   const [nextBlocks, setNextBlocks] = useState<Block[]>([]);
@@ -322,6 +325,12 @@ export const GameBoard: React.FC<
       onRestartComplete();
     }
   }, [onRestartComplete]);
+
+  const [isFirstMount, setIsFirstMount] = useState(true);
+
+  useEffect(() => {
+    setIsFirstMount(false);
+  }, []);
 
   // --- Вынести fetchBoosters наружу, чтобы использовать в useBooster ---
   const fetchBoosters = useCallback(async () => {
@@ -1469,6 +1478,7 @@ export const GameBoard: React.FC<
             ref={scoreDisplayRef}
             newScore={score}
             moveScore={lastScoreResult}
+            isFirstMount={isFirstMount}
           />
         </div>
 
@@ -1893,9 +1903,7 @@ export const GameBoard: React.FC<
               bombHoldActive ? "bomb-shake" : ""
             } z-10 font-figtree-mulish text-xl font-normal text-white`}
           >
-            {bombHoldActive
-              ? "Держите для взрыва..."
-              : "Нажмите и удерживайте для взрыва!"}
+            {bombHoldActive ? t("game.bomb_hold") : t("game.bomb_help")}
           </span>
         ) : (
           <DraggablePiecesSection

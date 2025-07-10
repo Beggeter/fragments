@@ -6,6 +6,7 @@ import { useUser } from "@/hooks/useUser";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { ScoreDisplay } from "./board/ScoreDisplay";
 import { LoadingNumberAnimation } from "./LoadingNumberAnimation";
+import { useTranslation } from "react-i18next";
 
 interface GameOverProps {
   onPlayAgain: () => void;
@@ -18,6 +19,7 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain }) => {
   const [adminRecord, setAdminRecord] = useState<number | null>(null);
   const [highScore, setHighScore] = useState<number>(user?.record ?? 0);
   const [isRecordLoading, setIsRecordLoading] = useState(true);
+  const { t } = useTranslation();
 
   useEffect(() => {
     setHighScore(user?.record ?? 0);
@@ -57,17 +59,17 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain }) => {
           Game Over
         </h2>
         <div className="flex flex-col gap-5">
-          <div className="flex flex-col items-center gap-2 max-w-md w-[90vw]">
+          <div className="flex flex-col items-center gap-1 max-w-md w-[90vw]">
             <p className="text-3xl font-figtree text-white font-bold mb-2">
-              Your score:
+              {t('game_over.your_score')}
             </p>
             <div className="text-5xl font-extrabold font-figtree text-green-400 mb-4 menu-shadow">
               {score}
             </div>
           </div>
-          <div className="flex flex-col items-center gap-2 max-w-md w-[90vw]">
+          <div className="flex flex-col items-center gap-1 max-w-md w-[90vw]">
             <p className="text-2xl font-figtree text-white font-bold mb-2">
-              High score:
+              {t('game_over.high_score')}
             </p>
             {isRecordLoading ? (
               <div className="text-5xl font-extrabold font-figtree text-amber-400 mb-4 menu-shadow">
@@ -78,14 +80,15 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain }) => {
                 />
               </div>
             ) : (
-              <div className="text-5xl font-extrabold font-figtree text-amber-400 mb-4 menu-shadow">
+              <div className="text-4xl font-extrabold font-figtree text-amber-400 mb-4 menu-shadow">
                 {highScore}
               </div>
             )}
           </div>
         </div>
         <MenuButton
-          text="Play Again"
+          // text={t('game_over.play_again')}
+          text={'Play Again'}
           gradientClass="green-gradient"
           className="rounded-3xl px-8 py-4  font-bold  w-[60%]"
           textClasses="font-black italic text-3xl"

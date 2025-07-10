@@ -540,7 +540,7 @@ const HomePage: React.FC = () => {
       {currentScreen === "shop" && (
         <ShopScreen
           onBack={handleShopBack}
-          initialTab={shopReturnTo === "classic mode" ? "Бустеры" : "Осколки"}
+          initialTab={shopReturnTo === "classic mode" ? "boosters" : "shards"}
         />
       )}
 

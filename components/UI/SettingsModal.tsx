@@ -4,6 +4,7 @@ import React from "react";
 import SettingsButton from "@/components/UI/SettingsButton";
 import { useSettingsStore } from "@/lib/state/settings";
 import ClickEffect from "../ClickEffect";
+import { useTranslation } from "react-i18next";
 
 interface ToggleSwitchProps {
   isEnabled: boolean;
@@ -64,16 +65,24 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   onGoHome,
   onOpenShop,
 }) => {
+  const { t, i18n: i18nextInstance } = useTranslation();
   const vibration = useSettingsStore((state) => state.vibrationValue);
   const setVibration = useSettingsStore((state) => state.setVibrationValue);
   const soundEnabled = useSettingsStore((state) => state.soundEnabled);
   const setSoundEnabled = useSettingsStore((state) => state.setSoundEnabled);
+  const { setLanguage } = useSettingsStore();
 
   // Вибрация только вкл/выкл
   const vibrationEnabled = vibration > 0;
   const handleVibrationToggle = () => {
     setVibration(vibrationEnabled ? 0 : 55);
   };
+
+  const languages = [
+    { code: "en", label: "English" },
+    { code: "ru", label: "Русский" },
+  ];
+  const currentLang = i18nextInstance.language;
 
   if (!isOpen) return null;
 
@@ -87,17 +96,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         className="relative fade-in-animation-fast bg-blue-600/20 backdrop-blur-md rounded-3xl shadow-2xl border border-white/20 p-8 max-w-md w-full mx-4"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Language Switcher */}
+       
         <ClickEffect>
           <button
             className="absolute top-4 right-6 text-5xl z-2 text-white hover:text-gray-300 "
             onClick={onClose}
-            aria-label="Close settings"
+            aria-label={t("settings.close")}
           >
             ×
           </button>
         </ClickEffect>
         <h2 className="mb-6 text-4xl z-1 font-bold tracking-wide text-white font-figtree-mulish menu-shadow">
-          Настройки
+          {t("settings.title")}
         </h2>
         <div className="flex flex-col gap-4 w-full mb-6">
           <div
@@ -107,15 +118,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="flex items-center gap-4 menu-shadow">
               <img
                 src={vibrationEnabled ? "/vibrateon.svg" : "/vibrateoff.svg"}
-                alt={
-                  vibrationEnabled ? "Вибрация включена" : "Вибрация выключена"
-                }
+                alt={vibrationEnabled ? t("settings.vibration_on") : t("settings.vibration_off")}
                 className={`w-8 h-8 transition-filter duration-500 `}
                 draggable={false}
                 style={{ background: "none" }}
               />
               <span className="font-extrabold text-[1.4rem] text-white font-figtree-mulish">
-                Вибрация
+                {t("settings.vibration")}
               </span>
             </div>
             <ToggleSwitch
@@ -131,13 +140,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="flex items-center gap-4 menu-shadow">
               <img
                 src={soundEnabled ? "/soundon.svg" : "/soundoff.svg"}
-                alt={soundEnabled ? "Sound on" : "Sound off"}
+                alt={soundEnabled ? t("settings.sound_on") : t("settings.sound_off")}
                 className={`w-8 h-8 transition-filter duration-500 $`}
                 draggable={false}
                 style={{ background: "none" }}
               />
               <span className="text-[1.4rem] font-extrabold text-white font-figtree-mulish">
-                Звук
+                {t("settings.sound")}
               </span>
             </div>
             <ToggleSwitch
@@ -145,11 +154,39 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               onToggle={() => setSoundEnabled(!soundEnabled)}
             />
           </div>
+          {/* <div className="settings-gradient backdrop-blur-xl rounded-3xl px-8 py-4 flex items-center justify-between min-h-[9vh] mb-4">
+          <div className="flex items-center gap-4 menu-shadow">
+            <span className="text-2xl">🌐</span>
+            <span className="font-extrabold text-[1.4rem] text-white font-figtree-mulish">
+              {t('settings.language') || 'Language'}
+            </span>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setLanguage('en')}
+              className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-2xl transition-all duration-200
+                ${currentLang === 'en' ? 'border-blue-400 bg-blue-900/80 scale-110 shadow-lg' : 'border-white/30 bg-blue-900/40 hover:border-blue-400 hover:scale-105'}`}
+              aria-label="English"
+              title="English"
+            >
+              <span role="img" aria-label="English">🇬🇧</span>
+            </button>
+            <button
+              onClick={() => setLanguage('ru')}
+              className={`w-10 h-10 rounded-full border-2 flex items-center justify-center text-2xl transition-all duration-200
+                ${currentLang === 'ru' ? 'border-blue-400 bg-blue-900/80 scale-110 shadow-lg' : 'border-white/30 bg-blue-900/40 hover:border-blue-400 hover:scale-105'}`}
+              aria-label="Русский"
+              title="Русский"
+            >
+              <span role="img" aria-label="Русский">🇷🇺</span>
+            </button>
+          </div>
+        </div> */}
         </div>
         <div className="flex flex-col gap-4 items-center w-full">
           {onGoHome && (
             <SettingsButton
-              text="Главное меню"
+              text={t("settings.main_menu")}
               leftIcon="/home.svg"
               gradientClass="settings-gradient"
               className="rounded-3xl px-8 py-4 font-bold w-[90%] h-16"
@@ -159,7 +196,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           )}
           {onOpenShop && (
             <SettingsButton
-              text="Магазин"
+              text={t("settings.shop")}
               leftIcon="/cart.svg"
               imageClasses="w-8 h-8"
               gradientClass="settings-gradient"
@@ -170,7 +207,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           )}
           {onRestart && (
             <SettingsButton
-              text="Начать заново"
+              text={t("settings.restart")}
               leftIcon="/replay.svg"
               gradientClass="settings-gradient"
               className="rounded-3xl px-8 py-4 font-bold w-[90%] h-16"

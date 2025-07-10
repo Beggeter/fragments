@@ -8,16 +8,18 @@ import { BOOSTERS, SHARD_PACKS, ZEN_SUBS } from "./store/storeItems";
 import ShardPurchaseModal from "./store/ShardPurchaseModal";
 import { ShardPack } from "@/types/shop";
 import ClickEffect from "./ClickEffect";
+import { useTranslation } from "react-i18next";
 
-const TABS = ["Осколки", "Бустеры", "ZEN"] as const;
+const TABS_KEYS = ['shards', 'boosters', 'zen'] as const;
 
 interface ShopScreenProps {
   onBack: () => void;
-  initialTab?: typeof TABS[number];
+  initialTab?: typeof TABS_KEYS[number];
 }
 
 
 function ShardPackCard({ amount, price, label, labelType, icon, onBuy }: any) {
+  const { t } = useTranslation();
   return (
     <ClickEffect
       className="relative bg-white/10 backdrop-blur-md rounded-3xl shadow-xl flex flex-col
@@ -34,7 +36,7 @@ function ShardPackCard({ amount, price, label, labelType, icon, onBuy }: any) {
                 : "bg-gradient-to-r from-emerald-400 to-emerald-500 text-white"
             }`}
         >
-          {label}
+          {t(label)}
         </div>
       )}
       {/* Объединенный контейнер для иконки и количества */}
@@ -54,7 +56,8 @@ function ShardPackCard({ amount, price, label, labelType, icon, onBuy }: any) {
   );
 }
 
-function BoosterCard({ icon, name, description, price, onBuy }: any) {
+function BoosterCard({ icon, name, id, price, onBuy }: any) {
+  const { t } = useTranslation();
   return (
     <ClickEffect
       onClick={onBuy}
@@ -76,7 +79,7 @@ function BoosterCard({ icon, name, description, price, onBuy }: any) {
         {/* Центральная часть: описание */}
         <div className="flex-1 flex items-center justify-center">
           <div className="bg-black/10 rounded-2xl px-3 py-2 shadow-xs  backdrop-blur-sm text-sm text-white text-center font-semibold font-figtree-mulish leading-snug max-w-[320px]">
-            {description}
+            {t(`shop.booster_${id}_desc`)}
           </div>
         </div>
       </div>
@@ -98,6 +101,7 @@ function ZenDescriptionCard({
 }: {
   onScrollToSubscriptions: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <ClickEffect
       onClick={onScrollToSubscriptions}
@@ -105,15 +109,15 @@ function ZenDescriptionCard({
     >
       <img src="/stars.svg" alt="ZEN" className=" w-40 h-30  " />
       <div className="mb-3 text-3xl font-extrabold text-white font-figtree-mulish menu-shadow tracking-wide text-center">
-        ZEN-подписка
+        {t('shop.zen_subscription')}
       </div>
       <div className="flex flex-col gap-4 w-full mt-2">
         <div className="flex items-center gap-4 bg-white/10 rounded-2xl px-4 py-3">
           <span className="text-2xl">❌</span>
           <div className="flex flex-col">
-            <span className="font-bold text-lg text-white">Без рекламы</span>
+            <span className="font-bold text-lg text-white">{t('shop.no_ads')}</span>
             <span className="text-white/80 text-sm">
-              Ничего не отвлекает от удовольствия
+              {t('shop.no_ads_desc')}
             </span>
           </div>
         </div>
@@ -121,19 +125,19 @@ function ZenDescriptionCard({
           <span className="text-2xl">💸</span>
           <div className="flex flex-col">
             <span className="font-bold text-lg text-white">
-              Скидка на бустеры
+              {t('shop.booster_discount')}
             </span>
             <span className="text-white/80 text-sm">
-              Выгодные покупки в магазине
+              {t('shop.booster_discount_desc')}
             </span>
           </div>
         </div>
         <div className="flex items-center gap-4 bg-white/10 rounded-2xl px-4 py-3">
           <span className="text-2xl">🧘</span>
           <div className="flex flex-col">
-            <span className="font-bold text-lg text-white">ZEN-режим</span>
+            <span className="font-bold text-lg text-white">{t('shop.zen_mode')}</span>
             <span className="text-white/80 text-sm">
-              Спокойный геймплей без ограничений
+              {t('shop.zen_mode_desc')}
             </span>
           </div>
         </div>
@@ -141,10 +145,10 @@ function ZenDescriptionCard({
           <span className="text-2xl">🏆</span>
           <div className="flex flex-col">
             <span className="font-bold text-lg text-white">
-              Розыгрыши призов
+              {t('shop.prize_draws')}
             </span>
             <span className="text-white/80 text-sm">
-              Чем больше очков, тем выше шансы!
+              {t('shop.prize_draws_desc')}
             </span>
           </div>
         </div>
@@ -161,6 +165,7 @@ function ZenSubCard({
   bonuses,
   onClick,
 }: any) {
+  const { t } = useTranslation();
   const parsedBonuses = bonuses.map((bonus: any) => {
     const boosterInfo = BOOSTERS.find((b) => b.name === bonus.name);
     return {
@@ -188,11 +193,9 @@ function ZenSubCard({
       )}
 
       <div className="flex flex-col gap-2 items-center justify-center w-7/12">
-        {/* <div className="rounded-2xl backdrop-blur-sm bg-white/10 justify-center items-center py-3 px-5"> */}
         <div className="text-3xl font-bold items-start text-white font-figtree-mulish menu-shadow  ">
-          {period}
+          {t(`shop.zen_period_${period}`)}
         </div>
-        {/* </div> */}
         <span className="items-center justify-center font-fig text-3xl font-extrabold">
           +
         </span>
@@ -256,7 +259,8 @@ function handleShardPurchase({
 }
 
 const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
-  const [tab, setTab] = useState(initialTab);
+  const { t } = useTranslation();
+  const [tab, setTab] = useState<typeof TABS_KEYS[number]>(initialTab || 'shards');
   const [adminBalance, setAdminBalance] = useState<number | null>(null);
   const [isBalanceLoading, setIsBalanceLoading] = useState(true);
   const [selectedBooster, setSelectedBooster] = useState<any>(null);
@@ -376,7 +380,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
   const handleInsufficientFunds = () => {
     setIsModalOpen(false);
     setSelectedBooster(null);
-    setTab("Осколки");
+    setTab("shards");
   };
 
   return (
@@ -407,24 +411,24 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
       </div>
       {/* Tab-панель */}
       <div className="flex gap-2 justify-center mt-2 mb-8">
-        {TABS.map((t) => (
-          <ClickEffect key={t}>
+        {TABS_KEYS.map((key) => (
+          <ClickEffect key={key}>
             <button
-              onClick={() => setTab(t)}
+              onClick={() => setTab(key)}
               className={`px-6 py-2 rounded-full text-lg font-extrabold transition-colors duration-300 border border-white/20  font-figtree-mulish ${
-                tab === t
+                tab === key
                   ? "bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg"
                   : "bg-white/10 backdrop-blur-md text-white  "
               }`}
             >
-              {t}
+              {t(`shop.${key}`)}
             </button>
           </ClickEffect>
         ))}
       </div>
       {/* Содержимое вкладок */}
       <div className="flex flex-col flex-1 justify-start items-center px-4 py-2 ">
-        {tab === "Осколки" && (
+        {tab === "shards" && (
           <div className="flex flex-col items-center w-full slide-in-animation">
             {/* Сортируем пакеты по возрастанию цены */}
             {(() => {
@@ -442,7 +446,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
             })()}
           </div>
         )}
-        {tab === "Бустеры" && (
+        {tab === "boosters" && (
           <div className="flex flex-col items-center w-full slide-in-animation">
             <div className="w-full max-w-2xl py-4 grid grid-cols-1 gap-y-2">
               {BOOSTERS.map((booster) => (
@@ -455,7 +459,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
             </div>
           </div>
         )}
-        {tab === "ZEN" && (
+        {tab === "zen" && (
           <div className="flex flex-col items-center w-full slide-in-animation">
             <div
               ref={storeScrollRef}

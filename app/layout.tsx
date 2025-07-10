@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Figtree, Geist, Geist_Mono, Manrope, Mulish } from "next/font/google";
 import "./globals.css";
 import Script from "next/script";
+import { I18nProvider } from "./i18n-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,8 +22,8 @@ const figtree = Figtree({
 });
 
 const mulish = Manrope({
-  subsets: ["latin", 'cyrillic'],
-  weight: ["400", "600", "800",  "700"],
+  subsets: ["latin", "cyrillic"],
+  weight: ["400", "600", "800", "700"],
   style: ["normal"],
   variable: "--font-manrope",
 });
@@ -71,7 +72,9 @@ export default function RootLayout({
           rel="stylesheet"
         ></link>
       </head>
-      <body>{children}</body>
+      <body>
+        <I18nProvider>{children}</I18nProvider>
+      </body>
     </html>
   );
 }
