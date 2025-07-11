@@ -43,9 +43,7 @@ export const BoostersPanel: React.FC<BoostersPanelProps> = ({
     >
       <div className="flex justify-between gap-2 ">
         {boosters.map((booster) => {
-          const isDisabled =
-            booster.quantity === 0 ||
-            (!!activeBooster && activeBooster !== booster.name);
+          const isDisabled = !!activeBooster && activeBooster !== booster.name;
           const isAvailable = booster.quantity > 0;
           // Цвета для пузырика
           // let bubbleColor = "#2868C3";
@@ -68,7 +66,7 @@ export const BoostersPanel: React.FC<BoostersPanelProps> = ({
                 onClick={() =>
                   isAvailable ? onBoosterClick(booster.id) : onOpenShop?.()
                 }
-                disabled={gameOver}
+                disabled={isDisabled || gameOver}
               >
                 <span
                   className={`absolute right-0 top-0 flex items-center justify-center
@@ -79,7 +77,7 @@ export const BoostersPanel: React.FC<BoostersPanelProps> = ({
                           : "w-[20px] h-[20px] font-black text-[16px] leading-none"
                       } `}
                   style={{
-                    pointerEvents: "none",
+                    // pointerEvents: "none",
                     background: isAvailable ? `#1e2939 ` : "#16a34a",
                     boxShadow: "0 1px 4px 0 rgba(0,0,0,0.18)",
                     textShadow: "0 1px 2px rgba(0,0,0,0.18)",
@@ -93,8 +91,8 @@ export const BoostersPanel: React.FC<BoostersPanelProps> = ({
                 <img
                   src={booster.icon}
                   alt={booster.name}
-                  className={`w-9 h-9 ${
-                    gameOver ? "opacity-40 grayscale" : ""
+                  className={`w-9 h-9 transition-all duration-200 ${
+                    gameOver || isDisabled ? "opacity-90 grayscale" : ""
                   }`}
                   draggable={false}
                 />
