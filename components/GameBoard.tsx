@@ -181,6 +181,163 @@ type AnimationCell = {
   delay?: number;
 };
 
+// Выносим функции за пределы компонента для оптимизации
+const scalePath = (d: string, boardW: number, boardH: number, boardWidth: number, boardHeight: number) => {
+  // Переводим path из относительных координат (0-8) в пиксели
+  const scaleX = boardW / boardWidth;
+  const scaleY = boardH / boardHeight;
+  // Преобразует d="M x y L x y ..." в пиксели
+  return d.replace(
+    /([ML])\s*([\d.]+)\s*([\d.]+)/g,
+    (_m, cmd, x, y) => {
+      return `${cmd} ${+x * scaleX} ${+y * scaleY}`;
+    }
+  );
+};
+
+// Мемоизированная функция для поиска связанных областей
+const findConnectedAreasMemo = (() => {
+  const cache = new Map<string, number[][][]>();
+  
+  return (matrix: boolean[][]): number[][][] => {
+    const key = JSON.stringify(matrix);
+    if (cache.has(key)) {
+      return cache.get(key)!;
+    }
+    
+    const h = matrix.length;
+    const w = matrix[0]?.length || 0;
+    const visited = Array.from({ length: h }, () => Array(w).fill(false));
+    const areas: number[][][] = [];
+    
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        if (matrix[y][x] && !visited[y][x]) {
+          // BFS
+          const queue: [number, number][] = [[y, x]];
+          const area: [number, number][] = [];
+          visited[y][x] = true;
+          while (queue.length) {
+            const [cy, cx] = queue.shift()!;
+            area.push([cy, cx]);
+            for (const [dy, dx] of [
+              [0, 1],
+              [1, 0],
+              [0, -1],
+              [-1, 0],
+            ]) {
+              const ny = cy + dy,
+                nx = cx + dx;
+              if (
+                ny >= 0 &&
+                ny < h &&
+                nx >= 0 &&
+                nx < w &&
+                matrix[ny][nx] &&
+                !visited[ny][nx]
+              ) {
+                visited[ny][nx] = true;
+                queue.push([ny, nx]);
+              }
+            }
+          }
+          areas.push(area);
+        }
+      }
+    }
+    
+    cache.set(key, areas);
+    return areas;
+  };
+})();
+
+const getCellEdgesMemo = (() => {
+  const cache = new Map<string, Array<[[number, number], [number, number]]>>();
+  
+  return (area: [number, number][], matrix: boolean[][]) => {
+    const key = JSON.stringify({ area, matrix });
+    if (cache.has(key)) {
+      return cache.get(key)!;
+    }
+    
+    const edges: Array<[[number, number], [number, number]]> = [];
+    const set = new Set(area.map(([y, x]) => `${y},${x}`));
+    for (const [y, x] of area) {
+      // top
+      if (!set.has(`${y - 1},${x}`))
+        edges.push([
+          [x, y],
+          [x + 1, y],
+        ]);
+      // right
+      if (!set.has(`${y},${x + 1}`))
+        edges.push([
+          [x + 1, y],
+          [x + 1, y + 1],
+        ]);
+      // bottom
+      if (!set.has(`${y + 1},${x}`))
+        edges.push([
+          [x + 1, y + 1],
+          [x, y + 1],
+        ]);
+      // left
+      if (!set.has(`${y},${x - 1}`))
+        edges.push([
+          [x, y + 1],
+          [x, y],
+        ]);
+    }
+    
+    cache.set(key, edges);
+    return edges;
+  };
+})();
+
+const edgesToPathMemo = (() => {
+  const cache = new Map<string, string>();
+  
+  return (edges: Array<[[number, number], [number, number]]>): string => {
+    const key = JSON.stringify(edges);
+    if (cache.has(key)) {
+      return cache.get(key)!;
+    }
+    
+    if (edges.length === 0) return "";
+    // Строим карту: start -> end
+    const edgeMap = new Map<string, [number, number]>();
+    edges.forEach(([[x1, y1], [x2, y2]]) => {
+      edgeMap.set(`${x1},${y1}`, [x2, y2]);
+    });
+    // Находим стартовую точку (ту, которая встречается только один раз)
+    const points = edges.flat();
+    const count = new Map<string, number>();
+    points.forEach(([x, y]) => {
+      const k = `${x},${y}`;
+      count.set(k, (count.get(k) || 0) + 1);
+    });
+    let startKey =
+      Array.from(count.entries()).find(
+        ([k, v]) => v === 1
+      )?.[0] || `${edges[0][0][0]},${edges[0][0][1]}`;
+    let path = `M ${startKey.replace(",", " ")}`;
+    let currKey = startKey;
+    let steps = 0;
+    while (steps < edges.length + 5) {
+      const next = edgeMap.get(currKey);
+      if (!next) break;
+      path += ` L ${next[0]} ${next[1]}`;
+      currKey = `${next[0]},${next[1]}`;
+      if (currKey === startKey) break;
+      steps++;
+    }
+    path += " Z";
+    
+    cache.set(key, path);
+    return path;
+  };
+})();
+
 export const GameBoard: React.FC<
   GameBoardProps & { onShowSpinner?: () => void }
 > = ({
@@ -515,68 +672,175 @@ export const GameBoard: React.FC<
     [startDrag, updateDrag, boardRef]
   );
 
-  useEffect(() => {
-    const handleMove = (e: MouseEvent | TouchEvent) => {
-      if (!draggedPiece || !boardRef.current) return;
+  // Выносим обработчики событий за пределы useEffect
+  const handleMove = useCallback((e: MouseEvent | TouchEvent) => {
+    if (!draggedPiece || !boardRef.current) return;
 
-      if (e instanceof TouchEvent) {
-        e.preventDefault();
+    if (e instanceof TouchEvent) {
+      e.preventDefault();
+    }
+
+    const { clientX, clientY } = getEventCoordinates(e);
+    const currentDragPosition = { x: clientX, y: clientY };
+    updateDrag(currentDragPosition);
+
+    const nearestPosition = calculateGridPosition(
+      e,
+      currentDragPosition,
+      lastHighlightedPosition
+    );
+
+    // Обновляем последнюю подсвеченную позицию только если есть новая позиция
+    if (nearestPosition) {
+      setLastHighlightedPosition(nearestPosition);
+    } else {
+      // Сбрасываем lastHighlightedPosition когда хайлайт исчезает
+      setLastHighlightedPosition(null);
+    }
+
+    setHoverCell(nearestPosition);
+  }, [draggedPiece, updateDrag, calculateGridPosition, lastHighlightedPosition, setHoverCell]);
+
+  // --- Управление цветом анимации очистки линий ---
+  const usePlacedPieceColorInClearAnim = true; // Вынесено в переменную для удобства
+
+  // Функция для добавления анимаций очистки
+  const addClearAnimations = useCallback(
+    (
+      board: any[][],
+      cellsToClear: boolean[][],
+      placedPieceColor?: BlockColor
+    ) => {
+      const newAnims: AnimationCell[] = [];
+      // Определяем очищаемые строки и столбцы
+      const rowsToClear = new Set<number>();
+      const colsToClear = new Set<number>();
+      for (let y = 0; y < cellsToClear.length; y++) {
+        let fullRow = true;
+        for (let x = 0; x < cellsToClear[0].length; x++) {
+          if (!cellsToClear[y][x]) fullRow = false;
+        }
+        if (fullRow) rowsToClear.add(y);
       }
-
-      const { clientX, clientY } = getEventCoordinates(e);
-      const currentDragPosition = { x: clientX, y: clientY };
-      updateDrag(currentDragPosition);
-
-      const nearestPosition = calculateGridPosition(
-        e,
-        currentDragPosition,
-        lastHighlightedPosition
-      );
-
-      // Обновляем последнюю подсвеченную позицию только если есть новая позиция
-      if (nearestPosition) {
-        setLastHighlightedPosition(nearestPosition);
-      } else {
-        // Сбрасываем lastHighlightedPosition когда хайлайт исчезает
-        setLastHighlightedPosition(null);
+      for (let x = 0; x < cellsToClear[0].length; x++) {
+        let fullCol = true;
+        for (let y = 0; y < cellsToClear.length; y++) {
+          if (!cellsToClear[y][x]) fullCol = false;
+        }
+        if (fullCol) colsToClear.add(x);
       }
-
-      setHoverCell(nearestPosition);
-    };
-
-    const handleStart = (e: TouchEvent) => {
-      // e.preventDefault();
-    };
-
-    const handleEnd = (e: MouseEvent | TouchEvent) => {
-      if (draggedPiece) {
-        if (hoverCell) {
-          playPlacePiece();
-
-          onPiecePlaced({
-            x: hoverCell.x,
-            y: hoverCell.y,
-            board,
-            draggedPiece,
-            hoverCell,
-            width,
-            placePiece,
-            setClearingHorizontalLines,
-            setClearingVerticalLines,
-            setIsAnimating,
-            boardRect,
-            dynamicCellSize,
-            GAP_SIZE_PX,
-            useGameStore,
-          });
-        } else {
-          endDrag();
+      // Горизонтальные линии
+      for (let y = 0; y < cellsToClear.length; y++) {
+        if (rowsToClear.has(y)) {
+          for (let x = 0; x < cellsToClear[0].length; x++) {
+            if (cellsToClear[y][x]) {
+              newAnims.push({
+                id: uuidv4(),
+                x,
+                y,
+                color: usePlacedPieceColorInClearAnim
+                  ? placedPieceColor
+                  : board[y][x]?.color || placedPieceColor,
+                delay: (cellsToClear[0].length - 1 - x) * 0.03,
+              });
+            }
+          }
         }
       }
-      setHoverCell(null);
-      setLastHighlightedPosition(null); // Сбрасываем при окончании перетаскивания
-    };
+      // Вертикальные линии
+      for (let x = 0; x < cellsToClear[0].length; x++) {
+        if (colsToClear.has(x)) {
+          for (let y = 0; y < cellsToClear.length; y++) {
+            if (cellsToClear[y][x]) {
+              newAnims.push({
+                id: uuidv4(),
+                x,
+                y,
+                color: usePlacedPieceColorInClearAnim
+                  ? placedPieceColor
+                  : board[y][x]?.color || placedPieceColor,
+                delay: y * 0.03,
+              });
+            }
+          }
+        }
+      }
+      if (newAnims.length) {
+        setClearAnimations((prev: AnimationCell[]) => [...prev, ...newAnims]);
+        // Учитываем максимальный delay и длительность анимации взрыва (0.55s), плюс запас
+        const ANIMATION_DURATION = 0.3; // должно совпадать с BoardClearAnimationsOverlay
+        const maxDelay = Math.max(...newAnims.map((a) => a.delay ?? 0));
+        setTimeout(() => {
+          setClearAnimations((prev: AnimationCell[]) =>
+            prev.filter((cell) => !newAnims.some((anim) => anim.id === cell.id))
+          );
+        }, (maxDelay + ANIMATION_DURATION) * 1000 + 80);
+      }
+    },
+    []
+  );
 
+  // Функция-обёртка для размещения фигуры с сохранением истории и рекорда
+  const onPiecePlaced = useCallback(
+    (args: HandlePiecePlacementArgs) => {
+      handlePiecePlacement({
+        ...args,
+        addClearAnimations,
+        onAfterPlacement: async () => {
+          const { board, score, currentPieces, piecesPlaced } =
+            useGameStore.getState();
+          setHistory((prev) => [
+            ...prev,
+            {
+              board: board.map((row) => row.map((cell) => ({ ...cell }))),
+              score,
+              currentPieces: currentPieces.map((piece) => ({ ...piece })),
+              piecesPlaced,
+            },
+          ]);
+
+          // Сохраняем игру после размещения фигуры
+          saveAfterAction();
+        },
+      });
+    },
+    [setHistory, saveAfterAction, addClearAnimations]
+  );
+
+  const handleStart = useCallback((e: TouchEvent) => {
+    // e.preventDefault();
+  }, []);
+
+  const handleEnd = useCallback((e: MouseEvent | TouchEvent) => {
+    if (draggedPiece) {
+      if (hoverCell) {
+        playPlacePiece();
+
+        onPiecePlaced({
+          x: hoverCell.x,
+          y: hoverCell.y,
+          board,
+          draggedPiece,
+          hoverCell,
+          width,
+          placePiece,
+          setClearingHorizontalLines,
+          setClearingVerticalLines,
+          setIsAnimating,
+          boardRect,
+          dynamicCellSize,
+          GAP_SIZE_PX,
+          useGameStore,
+        });
+      } else {
+        endDrag();
+      }
+    }
+    setHoverCell(null);
+    setLastHighlightedPosition(null); // Сбрасываем при окончании перетаскивания
+  }, [draggedPiece, hoverCell, board, width, placePiece, setClearingHorizontalLines, setClearingVerticalLines, setIsAnimating, boardRect, dynamicCellSize, endDrag, setHoverCell, onPiecePlaced]);
+
+  useEffect(() => {
     if (typeof window !== "undefined") {
       window.addEventListener("touchstart", handleStart, { passive: false });
       window.addEventListener("mousemove", handleMove);
@@ -596,16 +860,7 @@ export const GameBoard: React.FC<
     }
 
     return undefined;
-  }, [
-    draggedPiece,
-    updateDrag,
-    endDrag,
-    setHoverCell,
-    board,
-    calculateGridPosition,
-    hoverCell,
-    lastHighlightedPosition,
-  ]);
+  }, [handleMove, handleStart, handleEnd]);
 
   // Создаем стабильную функцию для game over
   const handleGameOver = useCallback(() => {
@@ -889,108 +1144,7 @@ export const GameBoard: React.FC<
   const handleBombTouchEnd = handleBombMouseUp;
   const handleBombTouchCancel = handleBombMouseUp;
 
-  // Функция для добавления анимаций очистки
-  const addClearAnimations = useCallback(
-    (
-      board: any[][],
-      cellsToClear: boolean[][],
-      placedPieceColor?: BlockColor
-    ) => {
-      const newAnims: AnimationCell[] = [];
-      // Определяем очищаемые строки и столбцы
-      const rowsToClear = new Set<number>();
-      const colsToClear = new Set<number>();
-      for (let y = 0; y < cellsToClear.length; y++) {
-        let fullRow = true;
-        for (let x = 0; x < cellsToClear[0].length; x++) {
-          if (!cellsToClear[y][x]) fullRow = false;
-        }
-        if (fullRow) rowsToClear.add(y);
-      }
-      for (let x = 0; x < cellsToClear[0].length; x++) {
-        let fullCol = true;
-        for (let y = 0; y < cellsToClear.length; y++) {
-          if (!cellsToClear[y][x]) fullCol = false;
-        }
-        if (fullCol) colsToClear.add(x);
-      }
-      // Горизонтальные линии
-      for (let y = 0; y < cellsToClear.length; y++) {
-        if (rowsToClear.has(y)) {
-          for (let x = 0; x < cellsToClear[0].length; x++) {
-            if (cellsToClear[y][x]) {
-              newAnims.push({
-                id: uuidv4(),
-                x,
-                y,
-                color: usePlacedPieceColorInClearAnim
-                  ? placedPieceColor
-                  : board[y][x]?.color || placedPieceColor,
-                delay: (cellsToClear[0].length - 1 - x) * 0.03,
-              });
-            }
-          }
-        }
-      }
-      // Вертикальные линии
-      for (let x = 0; x < cellsToClear[0].length; x++) {
-        if (colsToClear.has(x)) {
-          for (let y = 0; y < cellsToClear.length; y++) {
-            if (cellsToClear[y][x]) {
-              newAnims.push({
-                id: uuidv4(),
-                x,
-                y,
-                color: usePlacedPieceColorInClearAnim
-                  ? placedPieceColor
-                  : board[y][x]?.color || placedPieceColor,
-                delay: y * 0.03,
-              });
-            }
-          }
-        }
-      }
-      if (newAnims.length) {
-        setClearAnimations((prev: AnimationCell[]) => [...prev, ...newAnims]);
-        // Учитываем максимальный delay и длительность анимации взрыва (0.55s), плюс запас
-        const ANIMATION_DURATION = 0.3; // должно совпадать с BoardClearAnimationsOverlay
-        const maxDelay = Math.max(...newAnims.map((a) => a.delay ?? 0));
-        setTimeout(() => {
-          setClearAnimations((prev: AnimationCell[]) =>
-            prev.filter((cell) => !newAnims.some((anim) => anim.id === cell.id))
-          );
-        }, (maxDelay + ANIMATION_DURATION) * 1000 + 80);
-      }
-    },
-    []
-  );
 
-  // Функция-обёртка для размещения фигуры с сохранением истории и рекорда
-  const onPiecePlaced = useCallback(
-    (args: HandlePiecePlacementArgs) => {
-      handlePiecePlacement({
-        ...args,
-        addClearAnimations,
-        onAfterPlacement: async () => {
-          const { board, score, currentPieces, piecesPlaced } =
-            useGameStore.getState();
-          setHistory((prev) => [
-            ...prev,
-            {
-              board: board.map((row) => row.map((cell) => ({ ...cell }))),
-              score,
-              currentPieces: currentPieces.map((piece) => ({ ...piece })),
-              piecesPlaced,
-            },
-          ]);
-
-          // Сохраняем игру после размещения фигуры
-          saveAfterAction();
-        },
-      });
-    },
-    [setHistory, saveAfterAction, addClearAnimations]
-  );
 
   useEffect(() => {
     if (onBoardRectChange) {
@@ -1000,9 +1154,6 @@ export const GameBoard: React.FC<
 
   // Получаем цвет фигуры для подсветки
   const potentialLineColor = draggedPiece?.color ? draggedPiece.color : "#fff";
-
-  // --- Управление цветом анимации очистки линий ---
-  const usePlacedPieceColorInClearAnim = true; // Вынесено в переменную для удобства
 
   // Функция для генерации партиклов
   function renderParticles(
@@ -1525,142 +1676,21 @@ export const GameBoard: React.FC<
                   const boardW = boardRef.current.offsetWidth;
                   const boardH = boardRef.current.offsetHeight;
                   // Переводим path из относительных координат (0-8) в пиксели
-                  const scaleX = boardW / board[0].length;
-                  const scaleY = boardH / board.length;
-                  function scalePath(d: string) {
-                    // Преобразует d="M x y L x y ..." в пиксели
-                    return d.replace(
-                      /([ML])\s*([\d.]+)\s*([\d.]+)/g,
-                      (_m, cmd, x, y) => {
-                        return `${cmd} ${+x * scaleX} ${+y * scaleY}`;
-                      }
-                    );
-                  }
-                  // --- Вспомогательные функции ---
-                  function findConnectedAreas(
-                    matrix: boolean[][]
-                  ): number[][][] {
-                    const h = matrix.length;
-                    const w = matrix[0]?.length || 0;
-                    const visited = Array.from({ length: h }, () =>
-                      Array(w).fill(false)
-                    );
-                    const areas: number[][][] = [];
-                    for (let y = 0; y < h; y++) {
-                      for (let x = 0; x < w; x++) {
-                        if (matrix[y][x] && !visited[y][x]) {
-                          // BFS
-                          const queue: [number, number][] = [[y, x]];
-                          const area: [number, number][] = [];
-                          visited[y][x] = true;
-                          while (queue.length) {
-                            const [cy, cx] = queue.shift()!;
-                            area.push([cy, cx]);
-                            for (const [dy, dx] of [
-                              [0, 1],
-                              [1, 0],
-                              [0, -1],
-                              [-1, 0],
-                            ]) {
-                              const ny = cy + dy,
-                                nx = cx + dx;
-                              if (
-                                ny >= 0 &&
-                                ny < h &&
-                                nx >= 0 &&
-                                nx < w &&
-                                matrix[ny][nx] &&
-                                !visited[ny][nx]
-                              ) {
-                                visited[ny][nx] = true;
-                                queue.push([ny, nx]);
-                              }
-                            }
-                          }
-                          areas.push(area);
-                        }
-                      }
-                    }
-                    return areas;
-                  }
-                  function getCellEdges(
-                    area: [number, number][],
-                    matrix: boolean[][]
-                  ) {
-                    const edges: Array<[[number, number], [number, number]]> =
-                      [];
-                    const set = new Set(area.map(([y, x]) => `${y},${x}`));
-                    for (const [y, x] of area) {
-                      // top
-                      if (!set.has(`${y - 1},${x}`))
-                        edges.push([
-                          [x, y],
-                          [x + 1, y],
-                        ]);
-                      // right
-                      if (!set.has(`${y},${x + 1}`))
-                        edges.push([
-                          [x + 1, y],
-                          [x + 1, y + 1],
-                        ]);
-                      // bottom
-                      if (!set.has(`${y + 1},${x}`))
-                        edges.push([
-                          [x + 1, y + 1],
-                          [x, y + 1],
-                        ]);
-                      // left
-                      if (!set.has(`${y},${x - 1}`))
-                        edges.push([
-                          [x, y + 1],
-                          [x, y],
-                        ]);
-                    }
-                    return edges;
-                  }
-                  function edgesToPath(
-                    edges: Array<[[number, number], [number, number]]>
-                  ): string {
-                    if (edges.length === 0) return "";
-                    // Строим карту: start -> end
-                    const edgeMap = new Map<string, [number, number]>();
-                    edges.forEach(([[x1, y1], [x2, y2]]) => {
-                      edgeMap.set(`${x1},${y1}`, [x2, y2]);
-                    });
-                    // Находим стартовую точку (ту, которая встречается только один раз)
-                    const points = edges.flat();
-                    const count = new Map<string, number>();
-                    points.forEach(([x, y]) => {
-                      const k = `${x},${y}`;
-                      count.set(k, (count.get(k) || 0) + 1);
-                    });
-                    let startKey =
-                      Array.from(count.entries()).find(
-                        ([k, v]) => v === 1
-                      )?.[0] || `${edges[0][0][0]},${edges[0][0][1]}`;
-                    let path = `M ${startKey.replace(",", " ")}`;
-                    let currKey = startKey;
-                    let steps = 0;
-                    while (steps < edges.length + 5) {
-                      const next = edgeMap.get(currKey);
-                      if (!next) break;
-                      path += ` L ${next[0]} ${next[1]}`;
-                      currKey = `${next[0]},${next[1]}`;
-                      if (currKey === startKey) break;
-                      steps++;
-                    }
-                    path += " Z";
-                    return path;
-                  }
-                  return findConnectedAreas(potentialClearHighlight).map(
+                  return findConnectedAreasMemo(potentialClearHighlight).map(
                     (area, idx) => {
-                      const edges = getCellEdges(
+                      const edges = getCellEdgesMemo(
                         area as [number, number][],
                         potentialClearHighlight
                       );
                       if (edges.length === 0) return null;
-                      const d = edgesToPath(edges);
-                      const dPx = scalePath(d);
+                      const d = edgesToPathMemo(edges);
+                      const dPx = scalePath(
+                        d,
+                        boardW,
+                        boardH,
+                        board[0].length,
+                        board.length
+                      );
                       const color = COLOR_HEX[draggedPiece.color] || "#fff";
                       return (
                         <div
