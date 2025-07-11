@@ -411,17 +411,11 @@ const HomePage: React.FC = () => {
       !isAuthenticated &&
       !isAdmin)
   ) {
-    return (
-      <LoadingScreen
-        subtitle={
-          isTelegramAutoAuth ? "Connecting to Telegram..." : "Loading..."
-        }
-      />
-    );
+    return <LoadingScreen />;
   }
 
   return (
-    <div className="min-h-screen bg-blue-900">
+    <div className="min-h-screen menu-bg">
       {/* Overlay spinner */}
       {showSpinnerAnimation && boardRect && (
         <div
@@ -545,9 +539,7 @@ const HomePage: React.FC = () => {
       )}
 
       {/* Fallback для отладки */}
-      {!currentScreen && (
-        <LoadingScreen subtitle="Error: currentScreen not set" />
-      )}
+      {!currentScreen && <LoadingScreen />}
     </div>
   );
 };

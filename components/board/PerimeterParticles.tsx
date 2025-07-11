@@ -72,7 +72,7 @@ export const PerimeterParticles: React.FC<PerimeterParticlesProps> = React.memo(
 
       // Для каждого pt генерируем параметры частицы
       return pts.map((pt) => {
-        const offset = -10;
+        const offset = -12;
         const left =
           pt.x * (width - MIN_PARTICLE_SIZE) +
           (pt.side === "left" ||
@@ -98,7 +98,7 @@ export const PerimeterParticles: React.FC<PerimeterParticlesProps> = React.memo(
 
         // Рандомные параметры
         const baseDist = 2;
-        const randomDist = baseDist + Math.random() * 6;
+        const randomDist = baseDist + Math.random() * 8;
         const randomAngle = (Math.random() - 0.5) * 1.5;
         const randomDelay = Math.random() * 100;
         const randomDuration = ANIMATION_DURATION - Math.random() * 400;
