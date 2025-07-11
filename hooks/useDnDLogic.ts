@@ -100,6 +100,14 @@ export const useDnDLogic = () => {
     []
   );
 
+  // Кэш для результатов calculateGridPosition
+  const gridPositionCache = useRef(new Map<string, Position | null>());
+
+  // Очищаем кэш при изменении важных параметров
+  useEffect(() => {
+    gridPositionCache.current.clear();
+  }, [validPositions, boardRect, dynamicCellSize]);
+
   const calculateGridPosition = useCallback(
     (
       e: MouseEvent | TouchEvent,
@@ -119,6 +127,26 @@ export const useDnDLogic = () => {
 
       const { draggedPiece } = useGameStore.getState();
       if (!draggedPiece) return null;
+
+      // Создаем ключ кэша на основе входных параметров
+      const cacheKey = JSON.stringify({
+        clientX: Math.round(clientX),
+        clientY: Math.round(clientY),
+        currentDragPosition,
+        lastHighlightedPosition,
+        draggedPieceId: draggedPiece.uniqueId,
+        boardRect: {
+          left: Math.round(rect.left),
+          top: Math.round(rect.top)
+        },
+        dynamicCellSize: Math.round(dynamicCellSize * 100) / 100, // Округляем для стабильности
+        validPositionsLength: validPositions.length
+      });
+
+      // Проверяем кэш
+      if (gridPositionCache.current.has(cacheKey)) {
+        return gridPositionCache.current.get(cacheKey);
+      }
 
       const { x: dynamicOffsetX, y: dynamicOffsetY } = calculateDynamicOffset(
         currentDragPosition.x,
@@ -149,10 +177,26 @@ export const useDnDLogic = () => {
         lastHighlightedPosition
       );
 
+      // Сохраняем результат в кэш
+      gridPositionCache.current.set(cacheKey, nearestPosition);
+
+      // Ограничиваем размер кэша (максимум 1000 записей)
+      if (gridPositionCache.current.size > 1000) {
+        const firstKey = gridPositionCache.current.keys().next().value;
+        if (firstKey) {
+          gridPositionCache.current.delete(firstKey);
+        }
+      }
+
       return nearestPosition;
     },
     [validPositions, boardRect, dynamicCellSize, calculateDynamicOffset]
   );
+
+  // Функция для очистки кэша при изменении важных параметров
+  const clearGridPositionCache = useCallback(() => {
+    gridPositionCache.current.clear();
+  }, []);
 
   return {
     boardRef,
@@ -161,6 +205,7 @@ export const useDnDLogic = () => {
     cellRef,
     boardRect,
     calculateDynamicOffset,
+    clearGridPositionCache,
   };
 };
 

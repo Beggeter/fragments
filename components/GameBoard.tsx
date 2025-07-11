@@ -698,7 +698,7 @@ export const GameBoard: React.FC<
       setLastHighlightedPosition(null);
     }
 
-    setHoverCell(nearestPosition);
+    setHoverCell(nearestPosition || null);
   }, [draggedPiece, updateDrag, calculateGridPosition, lastHighlightedPosition, setHoverCell]);
 
   // --- Управление цветом анимации очистки линий ---
