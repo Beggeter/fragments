@@ -7,6 +7,7 @@ import { animate, useMotionValue, motion, AnimatePresence } from "framer-motion"
 import { useGameStore } from "@/lib/state/store";
 import { vibrate } from "@/utils/helpers";
 import { useSettingsStore } from "@/lib/state/settings";
+import { PerimeterParticles } from "./PerimeterParticles";
 
 interface ComboVisualizerProps {
   speed?: number;
@@ -128,7 +129,8 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   const [currentBlur, setCurrentBlur] = useState<[number, number]>([0.5, 0.5]);
   const [isExploding, setIsExploding] = useState(false);
   const [showComboText, setShowComboText] = useState(false);
-    const [showClearText, setShowClearText] = useState(false);
+  const [showClearText, setShowClearText] = useState(false);
+  const [showParticles, setShowParticles] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [scorePluses, setScorePluses] = useState<
     {
@@ -186,6 +188,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
           }, 50);
           setTimeout(() => clearInterval(checkSizeTimer), 500); // Fallback timeout
         }
+        setShowParticles(true);
         setShowClearText(false);
         handleVibrate();
 
@@ -194,15 +197,18 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
         if (typeof onExplodeChange === "function") onExplodeChange(false);
       }, 400);
       const textTimer = setTimeout(() => setShowComboText(false), 800);
+      const particlesTimer = setTimeout(() => setShowParticles(false), 1000);
 
         return () => {
           clearTimeout(explodeTimer);
           clearTimeout(textTimer);
+          clearTimeout(particlesTimer);
         };
       } else {
         // При сбросе комбо до 0 скрываем текст
         setShowComboText(false);
         setShowClearText(false);
+        setShowParticles(false);
       }
     }
   }, [lastScore?.comboLevel, containerSize]);
@@ -506,6 +512,16 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
         }`}
                 style={borderStyle}
       />
+            {/* --- ПЕРИМЕТРАЛЬНЫЕ ЧАСТИЦЫ ПРИ КОМБО --- */}
+            {showParticles && size.width > 0 && size.height > 0 && (
+        <PerimeterParticles
+          width={size.width}
+          height={size.height}
+          visible={true}
+          // color={theme.background}
+        />
+      )}
+
       {lastScore &&
         lastScore.comboLevel > 0 &&
         containerSize.width > 0 && containerSize.height > 0 && // Only render when container size is available
