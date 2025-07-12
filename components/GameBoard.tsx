@@ -39,6 +39,8 @@ import { Piece } from "./pieces/Piece";
 import NeonGlowOutline from "./NeonGlowOutline";
 import { NeonGlowParticles } from "./board/NeonGlowParticles";
 import BoardClearAnimationsOverlay from "./board/BoardClearAnimationsOverlay";
+import BoardRestoreAnimationsOverlay, { RestoreAnimationCell } from "./board/BoardRestoreAnimationsOverlay";
+import PieceReturnAnimation from "./board/PieceReturnAnimation";
 import { v4 as uuidv4 } from "uuid";
 import ClickEffect from "./ClickEffect";
 import { useTranslation } from "react-i18next";
@@ -59,6 +61,13 @@ interface GameBoardProps {
   isIntentionalRestart?: boolean;
   onRestartComplete?: () => void;
   onOpenShop?: () => void;
+  onPieceReturnAnimation?: (animationData: {
+    piece: any;
+    fromPosition: { x: number; y: number };
+    targetRect: DOMRect | null;
+    cellSize: number;
+    gap: number;
+  }) => void;
 }
 
 // Тип для аргументов handlePiecePlacement
@@ -352,6 +361,7 @@ export const GameBoard: React.FC<
   isIntentionalRestart: externalIsIntentionalRestart,
   onRestartComplete,
   onOpenShop,
+  onPieceReturnAnimation,
 }) => {
   const {
     board,
@@ -445,10 +455,68 @@ export const GameBoard: React.FC<
       score: number;
       currentPieces: Block[];
       piecesPlaced: number;
+      clearedCells?: boolean[][]; // Матрица очищенных клеток
+      placedPiecePosition?: Position; // Позиция размещенной фигуры
+      placedPiece?: Block; // Сама размещенная фигура
     }[]
   >([]);
 
   const [clearAnimations, setClearAnimations] = useState<AnimationCell[]>([]);
+  const [restoreAnimations, setRestoreAnimations] = useState<RestoreAnimationCell[]>([]);
+
+  // Состояние для хранения данных undo
+  const [undoData, setUndoData] = useState<{
+    currentState: any;
+    previousState: any;
+    restoreBoardState: () => void;
+    restorePiecesState: () => void;
+  } | null>(null);
+
+  // Функция для второй фазы undo - анимация возвращения фигуры
+  const startPieceReturnAnimation = useCallback(() => {
+    console.log("🔄 startPieceReturnAnimation called");
+    if (!undoData) {
+      console.log("🔄 No undoData, returning");
+      return;
+    }
+    
+    const { currentState, restorePiecesState } = undoData;
+    console.log("🔄 startPieceReturnAnimation: currentState", currentState);
+    
+    if (currentState.placedPiece && currentState.placedPiecePosition) {
+      // Найти контейнер для возвращения фигуры
+      const piecesContainer = document.querySelector('.draggable-pieces-section');
+      const targetRect = piecesContainer?.getBoundingClientRect() || null;
+      
+      console.log("🔄 Phase 2: Starting piece return animation", {
+        piece: currentState.placedPiece.id,
+        fromPosition: currentState.placedPiecePosition,
+        targetRect: targetRect ? { width: targetRect.width, height: targetRect.height } : null,
+      });
+      
+      if (onPieceReturnAnimation) {
+        onPieceReturnAnimation({
+          piece: currentState.placedPiece,
+          fromPosition: currentState.placedPiecePosition,
+          targetRect,
+          cellSize: dynamicCellSize || DEFAULT_CELL_SIZE,
+          gap: GAP_SIZE_PX,
+        });
+      }
+      
+      // Завершить undo после анимации возвращения фигуры
+      setTimeout(() => {
+        console.log("🔄 Phase 2: Piece return animation completed");
+        restorePiecesState();
+        setUndoData(null); // Очищаем данные undo
+      }, 800); // Время анимации возвращения фигуры
+    } else {
+      // Если нет фигуры для возвращения, завершаем undo сразу
+      console.log("🔄 Phase 2: No piece to return, completing undo immediately");
+      restorePiecesState();
+      setUndoData(null); // Очищаем данные undo
+    }
+  }, [undoData]);
 
   const blockGenerator = new BlockGenerator();
   const scoreCalculator = new ScoreCalculator();
@@ -786,9 +854,13 @@ export const GameBoard: React.FC<
       handlePiecePlacement({
         ...args,
         addClearAnimations,
-        onAfterPlacement: async () => {
+        onAfterPlacement: async (clearedCells, placedPiecePosition, placedPiece) => {
           const { board, score, currentPieces, piecesPlaced } =
             useGameStore.getState();
+          
+          // Определяем, были ли очищены клетки
+          const hasClearedCells = clearedCells.some((row) => row.some((cell) => cell));
+          
           setHistory((prev) => [
             ...prev,
             {
@@ -796,6 +868,9 @@ export const GameBoard: React.FC<
               score,
               currentPieces: currentPieces.map((piece) => ({ ...piece })),
               piecesPlaced,
+              clearedCells: hasClearedCells ? clearedCells : undefined,
+              placedPiecePosition,
+              placedPiece,
             },
           ]);
 
@@ -939,6 +1014,7 @@ export const GameBoard: React.FC<
         score,
         currentPieces: currentPieces.map((piece) => ({ ...piece })),
         piecesPlaced: piecesPlaced,
+        // Лазер не размещает фигуру, поэтому не сохраняем clearedCells
       },
     ]);
 
@@ -946,27 +1022,180 @@ export const GameBoard: React.FC<
     saveAfterAction();
   };
 
-  // Новый обработчик undo
+  // Новый обработчик undo с двухфазной анимацией
   const handleUndo = useCallback(() => {
-    let last: (typeof history)[number] | undefined;
-    setHistory((prev) => {
-      if (prev.length < 2) return prev;
-      const newHistory = prev.slice(0, -1);
-      last = newHistory[newHistory.length - 1];
-      return newHistory;
+    if (history.length < 2) return;
+    
+    // Получаем текущее состояние (которое будет отменено)
+    const currentState = history[history.length - 1];
+    const previousState = history[history.length - 2];
+    
+    console.log("🔄 Undo started:", {
+      hasCurrentState: !!currentState,
+      hasPreviousState: !!previousState,
+      hasClearedCells: !!currentState.clearedCells,
+      hasPlacedPiece: !!currentState.placedPiece,
+      hasPlacedPiecePosition: !!currentState.placedPiecePosition,
+      historyLength: history.length,
     });
-    // setHistory асинхронный, поэтому используем setTimeout, чтобы last был актуальным
-    setTimeout(() => {
-      if (last) {
-        useGameStore.setState({
-          board: last.board.map((row) => row.map((cell) => ({ ...cell }))),
-          score: last.score,
-          currentPieces: last.currentPieces.map((piece) => ({ ...piece })),
-          piecesPlaced: last.piecesPlaced,
-        });
+    
+    // Функция для восстановления состояния доски (вызывается после анимации восстановления клеток)
+    const restoreBoardState = () => {
+      console.log("🔄 Phase 1.5: Restoring board state");
+      
+      // Если есть размещенная фигура, нужно убрать её с доски
+      let newBoard = previousState.board.map((row) => row.map((cell) => ({ ...cell })));
+      
+      if (currentState.placedPiece && currentState.placedPiecePosition) {
+        // Убираем размещенную фигуру с доски
+        const pieceMatrix = currentState.placedPiece.matrix;
+        const pieceX = currentState.placedPiecePosition.x;
+        const pieceY = currentState.placedPiecePosition.y;
+        
+        for (let y = 0; y < pieceMatrix.length; y++) {
+          for (let x = 0; x < pieceMatrix[0].length; x++) {
+            if (pieceMatrix[y][x].value === 1) {
+              const boardX = pieceX + x;
+              const boardY = pieceY + y;
+              if (boardY >= 0 && boardY < newBoard.length && 
+                  boardX >= 0 && boardX < newBoard[0].length) {
+                newBoard[boardY][boardX] = { value: 0 };
+              }
+            }
+          }
+        }
       }
-    }, 0);
-  }, [history]);
+      
+      useGameStore.setState({
+        board: newBoard,
+        score: previousState.score,
+      });
+      
+      console.log("🔄 Board state restored successfully!");
+    };
+
+    // Функция для восстановления состояния фигур (вызывается после анимации возвращения фигуры)
+    const restorePiecesState = () => {
+      console.log("🔄 Phase 3: Restoring pieces state", {
+        newPiecesCount: previousState.currentPieces.length,
+        newPiecesPlaced: previousState.piecesPlaced,
+      });
+      
+      useGameStore.setState({
+        currentPieces: previousState.currentPieces.map((piece) => ({ ...piece })),
+        piecesPlaced: previousState.piecesPlaced,
+      });
+      
+      // Удаляем последний элемент из истории после завершения всех анимаций
+      setHistory((prev) => prev.slice(0, -1));
+      
+      console.log("🔄 Undo completed successfully!");
+    };
+
+    // Сохраняем данные undo для использования в анимациях
+    setUndoData({
+      currentState,
+      previousState,
+      restoreBoardState,
+      restorePiecesState,
+    });
+
+    // Первая фаза - восстановление поля (если были очищенные клетки)
+    if (currentState.clearedCells) {
+      const restoreCells: RestoreAnimationCell[] = [];
+      
+      // Создаем анимации для всех очищенных клеток
+      currentState.clearedCells.forEach((row, y) => {
+        row.forEach((wasCleared, x) => {
+          if (wasCleared) {
+            // Определяем цвет клетки: если это клетка размещенной фигуры, используем её цвет,
+            // иначе используем оригинальный цвет клетки из предыдущего состояния
+            let cellColor = previousState.board[y][x]?.color || 'blue';
+            
+            // Проверяем, является ли эта клетка частью размещенной фигуры
+            if (currentState.placedPiece && currentState.placedPiecePosition) {
+              const pieceMatrix = currentState.placedPiece.matrix;
+              const pieceX = x - currentState.placedPiecePosition.x;
+              const pieceY = y - currentState.placedPiecePosition.y;
+              
+              // Если координаты попадают в матрицу фигуры и там есть клетка
+              if (pieceY >= 0 && pieceY < pieceMatrix.length && 
+                  pieceX >= 0 && pieceX < pieceMatrix[0].length && 
+                  pieceMatrix[pieceY][pieceX].value === 1) {
+                // Это клетка размещенной фигуры - используем её цвет
+                cellColor = currentState.placedPiece.color;
+              }
+            }
+            
+            restoreCells.push({
+              id: `restore-${x}-${y}-${Date.now()}`,
+              x,
+              y,
+              color: cellColor,
+              delay: Math.random() * 0.3, // Случайная задержка для красоты
+            });
+          }
+        });
+      });
+
+      if (restoreCells.length > 0) {
+        console.log("🔄 Phase 1: Starting field restore animation with", restoreCells.length, "cells");
+        setRestoreAnimations(restoreCells);
+        // onComplete колбэк будет вызван компонентом BoardRestoreAnimationsOverlay
+        // когда анимация завершится, и запустит startPieceReturnAnimation()
+      } else {
+        console.log("🔄 Phase 1: No cells to restore, skipping to piece return");
+        restoreBoardState();
+        startPieceReturnAnimation();
+      }
+    } else {
+      // Если нет очищенных клеток, сразу восстанавливаем доску и переходим к возвращению фигуры
+      console.log("🔄 Phase 1: No cleared cells, restoring board and starting piece return");
+      console.log("🔄 Debug: startPieceReturnAnimation function:", typeof startPieceReturnAnimation);
+      restoreBoardState();
+      
+      // Передаем данные напрямую, так как setUndoData асинхронный
+      const undoDataForAnimation = {
+        currentState,
+        previousState,
+        restoreBoardState,
+        restorePiecesState,
+      };
+      
+      // Вызываем анимацию с данными напрямую
+      if (undoDataForAnimation.currentState.placedPiece && undoDataForAnimation.currentState.placedPiecePosition) {
+        // Найти контейнер для возвращения фигуры
+        const piecesContainer = document.querySelector('.draggable-pieces-section');
+        const targetRect = piecesContainer?.getBoundingClientRect() || null;
+        
+        console.log("🔄 Phase 2: Starting piece return animation", {
+          piece: undoDataForAnimation.currentState.placedPiece.id,
+          fromPosition: undoDataForAnimation.currentState.placedPiecePosition,
+          targetRect: targetRect ? { width: targetRect.width, height: targetRect.height } : null,
+        });
+        
+        if (onPieceReturnAnimation) {
+          onPieceReturnAnimation({
+            piece: undoDataForAnimation.currentState.placedPiece,
+            fromPosition: undoDataForAnimation.currentState.placedPiecePosition,
+            targetRect,
+            cellSize: dynamicCellSize || DEFAULT_CELL_SIZE,
+            gap: GAP_SIZE_PX,
+          });
+        }
+        
+        // Завершить undo после анимации возвращения фигуры
+        setTimeout(() => {
+          console.log("🔄 Phase 2: Piece return animation completed");
+          undoDataForAnimation.restorePiecesState();
+        }, 800); // Время анимации возвращения фигуры
+      } else {
+        // Если нет фигуры для возвращения, завершаем undo сразу
+        console.log("🔄 Phase 2: No piece to return, completing undo immediately");
+        undoDataForAnimation.restorePiecesState();
+      }
+    }
+  }, [history, startPieceReturnAnimation]);
 
   // --- Добавляю функцию списывания бустера ---
   const useBooster = async (boosterName: string) => {
@@ -1082,6 +1311,7 @@ export const GameBoard: React.FC<
         score,
         currentPieces: currentPieces.map((piece) => ({ ...piece })),
         piecesPlaced: piecesPlaced,
+        // Бомба не размещает фигуру, поэтому не сохраняем clearedCells
       },
     ]);
     // Анимация разлёта будет проигрываться 500 мс
@@ -1248,6 +1478,7 @@ export const GameBoard: React.FC<
             score,
             currentPieces: currentPieces.map((piece) => ({ ...piece })),
             piecesPlaced: piecesPlaced,
+            // clearedLine не размещает фигуру, поэтому не сохраняем clearedCells
           },
         ]);
       });
@@ -1504,6 +1735,7 @@ export const GameBoard: React.FC<
           score: newScore,
           currentPieces: currentPieces.map((piece) => ({ ...piece })),
           piecesPlaced: piecesPlaced,
+          // Whirlwind не размещает фигуру, поэтому не сохраняем clearedCells
         },
       ]);
 
@@ -1666,6 +1898,24 @@ export const GameBoard: React.FC<
                 gap={GAP_SIZE_PX}
                 boardRect={null}
               />
+              <BoardRestoreAnimationsOverlay
+                cells={restoreAnimations}
+                cellSize={dynamicCellSize || DEFAULT_CELL_SIZE}
+                gap={GAP_SIZE_PX}
+                boardRect={null}
+                onComplete={() => {
+                  console.log("🔄 Phase 1: Field restore animation completed via onComplete");
+                  setRestoreAnimations([]);
+                  
+                  // Восстанавливаем состояние доски сразу после анимации восстановления клеток
+                  if (undoData) {
+                    undoData.restoreBoardState();
+                  }
+                  
+                  startPieceReturnAnimation();
+                }}
+              />
+              {/* Анимация возвращения фигуры для undo теперь в app/page.tsx */}
               {/* Неоновый контур потенциально очищаемых областей */}
               {potentialClearHighlight &&
                 potentialClearHighlight.length > 0 &&

@@ -15,6 +15,7 @@ import { LoadingScreen } from "@/components/LoadingScreen";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ShopScreen from "../components/ShopScreen";
 import LeaderboardScreen from "../components/LeaderboardScreen";
+import PieceReturnAnimation from "../components/board/PieceReturnAnimation";
 
 type Screen =
   | "admin login"
@@ -100,6 +101,14 @@ const HomePage: React.FC = () => {
   const [particlesInit, setParticlesInit] = useState(false);
   // Track where the shop was opened from
   const [shopReturnTo, setShopReturnTo] = useState<Screen | null>(null);
+  // Piece return animation state
+  const [pieceReturnAnimation, setPieceReturnAnimation] = useState<{
+    piece: any;
+    fromPosition: { x: number; y: number };
+    targetRect: DOMRect | null;
+    cellSize: number;
+    gap: number;
+  } | null>(null);
 
   // Добавляем состояние для отслеживания намеренного перезапуска
   const [isIntentionalRestart, setIsIntentionalRestart] = useState(false);
@@ -393,6 +402,17 @@ const HomePage: React.FC = () => {
     setCurrentScreen("main menu");
   }, []);
 
+  // Колбэк для запуска анимации возвращения фигуры
+  const handlePieceReturnAnimation = useCallback((animationData: {
+    piece: any;
+    fromPosition: { x: number; y: number };
+    targetRect: DOMRect | null;
+    cellSize: number;
+    gap: number;
+  }) => {
+    setPieceReturnAnimation(animationData);
+  }, []);
+
   // Показываем загрузку ресурсов если они еще не загружены
   if (!resourcesLoaded) {
     const allColors: BlockColor[] = [
@@ -450,6 +470,21 @@ const HomePage: React.FC = () => {
             onLineBreakpoint={handleLineBreakpoint}
           />
         </div>
+      )}
+
+      
+
+      {/* Piece Return Animation */}
+      {pieceReturnAnimation && boardRect && (
+        <PieceReturnAnimation
+          piece={pieceReturnAnimation.piece}
+          fromPosition={pieceReturnAnimation.fromPosition}
+          targetRect={pieceReturnAnimation.targetRect}
+          cellSize={pieceReturnAnimation.cellSize}
+          gap={pieceReturnAnimation.gap}
+          onComplete={() => setPieceReturnAnimation(null)}
+          boardRect={boardRect}
+        />
       )}
 
       <div
@@ -530,6 +565,7 @@ const HomePage: React.FC = () => {
           isIntentionalRestart={isIntentionalRestart}
           onRestartComplete={handleRestartComplete}
           onOpenShop={handleOpenShop}
+          onPieceReturnAnimation={handlePieceReturnAnimation}
         />
       )}
 

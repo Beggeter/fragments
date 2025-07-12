@@ -92,7 +92,7 @@ export function handlePiecePlacement({
   dynamicCellSize: number;
   GAP_SIZE_PX: number;
   useGameStore: any;
-  onAfterPlacement?: () => void;
+  onAfterPlacement?: (clearedCells: boolean[][], placedPiecePosition: Position, placedPiece: Block) => void;
   addClearAnimations?: (board: any[][], cellsToClear: boolean[][], placedPieceColor?: import("../../lib/data/types").BlockColor) => void;
 }) {
   if (draggedPiece && hoverCell) {
@@ -121,6 +121,6 @@ export function handlePiecePlacement({
       }, 0);
     }
     // --- конец блока pixelPosition ---
-    if (onAfterPlacement) onAfterPlacement();
+    if (onAfterPlacement) onAfterPlacement(cellsToClear, hoverCell, draggedPiece);
   }
 } 
