@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useUser } from "@/hooks/useUser";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
-import { LoadingNumberAnimation } from "./LoadingNumberAnimation";
+import { LoadingScreen } from "./LoadingScreen";
 import ComingSoonModal from "./UI/ComingSoonModal";
+import ClickEffect from "./ClickEffect";
+import { useTranslation } from "react-i18next";
 
 interface LeaderboardEntry {
   id: number;
@@ -16,8 +18,9 @@ interface LeaderboardScreenProps {
 }
 
 const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
+  const { t } = useTranslation();
   const { user } = useUser();
-  const { isAdminAuthenticated } = useAdminAuth();
+  const { isAdmin } = useAdminAuth();
   const [activeTab, setActiveTab] = useState<'classic' | 'zen'>('classic');
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [userPosition, setUserPosition] = useState<number | null>(null);
@@ -59,7 +62,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
       
     } catch (err) {
       console.error('Error fetching leaderboard:', err);
-      setError('Ошибка загрузки таблицы лидеров');
+      setError(t('leaderboard.error'));
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -68,7 +71,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
 
   useEffect(() => {
     fetchLeaderboard();
-  }, [user]);
+  }, [user, t]);
 
   const handleRefresh = () => {
     fetchLeaderboard(true);
@@ -98,40 +101,30 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
   const shouldShowBottomPosition = user && userPosition && !isUserInVisibleTop20;
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-pink-900 flex items-center justify-center">
-        <div className="text-white text-center">
-          <div className="text-2xl font-bold mb-4">Загрузка...</div>
-          <div className="text-lg">
-            <LoadingNumberAnimation isLoading={true} />
-          </div>
-        </div>
-      </div>
-    );
+    return <LoadingScreen showProgress={true} />;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-pink-900 text-white">
-      <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <button
+    <div className="flex relative flex-col min-h-screen text-white menu-bg fade-in-animation-fast">
+      {/* Верхняя панель */}
+      <div className="flex justify-between items-center px-4 py-4 mb-4">
+        <ClickEffect>
+          <img
+            src="/back.svg"
             onClick={onBack}
-            className="flex items-center text-white hover:text-yellow-400 transition-colors"
-          >
-            <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            Назад
-          </button>
-          
+            className="clickable flex justify-center items-center w-10 h-10 drop-shadow-xl"
+            alt={t('leaderboard.back')}
+          />
+        </ClickEffect>
+        
+        <ClickEffect>
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className={`flex items-center px-4 py-2 rounded-lg transition-colors ${
+            className={`flex items-center px-4 py-2 rounded-2xl transition-all duration-300 font-figtree-mulish font-bold ${
               isRefreshing 
-                ? 'bg-gray-600 cursor-not-allowed' 
-                : 'bg-blue-600 hover:bg-blue-700'
+                ? 'bg-gray-600/50 cursor-not-allowed' 
+                : 'bg-white/10 backdrop-blur-md hover:bg-white/20 border border-white/20 hover:border-white/30'
             }`}
           >
             <svg 
@@ -142,55 +135,64 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
             >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            {isRefreshing ? 'Обновление...' : 'Обновить'}
+            {isRefreshing ? t('leaderboard.refreshing') : t('leaderboard.refresh')}
           </button>
-        </div>
+        </ClickEffect>
+      </div>
 
-        {/* Title */}
-        <h1 className="text-4xl font-bold text-center mb-8 text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-pink-400">
-          Таблица лидеров
+      {/* Заголовок */}
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-pink-400 font-figtree-mulish menu-shadow">
+          {t('leaderboard.title')}
         </h1>
+      </div>
 
-        {/* Tabs */}
-        <div className="flex justify-center mb-8">
-          <div className="flex bg-gray-800 rounded-lg p-1">
-            <button
-              onClick={() => setActiveTab('classic')}
-              className={`px-6 py-2 rounded-md font-medium transition-colors ${
-                activeTab === 'classic'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-300 hover:text-white'
-              }`}
-            >
-              Классический
-            </button>
-            <button
-              onClick={handleZenClick}
-              className="px-6 py-2 rounded-md font-medium text-gray-300 hover:text-white transition-colors"
-            >
-              Zen
-            </button>
-          </div>
-        </div>
+      {/* Табы */}
+      <div className="flex gap-2 justify-center mb-8 px-4">
+        <ClickEffect>
+          <button
+            onClick={() => setActiveTab('classic')}
+            className={`px-6 py-3 rounded-full text-lg font-extrabold transition-all duration-300 border font-figtree-mulish ${
+              activeTab === 'classic'
+                ? 'bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg border-orange-400'
+                : 'bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20 hover:border-white/30'
+            }`}
+          >
+            {t('leaderboard.classic')}
+          </button>
+        </ClickEffect>
+        
+        <ClickEffect>
+          <button
+            onClick={handleZenClick}
+            className="px-6 py-3 rounded-full text-lg font-extrabold transition-all duration-300 border font-figtree-mulish bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20 hover:border-white/30"
+          >
+            {t('leaderboard.zen')}
+          </button>
+        </ClickEffect>
+      </div>
 
-        {/* Content */}
-        <div className={`max-w-2xl mx-auto ${shouldShowBottomPosition ? 'pb-20' : ''}`}>
+      {/* Контент */}
+      <div className="flex flex-col flex-1 justify-start items-center px-4 py-2">
+        <div className={`w-full max-w-2xl ${shouldShowBottomPosition ? 'pb-20' : ''}`}>
           {error ? (
             <div className="text-center py-12">
-              <div className="text-red-400 text-xl mb-4">{error}</div>
-              <button
-                onClick={() => fetchLeaderboard()}
-                className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg transition-colors"
-              >
-                Попробовать снова
-              </button>
+              <div className="text-red-400 text-xl mb-6 font-figtree-mulish">{error}</div>
+              <ClickEffect>
+                <button
+                  onClick={() => fetchLeaderboard()}
+                  className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 px-8 py-3 rounded-2xl transition-all duration-300 font-bold font-figtree-mulish shadow-lg"
+                >
+                  {t('leaderboard.try_again')}
+                </button>
+              </ClickEffect>
             </div>
           ) : leaderboard.length === 0 ? (
-            <div className="text-center py-12 text-gray-400">
-              Нет данных для отображения
+            <div className="text-center py-12 text-gray-400 font-figtree-mulish text-lg">
+              {t('leaderboard.no_data')}
             </div>
           ) : (
-            <div className="bg-gray-800/50 rounded-lg backdrop-blur-sm border border-gray-700 overflow-hidden">
+            <div className="bg-white/10 backdrop-blur-md rounded-3xl shadow-xl border border-white/20 overflow-hidden">
               <div className="leaderboard-scroll max-h-96 overflow-y-auto">
                 {leaderboard.map((entry, index) => {
                   const position = index + 1;
@@ -200,31 +202,33 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
                   return (
                     <div
                       key={entry.id}
-                      className={`flex items-center p-4 border-b border-gray-700 last:border-b-0 ${
+                      className={`flex items-center p-4 border-b border-white/10 last:border-b-0 transition-all duration-300 ${
                         isCurrentUserEntry
                           ? 'bg-gradient-to-r from-orange-500/20 to-red-500/20 border-orange-500/30'
-                          : 'hover:bg-gray-700/50'
-                      } transition-colors`}
+                          : 'hover:bg-white/10'
+                      }`}
                     >
-                      <div className="flex items-center justify-center w-12 h-12 rounded-full bg-gray-700 text-white font-bold mr-4">
+                      {/* Позиция/медаль */}
+                      <div className="flex items-center justify-center w-16 h-16 text-white font-bold mr-4 font-figtree-mulish text-2xl">
                         {medal || position}
                       </div>
                       
-                      {/* Avatar */}
+                      {/* Аватар */}
                       <div className="flex-shrink-0 mr-4">
                         <img
                           src={entry.avatarUrl || '/record.png'}
                           alt={entry.username}
-                          className="w-10 h-10 rounded-full bg-gray-600 object-cover"
+                          className="w-12 h-12 rounded-full bg-white/10 object-cover border-2 border-white/20"
                           onError={(e) => {
                             (e.target as HTMLImageElement).src = '/record.png';
                           }}
                         />
                       </div>
                       
+                      {/* Имя пользователя */}
                       <div className="flex-1">
                         <div className="flex items-center">
-                          <div className="font-medium text-white">
+                          <div className="font-bold text-white font-figtree-mulish text-lg">
                             {entry.username}
                             {isCurrentUserEntry && (
                               <span className="ml-2 text-orange-400 font-bold">(Вы)</span>
@@ -233,8 +237,9 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
                         </div>
                       </div>
                       
+                      {/* Счёт */}
                       <div className="text-right">
-                        <div className="text-lg font-bold text-yellow-400">
+                        <div className="text-xl font-bold text-yellow-400 font-figtree-mulish">
                           {entry.record.toLocaleString()}
                         </div>
                       </div>
@@ -247,24 +252,24 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
         </div>
       </div>
 
-      {/* Fixed Bottom Panel - User Position */}
+      {/* Фиксированная нижняя панель - позиция пользователя */}
       {shouldShowBottomPosition && (
-        <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-sm border-t border-gray-700 p-4 z-50">
+        <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-sm border-t border-white/20 p-4 z-50">
           <div className="container mx-auto max-w-2xl">
             <div className="flex items-center justify-center">
-              <div className="flex items-center bg-orange-500/20 rounded-lg px-4 py-3 border border-orange-500/30">
-                {user.avatarUrl && (
+              <div className="flex items-center bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-2xl px-6 py-4 border border-orange-500/30 backdrop-blur-md">
+                {user?.photoUrl && (
                   <img
-                    src={user.avatarUrl}
+                    src={user.photoUrl}
                     alt={user.username || user.firstName || 'User'}
-                    className="w-8 h-8 rounded-full mr-3"
+                    className="w-10 h-10 rounded-full mr-4 border-2 border-white/20"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/record.png';
                     }}
                   />
                 )}
-                <span className="text-orange-300 font-bold">
-                  Ваша позиция: #{userPosition}
+                <span className="text-orange-300 font-bold font-figtree-mulish text-lg">
+                  {t('leaderboard.your_position')}: #{userPosition}
                 </span>
               </div>
             </div>
@@ -272,11 +277,11 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
         </div>
       )}
 
-      {/* Coming Soon Modal */}
+      {/* Модальное окно "Скоро" */}
       {showComingSoon && (
         <ComingSoonModal
           onClose={() => setShowComingSoon(false)}
-          feature="Zen режим"
+          feature={t('leaderboard.zen')}
         />
       )}
     </div>

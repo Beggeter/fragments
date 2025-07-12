@@ -3,11 +3,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import ClickEffect from "../ClickEffect";
 
 interface ComingSoonModalProps {
-  isOpen: boolean;
+  isOpen?: boolean;
   onClose: () => void;
+  feature?: string;
 }
 
-const ComingSoonModal: FC<ComingSoonModalProps> = ({ isOpen, onClose }) => {
+const ComingSoonModal: FC<ComingSoonModalProps> = ({ isOpen = true, onClose, feature = "ZEN режим" }) => {
   if (!isOpen) return null;
 
   return (
@@ -44,7 +45,7 @@ const ComingSoonModal: FC<ComingSoonModalProps> = ({ isOpen, onClose }) => {
               
               {/* Description */}
               <p className="text-gray-300 text-lg font-figtree-mulish">
-                Режим ZEN находится в разработке. Скоро будет доступен!
+                {feature} находится в разработке. Скоро будет доступен!
               </p>
               
               {/* Close Button */}
