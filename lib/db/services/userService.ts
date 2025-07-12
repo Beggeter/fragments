@@ -1,4 +1,4 @@
-import { eq, and, desc, ne, count, sum } from 'drizzle-orm';
+import { eq, and, desc, ne, count, sum, gt } from 'drizzle-orm';
 import { db } from '../index';
 import { users, userGames, currencyTransactions, recordHistory } from '../schema';
 import type { User, NewUser, UserRole } from '../types';
@@ -75,6 +75,23 @@ export class UserService {
       .where(ne(users.record, 0))
       .orderBy(desc(users.record))
       .limit(limit);
+  }
+
+  // Получение позиции пользователя в рейтинге (быстрый способ)
+  static async getUserPosition(userId: number): Promise<number | null> {
+    const user = await this.getUserById(userId);
+    if (!user) return null;
+    
+    // Считаем сколько пользователей имеют рекорд больше чем у текущего
+    const [result] = await db
+      .select({ count: count() })
+      .from(users)
+      .where(and(
+        gt(users.record, user.record),
+        ne(users.record, 0)
+      ));
+    
+    return (result.count || 0) + 1;
   }
 
   // Удаление пользователя (только для админов)

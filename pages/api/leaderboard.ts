@@ -1,81 +1,49 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { GameService, UserService, CurrencyService } from '@/lib/db/services';
+import { UserService } from '@/lib/db/services';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    switch (req.method) {
-      case 'GET':
-        const { type = 'records', limit = 10 } = req.query;
-        
-        if (type === 'records') {
-          // Глобальные рекорды
-          const records = await GameService.getGlobalRecords(Number(limit));
-          
-          // Получаем информацию о пользователях для каждого рекорда
-          const recordsWithUsers = await Promise.all(
-            records.map(async (record) => {
-              const user = await UserService.getUserById(record.userId);
-              return {
-                ...record,
-                user: user ? {
-                  id: user.id,
-                  username: user.username,
-                  firstName: user.firstName,
-                  lastName: user.lastName,
-                  avatarUrl: user.avatarUrl,
-                } : null,
-              };
-            })
-          );
-
-          return res.status(200).json(recordsWithUsers);
-
-        } else if (type === 'currency') {
-          // Топ пользователей по валюте
-          const topUsers = await CurrencyService.getTopUsersByCurrency(Number(limit));
-          
-          // Получаем полную информацию о пользователях
-          const topUsersWithInfo = await Promise.all(
-            topUsers.map(async ({ userId, currency }) => {
-              const user = await UserService.getUserById(userId);
-              return {
-                userId,
-                currency,
-                user: user ? {
-                  id: user.id,
-                  username: user.username,
-                  firstName: user.firstName,
-                  lastName: user.lastName,
-                  avatarUrl: user.avatarUrl,
-                } : null,
-              };
-            })
-          );
-
-          return res.status(200).json(topUsersWithInfo);
-
-        } else if (type === 'stats') {
-          // Общая статистика
-          const [topUsers, globalStats, currencyStats] = await Promise.all([
-            UserService.getTopUsers(10),
-            GameService.getGlobalRecords(1), // Для получения лучшего рекорда
-            CurrencyService.getGlobalCurrencyStats(),
-          ]);
-
-          return res.status(200).json({
-            topUsers,
-            bestRecord: globalStats[0] || null,
-            currencyStats,
-          });
-
-        } else {
-          return res.status(400).json({ error: 'Invalid type. Use "records", "currency", or "stats"' });
-        }
-
-      default:
-        res.setHeader('Allow', ['GET']);
-        return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
+    if (req.method !== 'GET') {
+      res.setHeader('Allow', ['GET']);
+      return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
     }
+
+    const { limit = 20, userId } = req.query;
+    
+    // Получаем пользователей отсортированных по рекорду
+    const users = await UserService.getTopUsers(Number(limit));
+    console.log('Users from DB:', users);
+    
+    // Формируем простой список с именами, рекордами и аватарками
+    const leaderboard = users.map(user => {
+      const username = user.username || user.firstName || `User${user.id}`;
+      
+      return {
+        id: user.id,
+        username,
+        record: user.record,
+        avatarUrl: user.avatarUrl
+      };
+    });
+
+    // Если запрашивается позиция конкретного пользователя
+    let userPosition = null;
+    console.log('Requested userId:', userId);
+    if (userId) {
+      console.log('Getting position for userId:', userId);
+      // Быстрый способ получить позицию пользователя
+      userPosition = await UserService.getUserPosition(Number(userId));
+      console.log('Calculated userPosition:', userPosition);
+    }
+
+    console.log('Final leaderboard:', leaderboard);
+    console.log('User position:', userPosition);
+    
+    return res.status(200).json({
+      leaderboard,
+      userPosition
+    });
+    
   } catch (error) {
     console.error('Leaderboard API Error:', error);
     return res.status(500).json({ error: 'Internal server error' });

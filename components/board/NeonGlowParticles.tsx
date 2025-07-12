@@ -33,9 +33,10 @@ const CONFETTI_COLORS = [
 
 const MIN_PARTICLE_SIZE = 2;
 const MAX_PARTICLE_SIZE = 6;
-const ANIMATION_DURATION = 12000; // 12 секунд для очень медленного полета
-const FLIGHT_DISTANCE = 0.5; // 0.5 длины клетки
-const SPAWN_INTERVAL = 100; // Новые звезды каждые 100ms
+const ANIMATION_DURATION = 4000; // 12 секунд для очень медленного полета
+const FLIGHT_DISTANCE = 0.2; // 0.5 длины клетки
+const SPAWN_INTERVAL = 200; // Новые звезды каждые 200ms (уменьшили частоту)
+const MAX_PARTICLES = 8; // Максимальное количество частиц одновременно
 
 type Particle = {
   id: string;
@@ -45,8 +46,8 @@ type Particle = {
   top: number;
   randomSize: number;
   randomDuration: number;
-  transformTo: string;
-  transformToY: string;
+  transformTo: number;
+  transformToY: number;
   randomRotation: number;
   randomColor: string;
   startX: number;
@@ -160,8 +161,10 @@ export const NeonGlowParticles: React.FC<NeonGlowParticlesProps> = React.memo(
     const createParticle = useCallback(() => {
       if (pathPoints.length === 0) return;
       
-      const id = `particle-${nextId}`;
-      setNextId(prev => prev + 1);
+      // Проверяем максимальное количество частиц
+      if (particles.length >= MAX_PARTICLES) return;
+      
+      const id = `particle-${Date.now()}-${Math.random()}`;
       
       // Выбираем случайную точку вдоль всего path с интерполяцией
       const randomPosition = Math.random(); // 0-1 вдоль всего пути
@@ -224,8 +227,8 @@ export const NeonGlowParticles: React.FC<NeonGlowParticlesProps> = React.memo(
         top: startPoint.y,
         randomSize,
         randomDuration,
-        transformTo: `${endX - startPoint.x}px`,
-        transformToY: `${endY - startPoint.y}px`,
+        transformTo: endX - startPoint.x,
+        transformToY: endY - startPoint.y,
         randomRotation,
         randomColor,
         startX: startPoint.x,
@@ -240,7 +243,7 @@ export const NeonGlowParticles: React.FC<NeonGlowParticlesProps> = React.memo(
       setTimeout(() => {
         setParticles(prev => prev.filter(p => p.id !== id));
       }, randomDuration);
-    }, [pathPoints, nextId, color, cellSize]);
+    }, [pathPoints, color, cellSize]);
     
     // Управляем созданием новых частиц
     useEffect(() => {
@@ -268,12 +271,12 @@ export const NeonGlowParticles: React.FC<NeonGlowParticlesProps> = React.memo(
       if (!visible || particles.length === 0) return;
       
       const animate = () => {
-                 setParticles(prev => 
-           prev.map(particle => ({
-             ...particle,
-             progress: Math.min(1, particle.progress + 0.004) // ~60fps, но очень медленно
-           }))
-         );
+        setParticles(prev => 
+          prev.map(particle => ({
+            ...particle,
+            progress: Math.min(1, particle.progress + 0.004) // ~60fps, но очень медленно
+          }))
+        );
         
         animationRef.current = requestAnimationFrame(animate);
       };
@@ -287,6 +290,13 @@ export const NeonGlowParticles: React.FC<NeonGlowParticlesProps> = React.memo(
         }
       };
     }, [visible, particles.length]);
+    
+    // Очищаем частицы при скрытии
+    useEffect(() => {
+      if (!visible) {
+        setParticles([]);
+      }
+    }, [visible]);
 
     if (!visible || particles.length === 0) return null;
 
@@ -305,10 +315,9 @@ export const NeonGlowParticles: React.FC<NeonGlowParticlesProps> = React.memo(
         }}
       >
         {particles.map((pt) => {
-          const currentX = pt.startX + parseFloat(pt.transformTo) * pt.progress;
-          const currentY = pt.startY + parseFloat(pt.transformToY) * pt.progress;
-          const opacity = pt.progress < 0.1 ? pt.progress * 10 : pt.progress > 0.8 ? (1 - pt.progress) * 5 : 1;
-          const scale = pt.progress < 0.1 ? 0.3 + pt.progress * 7 : pt.progress > 0.8 ? 1 - (pt.progress - 0.8) * 2.5 : 1;
+          const progress = Math.max(0, Math.min(1, pt.progress));
+          const opacity = progress < 0.1 ? progress * 10 : progress > 0.8 ? (1 - progress) * 5 : 1;
+          const scale = progress < 0.1 ? 0.3 + progress * 7 : progress > 0.8 ? 1 - (progress - 0.8) * 2.5 : 1;
           
           return (
             <svg
@@ -320,13 +329,15 @@ export const NeonGlowParticles: React.FC<NeonGlowParticlesProps> = React.memo(
               xmlns="http://www.w3.org/2000/svg"
               style={{
                 position: "absolute",
-                left: currentX,
-                top: currentY,
+                left: pt.startX,
+                top: pt.startY,
                 pointerEvents: "none",
                 zIndex: 1,
-                transform: `translateZ(0) rotate(${pt.randomRotation}deg) scale(${scale})`,
+                transform: `translate3d(${pt.transformTo * progress}px, ${pt.transformToY * progress}px, 0) rotate(${pt.randomRotation}deg) scale(${scale})`,
                 opacity,
-                willChange: "transform, opacity"
+                willChange: "transform, opacity",
+                backfaceVisibility: "hidden",
+                WebkitBackfaceVisibility: "hidden"
               }}
             >
               {pt.id.length % 2 === 0 ? (

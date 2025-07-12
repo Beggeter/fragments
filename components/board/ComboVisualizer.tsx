@@ -7,7 +7,6 @@ import { animate, useMotionValue, motion, AnimatePresence } from "framer-motion"
 import { useGameStore } from "@/lib/state/store";
 import { vibrate } from "@/utils/helpers";
 import { useSettingsStore } from "@/lib/state/settings";
-import { PerimeterParticles } from "./PerimeterParticles";
 
 interface ComboVisualizerProps {
   speed?: number;
@@ -31,27 +30,6 @@ const getBlur = (
   if (moves >= 3) return [1, 8];
   return [0.5, 0.5];
 };
-
-// Новый хук для получения размеров поля
-function useParentSize(ref: React.RefObject<HTMLElement | null>) {
-  const [size, setSize] = useState<{ width: number; height: number }>({
-    width: 0,
-    height: 0,
-  });
-  useLayoutEffect(() => {
-    function update() {
-      if (ref.current) {
-        const rect = ref.current.getBoundingClientRect();
-        setSize({ width: rect.width, height: rect.height });
-      }
-    }
-    update();
-    window.addEventListener("resize", update);
-    return () => window.removeEventListener("resize", update);
-  }, [ref]);
-  return size;
-}
-
 // Компонент анимации барабана для счетчика комбо
 const ComboCounter: React.FC<{ value: number }> = ({ value }) => {
   const [displayValue, setDisplayValue] = useState(value);
@@ -150,8 +128,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   const [currentBlur, setCurrentBlur] = useState<[number, number]>([0.5, 0.5]);
   const [isExploding, setIsExploding] = useState(false);
   const [showComboText, setShowComboText] = useState(false);
-  const [showClearText, setShowClearText] = useState(false);
-  const [showParticles, setShowParticles] = useState(false);
+    const [showClearText, setShowClearText] = useState(false);
   const [debugMode, setDebugMode] = useState(false);
   const [scorePluses, setScorePluses] = useState<
     {
@@ -167,12 +144,28 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   const scorePlusId = React.useRef(0);
   const comboRef = useRef<SVGTextElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const { width: fieldWidth, height: fieldHeight } =
-    useParentSize(containerRef);
   const [comboWidth, setComboWidth] = useState(0);
   const [comboHeight, setComboHeight] = useState(70); // svg высота по умолчанию
   const rootRef = React.useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
+
+  // Unified size calculation with better fallback
+  const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
+  
+  useLayoutEffect(() => {
+    function updateContainerSize() {
+      if (containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const newSize = { width: rect.width, height: rect.height };
+        setContainerSize(newSize);
+        setSize(newSize);
+      }
+    }
+    
+    updateContainerSize();
+    window.addEventListener("resize", updateContainerSize);
+    return () => window.removeEventListener("resize", updateContainerSize);
+  }, []);
 
   // Handle combo level changes
   useEffect(() => {
@@ -180,8 +173,19 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
       if (lastScore.comboLevel > 0) {
         setIsExploding(true);
       if (typeof onExplodeChange === "function") onExplodeChange(true);
-        setShowComboText(true);
-      setShowParticles(true);
+        // Only show combo text if container size is available
+        if (containerSize.width > 0 && containerSize.height > 0) {
+          setShowComboText(true);
+        } else {
+          // Delay showing combo text until container size is available
+          const checkSizeTimer = setInterval(() => {
+            if (containerSize.width > 0 && containerSize.height > 0) {
+              setShowComboText(true);
+              clearInterval(checkSizeTimer);
+            }
+          }, 50);
+          setTimeout(() => clearInterval(checkSizeTimer), 500); // Fallback timeout
+        }
         setShowClearText(false);
         handleVibrate();
 
@@ -190,12 +194,10 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
         if (typeof onExplodeChange === "function") onExplodeChange(false);
       }, 400);
       const textTimer = setTimeout(() => setShowComboText(false), 800);
-      const particlesTimer = setTimeout(() => setShowParticles(false), 1000);
 
         return () => {
           clearTimeout(explodeTimer);
           clearTimeout(textTimer);
-        clearTimeout(particlesTimer);
         };
       } else {
         // При сбросе комбо до 0 скрываем текст
@@ -203,7 +205,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
         setShowClearText(false);
       }
     }
-  }, [lastScore?.comboLevel]);
+  }, [lastScore?.comboLevel, containerSize]);
 
   // Показываем clearText после ComboText (если был) или сразу, если нет
   useEffect(() => {
@@ -285,21 +287,17 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
 
   // 9 позиций внутри поля (с учётом размера надписи)
   function getPossiblePositions() {
-    // Проверяем, что размеры поля не нулевые
-    if (fieldWidth === 0 || fieldHeight === 0) {
-      // Fallback: используем размеры контейнера или фиксированные значения
-      const fallbackWidth = size.width || 400;
-      const fallbackHeight = size.height || 400;
-      const xs = [
-        fallbackWidth * 0.3,
-        fallbackWidth / 2,
-        fallbackWidth * 0.7
-      ];
-      const ys = [
-        fallbackHeight * 0.3,
-        fallbackHeight / 2,
-        fallbackHeight * 0.7
-      ];
+    // Use containerSize for more reliable calculations
+    const currentWidth = containerSize.width;
+    const currentHeight = containerSize.height;
+    
+    // If container size is not available, use more conservative fallback
+    if (currentWidth === 0 || currentHeight === 0) {
+      // Use fixed positions that work for most screen sizes
+      const minSize = 320; // minimum reasonable container size
+      const xs = [minSize * 0.25, minSize * 0.5, minSize * 0.75];
+      const ys = [minSize * 0.25, minSize * 0.5, minSize * 0.75];
+      
       const positions: { x: number; y: number }[] = [];
       for (let i = 0; i < 3; i++) {
         for (let j = 0; j < 3; j++) {
@@ -309,19 +307,25 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
       return positions;
     }
 
-    // Более кучные позиции: ближе к центру
-    const marginX = Math.max(comboWidth / 4, 16);
-    const marginY = Math.max(comboHeight / 2, 20);
+    // Use margins to prevent text from going to edges
+    const marginX = Math.max(comboWidth / 2 + 20, 50);
+    const marginY = Math.max(comboHeight / 2 + 20, 50);
+    
+    // Ensure positions are within bounds
+    const safeWidth = Math.max(currentWidth - 2 * marginX, 100);
+    const safeHeight = Math.max(currentHeight - 2 * marginY, 100);
+    
     const xs = [
-      fieldWidth * 0.3,
-      fieldWidth / 2,
-      fieldWidth * 0.7
+      marginX + safeWidth * 0.2,
+      marginX + safeWidth * 0.5,
+      marginX + safeWidth * 0.8
     ];
     const ys = [
-      fieldHeight * 0.3,
-      fieldHeight / 2,
-      fieldHeight * 0.7
+      marginY + safeHeight * 0.2,
+      marginY + safeHeight * 0.5,
+      marginY + safeHeight * 0.8
     ];
+    
     const positions: { x: number; y: number }[] = [];
     for (let i = 0; i < 3; i++) {
       for (let j = 0; j < 3; j++) {
@@ -421,7 +425,9 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
     if (!containerRef.current) return;
     function updateSize() {
       const rect = containerRef.current?.getBoundingClientRect();
-      setSize({ width: rect?.width || 0, height: rect?.height || 0 });
+      const newSize = { width: rect?.width || 0, height: rect?.height || 0 };
+      setSize(newSize);
+      setContainerSize(newSize);
     }
     updateSize();
     window.addEventListener("resize", updateSize);
@@ -480,10 +486,12 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
             fontFamily: "monospace",
           }}
         >
-          <div>fieldWidth: {fieldWidth}</div>
-          <div>fieldHeight: {fieldHeight}</div>
+          <div>containerWidth: {containerSize.width}</div>
+          <div>containerHeight: {containerSize.height}</div>
           <div>size.width: {size.width}</div>
           <div>size.height: {size.height}</div>
+          <div>comboWidth: {comboWidth}</div>
+          <div>comboHeight: {comboHeight}</div>
           {lastScore?.pixelPosition && (
             <>
               <div>target.x: {lastScore.pixelPosition.x}</div>
@@ -496,37 +504,28 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
         className={`absolute inset-0 p-2 -m-2 rounded-xl glowing-border ${
           isExploding ? "combo-explosion" : ""
         }`}
-        style={borderStyle}
+                style={borderStyle}
       />
-      {/* --- ПЕРИМЕТРАЛЬНЫЕ ЧАСТИЦЫ ПРИ КОМБО --- */}
-      {showParticles && size.width > 0 && size.height > 0 && (
-        <PerimeterParticles
-          width={size.width}
-          height={size.height}
-          visible={true}
-          // color={theme.background}
-        />
-      )}
       {lastScore &&
         lastScore.comboLevel > 0 &&
+        containerSize.width > 0 && containerSize.height > 0 && // Only render when container size is available
         (() => {
           const comboPos = getNearestPosition(lastScore.pixelPosition);
-          // Смещаем надпись так, чтобы её центр совпадал с выбранной позицией
-          const left = comboPos.x - (comboWidth + 70 + 24) / 2;
-          const top = comboPos.y - comboHeight / 2;
+          // Ensure the position is within bounds and prevent negative values
+          const totalWidth = comboWidth + 70 + 24;
+          const left = Math.max(0, Math.min(comboPos.x - totalWidth / 2, containerSize.width - totalWidth));
+          const top = Math.max(0, Math.min(comboPos.y - comboHeight / 2, containerSize.height - comboHeight));
+          
           return (
             <div
-              className={`combo-text ${showComboText ? "show" : ""} absolute flex items-center justify-center z-1000`}
+              className={`combo-text ${showComboText ? "show" : ""}`}
               style={{
-                position: "absolute",
                 left,
                 top,
-                pointerEvents: "none",
-                zIndex: 1000,
               }}
             >
               <svg
-                width={comboWidth + 70 + 24}
+                width={totalWidth}
                 height={comboHeight}
                 style={{ display: "block" }}
               >

@@ -14,6 +14,7 @@ import { BlockColor } from "@/lib/data/types";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import LoadingSpinner from "../components/LoadingSpinner";
 import ShopScreen from "../components/ShopScreen";
+import LeaderboardScreen from "../components/LeaderboardScreen";
 
 type Screen =
   | "admin login"
@@ -22,7 +23,8 @@ type Screen =
   | "classic mode"
   | "settings"
   | "gameover"
-  | "shop";
+  | "shop"
+  | "leaderboard";
 
 // Функция для надежного определения Telegram WebApp
 const isLaunchedInTelegram = (): boolean => {
@@ -281,7 +283,8 @@ const HomePage: React.FC = () => {
       currentScreen !== "classic mode" &&
       currentScreen !== "settings" &&
       currentScreen !== "gameover" &&
-      currentScreen !== "shop"
+      currentScreen !== "shop" &&
+      currentScreen !== "leaderboard"
     ) {
       console.log("✅ Пользователь авторизован, переключаем на главное меню");
       setCurrentScreen("main menu");
@@ -381,6 +384,14 @@ const HomePage: React.FC = () => {
     }
     setShopReturnTo(null);
   }, [shopReturnTo]);
+
+  const handleOpenLeaderboard = useCallback(() => {
+    setCurrentScreen("leaderboard");
+  }, []);
+
+  const handleLeaderboardBack = useCallback(() => {
+    setCurrentScreen("main menu");
+  }, []);
 
   // Показываем загрузку ресурсов если они еще не загружены
   if (!resourcesLoaded) {
@@ -503,6 +514,7 @@ const HomePage: React.FC = () => {
         <MainMenu
           onStartClassic={hadleStartClassic}
           onOpenShop={handleOpenShop}
+          onOpenLeaderboard={handleOpenLeaderboard}
         />
       </div>
 
@@ -535,6 +547,12 @@ const HomePage: React.FC = () => {
         <ShopScreen
           onBack={handleShopBack}
           initialTab={shopReturnTo === "classic mode" ? "boosters" : "shards"}
+        />
+      )}
+
+      {currentScreen === "leaderboard" && (
+        <LeaderboardScreen
+          onBack={handleLeaderboardBack}
         />
       )}
 
