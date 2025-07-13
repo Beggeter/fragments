@@ -73,38 +73,39 @@ const MainMenu: FC<MainMenuProps> = ({ onStartClassic, onOpenShop, onOpenLeaderb
 const TopButtons: FC<{ onOpenShop: () => void; onOpenLeaderboard?: () => void }> = ({ onOpenShop, onOpenLeaderboard }) => {
   return (
     <div className="flex flex-row justify-between items-start w-full z-100">
-      {/* Store - Left */}
-      <MenuButton
-        leftIcon={cart}
-        rightIcon={powers}
-        gradientClass="orange-gradient"
-        className="w-[35vw] sm:w-1/2 md:w-1/3 max-w-3xs rounded-r-2xl"
-        onClick={onOpenShop}
-      />
-      
-      {/* Daily Missions - Temporarily disabled */}
-      {/* 
-      <MenuButton
-        leftIcon={bullseye}
-        text={
-          <>
-            <span>Daily</span>
-            <span>Missions</span>
-          </>
-        }
-        gradientClass="orange-gradient"
-        notificationCount={2}
-        className="w-[45vw] sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3 max-w-2xs rounded-r-2xl"
-        textClasses="font-bold leading-6 text-[1.7em]"
-      />
-      */}
+      {/* Left side - Daily Missions and Store stacked vertically */}
+      <div className="flex flex-col gap-4">
+        {/* Daily Missions */}
+        <MenuButton
+          leftIcon={bullseye}
+          text={
+            <>
+              <span>Daily</span>
+              <span>Missions</span>
+            </>
+          }
+          gradientClass="orange-gradient"
+          notificationCount={2}
+          className="w-[35vw] sm:w-1/2 md:w-1/3 max-w-3xs rounded-r-2xl menu-button-static"
+          textClasses="font-bold leading-6 text-[1.7em]"
+        />
+        
+        {/* Store */}
+        <MenuButton
+          leftIcon={cart}
+          rightIcon={powers}
+          gradientClass="orange-gradient"
+          className="w-[35vw] sm:w-1/2 md:w-1/3 max-w-3xs rounded-r-2xl menu-button-static"
+          onClick={onOpenShop}
+        />
+      </div>
 
-      {/* Leaderboard Button - Right */}
+      {/* Right side - Leaderboard */}
       {onOpenLeaderboard ? (
         <MenuButton
           leftIcon={record}
           gradientClass="orange-gradient"
-          className="w-[30vw] sm:w-2/5 md:w-1/4 max-w-2xs rounded-l-2xl"
+          className="w-[30vw] sm:w-2/5 md:w-1/4 max-w-2xs rounded-l-2xl menu-button-static"
           onClick={onOpenLeaderboard}
         />
       ) : (

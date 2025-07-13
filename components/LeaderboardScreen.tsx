@@ -21,7 +21,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
   const { t } = useTranslation();
   const { user } = useUser();
   const { isAdmin } = useAdminAuth();
-  const [activeTab, setActiveTab] = useState<'classic' | 'zen'>('classic');
+  const [activeTab, setActiveTab] = useState<"classic" | "zen">("classic");
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [userPosition, setUserPosition] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,18 +38,18 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
       }
       setError(null);
 
-      const userIdParam = user ? `&userId=${user.id}` : '';
+      const userIdParam = user ? `&userId=${user.id}` : "";
       const response = await fetch(`/api/leaderboard?limit=20${userIdParam}`);
-      
+
       if (!response.ok) {
-        throw new Error('Failed to fetch leaderboard');
+        throw new Error("Failed to fetch leaderboard");
       }
 
       const data = await response.json();
-      console.log('API Response:', data);
-      console.log('User:', user);
-      console.log('User Position from API:', data.userPosition);
-      
+      console.log("API Response:", data);
+      console.log("User:", user);
+      console.log("User Position from API:", data.userPosition);
+
       // Обрабатываем новую структуру данных
       if (data.leaderboard) {
         setLeaderboard(data.leaderboard);
@@ -59,10 +59,9 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
         setLeaderboard(data);
         setUserPosition(null);
       }
-      
     } catch (err) {
-      console.error('Error fetching leaderboard:', err);
-      setError(t('leaderboard.error'));
+      console.error("Error fetching leaderboard:", err);
+      setError(t("leaderboard.error"));
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -83,10 +82,14 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
 
   const getMedalForPosition = (position: number) => {
     switch (position) {
-      case 1: return '🥇';
-      case 2: return '🥈';
-      case 3: return '🥉';
-      default: return null;
+      case 1:
+        return "🥇";
+      case 2:
+        return "🥈";
+      case 3:
+        return "🥉";
+      default:
+        return null;
     }
   };
 
@@ -95,10 +98,25 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
   };
 
   // Проверяем, есть ли пользователь в видимой части топ-20
-  const isUserInVisibleTop20 = user && leaderboard.some(entry => entry.id === user.id);
-  
-  // Показываем позицию внизу только если пользователь НЕ в топ-20
-  const shouldShowBottomPosition = user && userPosition && !isUserInVisibleTop20;
+  const isUserInVisibleTop20 =
+    user && leaderboard.some((entry) => entry.id === user.id);
+
+  // Показываем разделитель и карточку пользователя если он НЕ в топ-20
+  const shouldShowUserCard = user && userPosition && !isUserInVisibleTop20;
+
+  // Создаем карточку пользователя для отображения под разделителем
+  const getUserCard = () => {
+    if (!user || !userPosition) return null;
+
+    return {
+      id: user.id,
+      username: user.username || user.firstName || t('leaderboard.you'),
+      record: 0, // API должен предоставить реальный счет пользователя
+      avatarUrl:
+        user.photoUrl || "https://api.dicebear.com/7.x/avataaars/svg?seed=User",
+      position: userPosition,
+    };
+  };
 
   if (isLoading) {
     return <LoadingScreen showProgress={true} />;
@@ -113,179 +131,230 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
             src="/back.svg"
             onClick={onBack}
             className="clickable flex justify-center items-center w-10 h-10 drop-shadow-xl"
-            alt={t('leaderboard.back')}
+            alt={t("leaderboard.back")}
           />
         </ClickEffect>
-        
+
         <ClickEffect>
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
             className={`flex items-center px-4 py-2 rounded-2xl transition-all duration-300 font-figtree-mulish font-bold ${
-              isRefreshing 
-                ? 'bg-gray-600/50 cursor-not-allowed' 
-                : 'bg-white/10 backdrop-blur-md hover:bg-white/20 border border-white/20 hover:border-white/30'
+              isRefreshing
+                ? "bg-gray-600/50 cursor-not-allowed"
+                : "bg-white/10 backdrop-blur-md hover:bg-white/20 outline outline-white/20"
             }`}
           >
-            <svg 
-              className={`w-5 h-5 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} 
-              fill="none" 
-              stroke="currentColor" 
+            <svg
+              className={`w-5 h-5 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
+              fill="none"
+              stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
             </svg>
-            {isRefreshing ? t('leaderboard.refreshing') : t('leaderboard.refresh')}
+            {isRefreshing
+              ? t("leaderboard.refreshing")
+              : t("leaderboard.refresh")}
           </button>
         </ClickEffect>
-      </div>
-
-      {/* Заголовок */}
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-pink-400 font-figtree-mulish menu-shadow">
-          {t('leaderboard.title')}
-        </h1>
       </div>
 
       {/* Табы */}
-      <div className="flex gap-2 justify-center mb-8 px-4">
+      <div className="flex gap-2 justify-center mb-5 px-4">
         <ClickEffect>
           <button
-            onClick={() => setActiveTab('classic')}
+            onClick={() => setActiveTab("classic")}
             className={`px-6 py-3 rounded-full text-lg font-extrabold transition-all duration-300 border font-figtree-mulish ${
-              activeTab === 'classic'
-                ? 'bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg border-orange-400'
-                : 'bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20 hover:border-white/30'
+              activeTab === "classic"
+                ? "bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg border-orange-400"
+                : "bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20 hover:border-white/30"
             }`}
           >
-            {t('leaderboard.classic')}
+            {t("leaderboard.classic")}
           </button>
         </ClickEffect>
-        
+
         <ClickEffect>
           <button
             onClick={handleZenClick}
             className="px-6 py-3 rounded-full text-lg font-extrabold transition-all duration-300 border font-figtree-mulish bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20 hover:border-white/30"
           >
-            {t('leaderboard.zen')}
+            {t("leaderboard.zen")}
           </button>
         </ClickEffect>
       </div>
 
+      {/* Заголовок */}
+      <div className="text-center justify-center mb-0">
+        <div className="relative inline-block">
+          {/* Тень под текстом */}
+          <h1 className="absolute text-[2.5rem] sm:text-6xl font-black tracking-wider text-blue-600/30 font-figtree-mulish px-8 py-4 transform translate-x-1 translate-y-1">
+            LEADERBOARD
+          </h1>
+
+          {/* Основной заголовок */}
+          <h1 className="relative text-[2.5rem] sm:text-6xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-purple-300 to-indigo-300 font-figtree-mulish px-8 py-4">
+            LEADERBOARD
+          </h1>
+        </div>
+      </div>
+
       {/* Контент */}
-      <div className="flex flex-col flex-1 justify-start items-center px-4 py-2">
-        <div className={`w-full max-w-2xl ${shouldShowBottomPosition ? 'pb-20' : ''}`}>
+      <div className="flex flex-col flex-1 justify-start items-center px-2 sm:px-4 py-2">
+        <div className="w-full max-w-2xl">
           {error ? (
             <div className="text-center py-12">
-              <div className="text-red-400 text-xl mb-6 font-figtree-mulish">{error}</div>
+              <div className="text-red-400 text-xl mb-6 font-figtree-mulish">
+                {error}
+              </div>
               <ClickEffect>
                 <button
                   onClick={() => fetchLeaderboard()}
                   className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 px-8 py-3 rounded-2xl transition-all duration-300 font-bold font-figtree-mulish shadow-lg"
                 >
-                  {t('leaderboard.try_again')}
+                  {t("leaderboard.try_again")}
                 </button>
               </ClickEffect>
             </div>
           ) : leaderboard.length === 0 ? (
             <div className="text-center py-12 text-gray-400 font-figtree-mulish text-lg">
-              {t('leaderboard.no_data')}
+              {t("leaderboard.no_data")}
             </div>
           ) : (
-            <div className="bg-white/10 backdrop-blur-md rounded-3xl shadow-xl border border-white/20 overflow-hidden">
-              <div className="leaderboard-scroll max-h-96 overflow-y-auto">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-xl border border-white/20 overflow-hidden">
+              <div className="leaderboard-scroll max-h-[70dvh] pb-6 overflow-y-auto">
+                {/* Топ-20 */}
                 {leaderboard.map((entry, index) => {
                   const position = index + 1;
                   const medal = getMedalForPosition(position);
                   const isCurrentUserEntry = isCurrentUser(entry);
-                  
+
                   return (
                     <div
                       key={entry.id}
-                      className={`flex items-center p-4 border-b border-white/10 last:border-b-0 transition-all duration-300 ${
+                      className={`flex items-center p-3 sm:p-4 border-b border-white/10 last:border-b-0 transition-all duration-300 ${
                         isCurrentUserEntry
-                          ? 'bg-gradient-to-r from-orange-500/20 to-red-500/20 border-orange-500/30'
-                          : 'hover:bg-white/10'
+                          ? "bg-gradient-to-r from-orange-500/20 to-red-500/20 border-orange-500/30"
+                          : "hover:bg-white/10"
                       }`}
                     >
                       {/* Позиция/медаль */}
-                      <div className="flex items-center justify-center w-16 h-16 text-white font-bold mr-4 font-figtree-mulish text-2xl">
+                      <div className="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 text-white font-bold mr-3 sm:mr-4 font-figtree-mulish text-[1.4rem] sm:text-2xl">
                         {medal || position}
                       </div>
-                      
-                      {/* Аватар */}
-                      <div className="flex-shrink-0 mr-4">
-                        <img
-                          src={entry.avatarUrl || '/record.png'}
-                          alt={entry.username}
-                          className="w-12 h-12 rounded-full bg-white/10 object-cover border-2 border-white/20"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = '/record.png';
-                          }}
-                        />
-                      </div>
-                      
-                      {/* Имя пользователя */}
-                      <div className="flex-1">
-                        <div className="flex items-center">
-                          <div className="font-bold text-white font-figtree-mulish text-lg">
-                            {entry.username}
-                            {isCurrentUserEntry && (
-                              <span className="ml-2 text-orange-400 font-bold">(Вы)</span>
-                            )}
+
+                      {/* Аватар и имя пользователя в контейнере */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center bg-black/10 backdrop-blur-md rounded-2xl px-3 py-2  border-black/20">
+                          <div className="flex-shrink-0 mr-3">
+                            <img
+                              src={entry.avatarUrl || "/record.png"}
+                              alt={entry.username}
+                              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 object-cover border-2 border-white/20"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src =
+                                  "/record.png";
+                              }}
+                            />
+                          </div>
+                          <div className="flex items-center min-w-0 flex-1">
+                            <div className="font-bold text-white font-figtree-mulish text-base sm:text-lg truncate">
+                              {entry.username}
+                              {isCurrentUserEntry && !entry.username && (
+                                <span className="ml-2 text-orange-400 font-bold flex-shrink-0">
+                                  ({t('leaderboard.you')})
+                                </span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </div>
-                      
+
                       {/* Счёт */}
-                      <div className="text-right">
-                        <div className="text-xl font-bold text-yellow-400 font-figtree-mulish">
+                      <div className="text-right flex-shrink-0 ml-3">
+                        <div className="text-lg sm:text-xl font-bold text-yellow-400 font-figtree-mulish">
                           {entry.record.toLocaleString()}
                         </div>
                       </div>
                     </div>
                   );
                 })}
+
+                {/* Разделитель с точками */}
+                {shouldShowUserCard && (
+                  <div className="flex justify-center items-center py-6 border-b border-white/10">
+                    <div className="flex space-x-2">
+                      <div className="w-3 h-3 bg-white/60 rounded-full"></div>
+                      <div className="w-3 h-3 bg-white/60 rounded-full"></div>
+                      <div className="w-3 h-3 bg-white/60 rounded-full"></div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Карточка пользователя */}
+                {shouldShowUserCard && getUserCard() && (
+                  <div className="flex items-center p-3 sm:p-4 border-b border-white/10 last:border-b-0 transition-all duration-300 bg-gradient-to-r from-orange-500/20 to-red-500/20 ">
+                    {/* Позиция */}
+                    <div className="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 text-white font-bold mr-3 sm:mr-4 font-figtree-mulish text-[1.4rem] sm:text-2xl">
+                      {getUserCard()?.position}
+                    </div>
+
+                    {/* Аватар и имя пользователя в контейнере */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center bg-black/10 backdrop-blur-md rounded-2xl px-3 py-2  border-black/20">
+                        <div className="flex-shrink-0 mr-3">
+                          <img
+                            src={getUserCard()?.avatarUrl || "/record.png"}
+                            alt={getUserCard()?.username}
+                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 object-cover border-2 border-white/20"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src =
+                                "/record.png";
+                            }}
+                          />
+                        </div>
+                        <div className="flex items-center min-w-0 flex-1">
+                          <div className="font-bold text-white font-figtree-mulish text-base sm:text-lg truncate">
+                            {getUserCard()?.username}
+                            {!getUserCard()?.username && (
+                              <span className="ml-2 text-orange-400 font-bold flex-shrink-0">
+                                ({t('leaderboard.you')})
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Счёт */}
+                    <div className="text-right flex-shrink-0 ml-3">
+                      <div className="text-lg sm:text-xl font-bold text-yellow-400 font-figtree-mulish">
+                        {getUserCard()?.record.toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Фиксированная нижняя панель - позиция пользователя */}
-      {shouldShowBottomPosition && (
-        <div className="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-sm border-t border-white/20 p-4 z-50">
-          <div className="container mx-auto max-w-2xl">
-            <div className="flex items-center justify-center">
-              <div className="flex items-center bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-2xl px-6 py-4 border border-orange-500/30 backdrop-blur-md">
-                {user?.photoUrl && (
-                  <img
-                    src={user.photoUrl}
-                    alt={user.username || user.firstName || 'User'}
-                    className="w-10 h-10 rounded-full mr-4 border-2 border-white/20"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/record.png';
-                    }}
-                  />
-                )}
-                <span className="text-orange-300 font-bold font-figtree-mulish text-lg">
-                  {t('leaderboard.your_position')}: #{userPosition}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Модальное окно "Скоро" */}
       {showComingSoon && (
         <ComingSoonModal
           onClose={() => setShowComingSoon(false)}
-          feature={t('leaderboard.zen')}
+          feature={t("leaderboard.zen")}
         />
       )}
     </div>
   );
 };
 
-export default LeaderboardScreen; 
+export default LeaderboardScreen;
