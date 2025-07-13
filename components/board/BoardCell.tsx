@@ -46,7 +46,7 @@ const BoardCell = React.memo<{
       <div
         key={x}
         ref={isFirst ? cellRef : undefined}
-        className={`rounded-[3px] relative ${
+        className={`rounded-[3px] z-2  relative ${
           cell.value ? "bg-gray-900" : "bg-gray-900"
         } ${isPotentiallyCleared ? "potential-clear-highlight" : ""} 
         ${

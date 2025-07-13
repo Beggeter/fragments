@@ -39,8 +39,13 @@ import { Piece } from "./pieces/Piece";
 import NeonGlowOutline from "./NeonGlowOutline";
 import { NeonGlowParticles } from "./board/NeonGlowParticles";
 import BoardClearAnimationsOverlay from "./board/BoardClearAnimationsOverlay";
-import BoardRestoreAnimationsOverlay, { RestoreAnimationCell } from "./board/BoardRestoreAnimationsOverlay";
+import BoardRestoreAnimationsOverlay, {
+  RestoreAnimationCell,
+} from "./board/BoardRestoreAnimationsOverlay";
 import PieceReturnAnimation from "./board/PieceReturnAnimation";
+import ExplosionWave from "./board/ExplosionWave";
+import ExplosionParticles from "./board/ExplosionParticles";
+import ExplosionFlash from "./board/ExplosionFlash";
 import { v4 as uuidv4 } from "uuid";
 import ClickEffect from "./ClickEffect";
 import { useTranslation } from "react-i18next";
@@ -191,34 +196,37 @@ type AnimationCell = {
 };
 
 // Выносим функции за пределы компонента для оптимизации
-const scalePath = (d: string, boardW: number, boardH: number, boardWidth: number, boardHeight: number) => {
+const scalePath = (
+  d: string,
+  boardW: number,
+  boardH: number,
+  boardWidth: number,
+  boardHeight: number
+) => {
   // Переводим path из относительных координат (0-8) в пиксели
   const scaleX = boardW / boardWidth;
   const scaleY = boardH / boardHeight;
   // Преобразует d="M x y L x y ..." в пиксели
-  return d.replace(
-    /([ML])\s*([\d.]+)\s*([\d.]+)/g,
-    (_m, cmd, x, y) => {
-      return `${cmd} ${+x * scaleX} ${+y * scaleY}`;
-    }
-  );
+  return d.replace(/([ML])\s*([\d.]+)\s*([\d.]+)/g, (_m, cmd, x, y) => {
+    return `${cmd} ${+x * scaleX} ${+y * scaleY}`;
+  });
 };
 
 // Мемоизированная функция для поиска связанных областей
 const findConnectedAreasMemo = (() => {
   const cache = new Map<string, number[][][]>();
-  
+
   return (matrix: boolean[][]): number[][][] => {
     const key = JSON.stringify(matrix);
     if (cache.has(key)) {
       return cache.get(key)!;
     }
-    
+
     const h = matrix.length;
     const w = matrix[0]?.length || 0;
     const visited = Array.from({ length: h }, () => Array(w).fill(false));
     const areas: number[][][] = [];
-    
+
     for (let y = 0; y < h; y++) {
       for (let x = 0; x < w; x++) {
         if (matrix[y][x] && !visited[y][x]) {
@@ -254,7 +262,7 @@ const findConnectedAreasMemo = (() => {
         }
       }
     }
-    
+
     cache.set(key, areas);
     return areas;
   };
@@ -262,13 +270,13 @@ const findConnectedAreasMemo = (() => {
 
 const getCellEdgesMemo = (() => {
   const cache = new Map<string, Array<[[number, number], [number, number]]>>();
-  
+
   return (area: [number, number][], matrix: boolean[][]) => {
     const key = JSON.stringify({ area, matrix });
     if (cache.has(key)) {
       return cache.get(key)!;
     }
-    
+
     const edges: Array<[[number, number], [number, number]]> = [];
     const set = new Set(area.map(([y, x]) => `${y},${x}`));
     for (const [y, x] of area) {
@@ -297,7 +305,7 @@ const getCellEdgesMemo = (() => {
           [x, y],
         ]);
     }
-    
+
     cache.set(key, edges);
     return edges;
   };
@@ -305,13 +313,13 @@ const getCellEdgesMemo = (() => {
 
 const edgesToPathMemo = (() => {
   const cache = new Map<string, string>();
-  
+
   return (edges: Array<[[number, number], [number, number]]>): string => {
     const key = JSON.stringify(edges);
     if (cache.has(key)) {
       return cache.get(key)!;
     }
-    
+
     if (edges.length === 0) return "";
     // Строим карту: start -> end
     const edgeMap = new Map<string, [number, number]>();
@@ -326,9 +334,8 @@ const edgesToPathMemo = (() => {
       count.set(k, (count.get(k) || 0) + 1);
     });
     let startKey =
-      Array.from(count.entries()).find(
-        ([k, v]) => v === 1
-      )?.[0] || `${edges[0][0][0]},${edges[0][0][1]}`;
+      Array.from(count.entries()).find(([k, v]) => v === 1)?.[0] ||
+      `${edges[0][0][0]},${edges[0][0][1]}`;
     let path = `M ${startKey.replace(",", " ")}`;
     let currKey = startKey;
     let steps = 0;
@@ -341,7 +348,7 @@ const edgesToPathMemo = (() => {
       steps++;
     }
     path += " Z";
-    
+
     cache.set(key, path);
     return path;
   };
@@ -448,6 +455,27 @@ export const GameBoard: React.FC<
   );
   const [bombHoldActive, setBombHoldActive] = useState(false);
 
+  // Состояние для волны взрыва
+  const [explosionWave, setExplosionWave] = useState<{
+    centerX: number;
+    centerY: number;
+    isActive: boolean;
+  } | null>(null);
+
+  // Состояние для частиц взрыва
+  const [explosionParticles, setExplosionParticles] = useState<{
+    centerX: number;
+    centerY: number;
+    isActive: boolean;
+  } | null>(null);
+
+  // Состояние для вспышки взрыва
+  const [explosionFlash, setExplosionFlash] = useState<{
+    isActive: boolean;
+    centerX?: number;
+    centerY?: number;
+  }>({ isActive: false });
+
   // История ходов для undo (board, score, currentPieces, piecesPlaced)
   const [history, setHistory] = useState<
     {
@@ -462,7 +490,9 @@ export const GameBoard: React.FC<
   >([]);
 
   const [clearAnimations, setClearAnimations] = useState<AnimationCell[]>([]);
-  const [restoreAnimations, setRestoreAnimations] = useState<RestoreAnimationCell[]>([]);
+  const [restoreAnimations, setRestoreAnimations] = useState<
+    RestoreAnimationCell[]
+  >([]);
 
   // Состояние для хранения данных undo
   const [undoData, setUndoData] = useState<{
@@ -479,21 +509,25 @@ export const GameBoard: React.FC<
       console.log("🔄 No undoData, returning");
       return;
     }
-    
+
     const { currentState, restorePiecesState } = undoData;
     console.log("🔄 startPieceReturnAnimation: currentState", currentState);
-    
+
     if (currentState.placedPiece && currentState.placedPiecePosition) {
       // Найти контейнер для возвращения фигуры
-      const piecesContainer = document.querySelector('.draggable-pieces-section');
+      const piecesContainer = document.querySelector(
+        ".draggable-pieces-section"
+      );
       const targetRect = piecesContainer?.getBoundingClientRect() || null;
-      
+
       console.log("🔄 Phase 2: Starting piece return animation", {
         piece: currentState.placedPiece.id,
         fromPosition: currentState.placedPiecePosition,
-        targetRect: targetRect ? { width: targetRect.width, height: targetRect.height } : null,
+        targetRect: targetRect
+          ? { width: targetRect.width, height: targetRect.height }
+          : null,
       });
-      
+
       if (onPieceReturnAnimation) {
         onPieceReturnAnimation({
           piece: currentState.placedPiece,
@@ -503,7 +537,7 @@ export const GameBoard: React.FC<
           gap: GAP_SIZE_PX,
         });
       }
-      
+
       // Завершить undo после анимации возвращения фигуры
       setTimeout(() => {
         console.log("🔄 Phase 2: Piece return animation completed");
@@ -512,7 +546,9 @@ export const GameBoard: React.FC<
       }, 800); // Время анимации возвращения фигуры
     } else {
       // Если нет фигуры для возвращения, завершаем undo сразу
-      console.log("🔄 Phase 2: No piece to return, completing undo immediately");
+      console.log(
+        "🔄 Phase 2: No piece to return, completing undo immediately"
+      );
       restorePiecesState();
       setUndoData(null); // Очищаем данные undo
     }
@@ -550,7 +586,6 @@ export const GameBoard: React.FC<
       onRestartComplete();
     }
   }, [onRestartComplete]);
-
 
   // --- Вынести fetchBoosters наружу, чтобы использовать в useBooster ---
   const fetchBoosters = useCallback(async () => {
@@ -741,33 +776,42 @@ export const GameBoard: React.FC<
   );
 
   // Выносим обработчики событий за пределы useEffect
-  const handleMove = useCallback((e: MouseEvent | TouchEvent) => {
-    if (!draggedPiece || !boardRef.current) return;
+  const handleMove = useCallback(
+    (e: MouseEvent | TouchEvent) => {
+      if (!draggedPiece || !boardRef.current) return;
 
-    if (e instanceof TouchEvent) {
-      e.preventDefault();
-    }
+      if (e instanceof TouchEvent) {
+        e.preventDefault();
+      }
 
-    const { clientX, clientY } = getEventCoordinates(e);
-    const currentDragPosition = { x: clientX, y: clientY };
-    updateDrag(currentDragPosition);
+      const { clientX, clientY } = getEventCoordinates(e);
+      const currentDragPosition = { x: clientX, y: clientY };
+      updateDrag(currentDragPosition);
 
-    const nearestPosition = calculateGridPosition(
-      e,
-      currentDragPosition,
-      lastHighlightedPosition
-    );
+      const nearestPosition = calculateGridPosition(
+        e,
+        currentDragPosition,
+        lastHighlightedPosition
+      );
 
-    // Обновляем последнюю подсвеченную позицию только если есть новая позиция
-    if (nearestPosition) {
-      setLastHighlightedPosition(nearestPosition);
-    } else {
-      // Сбрасываем lastHighlightedPosition когда хайлайт исчезает
-      setLastHighlightedPosition(null);
-    }
+      // Обновляем последнюю подсвеченную позицию только если есть новая позиция
+      if (nearestPosition) {
+        setLastHighlightedPosition(nearestPosition);
+      } else {
+        // Сбрасываем lastHighlightedPosition когда хайлайт исчезает
+        setLastHighlightedPosition(null);
+      }
 
-    setHoverCell(nearestPosition || null);
-  }, [draggedPiece, updateDrag, calculateGridPosition, lastHighlightedPosition, setHoverCell]);
+      setHoverCell(nearestPosition || null);
+    },
+    [
+      draggedPiece,
+      updateDrag,
+      calculateGridPosition,
+      lastHighlightedPosition,
+      setHoverCell,
+    ]
+  );
 
   // --- Управление цветом анимации очистки линий ---
   const usePlacedPieceColorInClearAnim = true; // Вынесено в переменную для удобства
@@ -854,13 +898,19 @@ export const GameBoard: React.FC<
       handlePiecePlacement({
         ...args,
         addClearAnimations,
-        onAfterPlacement: async (clearedCells, placedPiecePosition, placedPiece) => {
+        onAfterPlacement: async (
+          clearedCells,
+          placedPiecePosition,
+          placedPiece
+        ) => {
           const { board, score, currentPieces, piecesPlaced } =
             useGameStore.getState();
-          
+
           // Определяем, были ли очищены клетки
-          const hasClearedCells = clearedCells.some((row) => row.some((cell) => cell));
-          
+          const hasClearedCells = clearedCells.some((row) =>
+            row.some((cell) => cell)
+          );
+
           setHistory((prev) => [
             ...prev,
             {
@@ -886,34 +936,51 @@ export const GameBoard: React.FC<
     // e.preventDefault();
   }, []);
 
-  const handleEnd = useCallback((e: MouseEvent | TouchEvent) => {
-    if (draggedPiece) {
-      if (hoverCell) {
-        playPlacePiece();
+  const handleEnd = useCallback(
+    (e: MouseEvent | TouchEvent) => {
+      if (draggedPiece) {
+        if (hoverCell) {
+          playPlacePiece();
 
-        onPiecePlaced({
-          x: hoverCell.x,
-          y: hoverCell.y,
-          board,
-          draggedPiece,
-          hoverCell,
-          width,
-          placePiece,
-          setClearingHorizontalLines,
-          setClearingVerticalLines,
-          setIsAnimating,
-          boardRect,
-          dynamicCellSize,
-          GAP_SIZE_PX,
-          useGameStore,
-        });
-      } else {
-        endDrag();
+          onPiecePlaced({
+            x: hoverCell.x,
+            y: hoverCell.y,
+            board,
+            draggedPiece,
+            hoverCell,
+            width,
+            placePiece,
+            setClearingHorizontalLines,
+            setClearingVerticalLines,
+            setIsAnimating,
+            boardRect,
+            dynamicCellSize,
+            GAP_SIZE_PX,
+            useGameStore,
+          });
+        } else {
+          endDrag();
+        }
       }
-    }
-    setHoverCell(null);
-    setLastHighlightedPosition(null); // Сбрасываем при окончании перетаскивания
-  }, [draggedPiece, hoverCell, board, width, placePiece, setClearingHorizontalLines, setClearingVerticalLines, setIsAnimating, boardRect, dynamicCellSize, endDrag, setHoverCell, onPiecePlaced]);
+      setHoverCell(null);
+      setLastHighlightedPosition(null); // Сбрасываем при окончании перетаскивания
+    },
+    [
+      draggedPiece,
+      hoverCell,
+      board,
+      width,
+      placePiece,
+      setClearingHorizontalLines,
+      setClearingVerticalLines,
+      setIsAnimating,
+      boardRect,
+      dynamicCellSize,
+      endDrag,
+      setHoverCell,
+      onPiecePlaced,
+    ]
+  );
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -1025,11 +1092,11 @@ export const GameBoard: React.FC<
   // Новый обработчик undo с двухфазной анимацией
   const handleUndo = useCallback(() => {
     if (history.length < 2) return;
-    
+
     // Получаем текущее состояние (которое будет отменено)
     const currentState = history[history.length - 1];
     const previousState = history[history.length - 2];
-    
+
     console.log("🔄 Undo started:", {
       hasCurrentState: !!currentState,
       hasPreviousState: !!previousState,
@@ -1038,39 +1105,45 @@ export const GameBoard: React.FC<
       hasPlacedPiecePosition: !!currentState.placedPiecePosition,
       historyLength: history.length,
     });
-    
+
     // Функция для восстановления состояния доски (вызывается после анимации восстановления клеток)
     const restoreBoardState = () => {
       console.log("🔄 Phase 1.5: Restoring board state");
-      
+
       // Если есть размещенная фигура, нужно убрать её с доски
-      let newBoard = previousState.board.map((row) => row.map((cell) => ({ ...cell })));
-      
+      let newBoard = previousState.board.map((row) =>
+        row.map((cell) => ({ ...cell }))
+      );
+
       if (currentState.placedPiece && currentState.placedPiecePosition) {
         // Убираем размещенную фигуру с доски
         const pieceMatrix = currentState.placedPiece.matrix;
         const pieceX = currentState.placedPiecePosition.x;
         const pieceY = currentState.placedPiecePosition.y;
-        
+
         for (let y = 0; y < pieceMatrix.length; y++) {
           for (let x = 0; x < pieceMatrix[0].length; x++) {
             if (pieceMatrix[y][x].value === 1) {
               const boardX = pieceX + x;
               const boardY = pieceY + y;
-              if (boardY >= 0 && boardY < newBoard.length && 
-                  boardX >= 0 && boardX < newBoard[0].length) {
+              if (
+                boardY >= 0 &&
+                boardY < newBoard.length &&
+                boardX >= 0 &&
+                boardX < newBoard[0].length
+              ) {
                 newBoard[boardY][boardX] = { value: 0 };
               }
             }
           }
         }
       }
-      
+
       useGameStore.setState({
         board: newBoard,
         score: previousState.score,
       });
-      
+
       console.log("🔄 Board state restored successfully!");
     };
 
@@ -1080,15 +1153,17 @@ export const GameBoard: React.FC<
         newPiecesCount: previousState.currentPieces.length,
         newPiecesPlaced: previousState.piecesPlaced,
       });
-      
+
       useGameStore.setState({
-        currentPieces: previousState.currentPieces.map((piece) => ({ ...piece })),
+        currentPieces: previousState.currentPieces.map((piece) => ({
+          ...piece,
+        })),
         piecesPlaced: previousState.piecesPlaced,
       });
-      
+
       // Удаляем последний элемент из истории после завершения всех анимаций
       setHistory((prev) => prev.slice(0, -1));
-      
+
       console.log("🔄 Undo completed successfully!");
     };
 
@@ -1103,30 +1178,34 @@ export const GameBoard: React.FC<
     // Первая фаза - восстановление поля (если были очищенные клетки)
     if (currentState.clearedCells) {
       const restoreCells: RestoreAnimationCell[] = [];
-      
+
       // Создаем анимации для всех очищенных клеток
       currentState.clearedCells.forEach((row, y) => {
         row.forEach((wasCleared, x) => {
           if (wasCleared) {
             // Определяем цвет клетки: если это клетка размещенной фигуры, используем её цвет,
             // иначе используем оригинальный цвет клетки из предыдущего состояния
-            let cellColor = previousState.board[y][x]?.color || 'blue';
-            
+            let cellColor = previousState.board[y][x]?.color || "blue";
+
             // Проверяем, является ли эта клетка частью размещенной фигуры
             if (currentState.placedPiece && currentState.placedPiecePosition) {
               const pieceMatrix = currentState.placedPiece.matrix;
               const pieceX = x - currentState.placedPiecePosition.x;
               const pieceY = y - currentState.placedPiecePosition.y;
-              
+
               // Если координаты попадают в матрицу фигуры и там есть клетка
-              if (pieceY >= 0 && pieceY < pieceMatrix.length && 
-                  pieceX >= 0 && pieceX < pieceMatrix[0].length && 
-                  pieceMatrix[pieceY][pieceX].value === 1) {
+              if (
+                pieceY >= 0 &&
+                pieceY < pieceMatrix.length &&
+                pieceX >= 0 &&
+                pieceX < pieceMatrix[0].length &&
+                pieceMatrix[pieceY][pieceX].value === 1
+              ) {
                 // Это клетка размещенной фигуры - используем её цвет
                 cellColor = currentState.placedPiece.color;
               }
             }
-            
+
             restoreCells.push({
               id: `restore-${x}-${y}-${Date.now()}`,
               x,
@@ -1139,21 +1218,32 @@ export const GameBoard: React.FC<
       });
 
       if (restoreCells.length > 0) {
-        console.log("🔄 Phase 1: Starting field restore animation with", restoreCells.length, "cells");
+        console.log(
+          "🔄 Phase 1: Starting field restore animation with",
+          restoreCells.length,
+          "cells"
+        );
         setRestoreAnimations(restoreCells);
         // onComplete колбэк будет вызван компонентом BoardRestoreAnimationsOverlay
         // когда анимация завершится, и запустит startPieceReturnAnimation()
       } else {
-        console.log("🔄 Phase 1: No cells to restore, skipping to piece return");
+        console.log(
+          "🔄 Phase 1: No cells to restore, skipping to piece return"
+        );
         restoreBoardState();
         startPieceReturnAnimation();
       }
     } else {
       // Если нет очищенных клеток, сразу восстанавливаем доску и переходим к возвращению фигуры
-      console.log("🔄 Phase 1: No cleared cells, restoring board and starting piece return");
-      console.log("🔄 Debug: startPieceReturnAnimation function:", typeof startPieceReturnAnimation);
+      console.log(
+        "🔄 Phase 1: No cleared cells, restoring board and starting piece return"
+      );
+      console.log(
+        "🔄 Debug: startPieceReturnAnimation function:",
+        typeof startPieceReturnAnimation
+      );
       restoreBoardState();
-      
+
       // Передаем данные напрямую, так как setUndoData асинхронный
       const undoDataForAnimation = {
         currentState,
@@ -1161,19 +1251,26 @@ export const GameBoard: React.FC<
         restoreBoardState,
         restorePiecesState,
       };
-      
+
       // Вызываем анимацию с данными напрямую
-      if (undoDataForAnimation.currentState.placedPiece && undoDataForAnimation.currentState.placedPiecePosition) {
+      if (
+        undoDataForAnimation.currentState.placedPiece &&
+        undoDataForAnimation.currentState.placedPiecePosition
+      ) {
         // Найти контейнер для возвращения фигуры
-        const piecesContainer = document.querySelector('.draggable-pieces-section');
+        const piecesContainer = document.querySelector(
+          ".draggable-pieces-section"
+        );
         const targetRect = piecesContainer?.getBoundingClientRect() || null;
-        
+
         console.log("🔄 Phase 2: Starting piece return animation", {
           piece: undoDataForAnimation.currentState.placedPiece.id,
           fromPosition: undoDataForAnimation.currentState.placedPiecePosition,
-          targetRect: targetRect ? { width: targetRect.width, height: targetRect.height } : null,
+          targetRect: targetRect
+            ? { width: targetRect.width, height: targetRect.height }
+            : null,
         });
-        
+
         if (onPieceReturnAnimation) {
           onPieceReturnAnimation({
             piece: undoDataForAnimation.currentState.placedPiece,
@@ -1183,7 +1280,7 @@ export const GameBoard: React.FC<
             gap: GAP_SIZE_PX,
           });
         }
-        
+
         // Завершить undo после анимации возвращения фигуры
         setTimeout(() => {
           console.log("🔄 Phase 2: Piece return animation completed");
@@ -1191,7 +1288,9 @@ export const GameBoard: React.FC<
         }, 800); // Время анимации возвращения фигуры
       } else {
         // Если нет фигуры для возвращения, завершаем undo сразу
-        console.log("🔄 Phase 2: No piece to return, completing undo immediately");
+        console.log(
+          "🔄 Phase 2: No piece to return, completing undo immediately"
+        );
         undoDataForAnimation.restorePiecesState();
       }
     }
@@ -1294,6 +1393,34 @@ export const GameBoard: React.FC<
       }
     }
     setExplodingCells({ cells, cellSize });
+    
+    // Запускаем волну взрыва
+    setExplosionWave({
+      centerX: cx,
+      centerY: cy,
+      isActive: true,
+    });
+    
+    // Запускаем частицы взрыва
+    setExplosionParticles({
+      centerX: cx,
+      centerY: cy,
+      isActive: true,
+    });
+    
+    // Запускаем вспышку
+    setExplosionFlash({
+      isActive: true,
+      centerX: cx * (dynamicCellSize || DEFAULT_CELL_SIZE) + (dynamicCellSize || DEFAULT_CELL_SIZE) / 2,
+      centerY: cy * (dynamicCellSize || DEFAULT_CELL_SIZE) + (dynamicCellSize || DEFAULT_CELL_SIZE) / 2,
+    });
+    
+    // Добавляем тряску экрана
+    document.body.classList.add("screen-shake");
+    setTimeout(() => {
+      document.body.classList.remove("screen-shake");
+    }, 500);
+    
     // Очищаем клетки сразу!
     const newBoard = board.map((row, rowIdx) =>
       row.map((cell, colIdx) => {
@@ -1373,8 +1500,6 @@ export const GameBoard: React.FC<
 
   const handleBombTouchEnd = handleBombMouseUp;
   const handleBombTouchCancel = handleBombMouseUp;
-
-
 
   useEffect(() => {
     if (onBoardRectChange) {
@@ -1904,14 +2029,16 @@ export const GameBoard: React.FC<
                 gap={GAP_SIZE_PX}
                 boardRect={null}
                 onComplete={() => {
-                  console.log("🔄 Phase 1: Field restore animation completed via onComplete");
+                  console.log(
+                    "🔄 Phase 1: Field restore animation completed via onComplete"
+                  );
                   setRestoreAnimations([]);
-                  
+
                   // Восстанавливаем состояние доски сразу после анимации восстановления клеток
                   if (undoData) {
                     undoData.restoreBoardState();
                   }
-                  
+
                   startPieceReturnAnimation();
                 }}
               />
@@ -2028,6 +2155,27 @@ export const GameBoard: React.FC<
                 onTouchCancel={bombMode ? handleBombTouchCancel : undefined}
                 onContextMenu={bombMode ? (e) => e.preventDefault() : undefined}
               >
+                <div 
+                  className="absolute w-full h-full" 
+                  id="game-board-grid-bg"
+                  style={{ zIndex: 1 }}
+                >
+                  {/* Волна взрыва */}
+                  {explosionWave && (
+                    <ExplosionWave
+                      centerX={explosionWave.centerX}
+                      centerY={explosionWave.centerY}
+                      boardWidth={width}
+                      boardHeight={height}
+                      cellSize={dynamicCellSize || DEFAULT_CELL_SIZE}
+                      gap={GAP_SIZE_PX}
+                      isActive={explosionWave.isActive}
+                      onComplete={() => setExplosionWave(null)}
+                    />
+                  )}
+
+
+                </div>
                 {board.map((row, y) => (
                   <React.Fragment key={y}>
                     {row.map((cell, x) => {
@@ -2166,6 +2314,20 @@ export const GameBoard: React.FC<
                   })}
                 </div>
               )}
+
+              {/* Частицы взрыва */}
+              {explosionParticles && (
+                <ExplosionParticles
+                  centerX={explosionParticles.centerX}
+                  centerY={explosionParticles.centerY}
+                  boardWidth={width}
+                  boardHeight={height}
+                  cellSize={dynamicCellSize || DEFAULT_CELL_SIZE}
+                  gap={GAP_SIZE_PX}
+                  isActive={explosionParticles.isActive}
+                  onComplete={() => setExplosionParticles(null)}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -2189,6 +2351,14 @@ export const GameBoard: React.FC<
             onPieceStart={handlePieceStart}
           />
         )}
+
+        {/* Вспышка взрыва */}
+        <ExplosionFlash
+          isActive={explosionFlash.isActive}
+          centerX={explosionFlash.centerX}
+          centerY={explosionFlash.centerY}
+          onComplete={() => setExplosionFlash({ isActive: false })}
+        />
       </div>
     </div>
   );

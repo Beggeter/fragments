@@ -178,19 +178,22 @@ const PieceReturnAnimation: React.FC<PieceReturnAnimationProps> = ({
           y: startY,
           scale: 1,
           opacity: 1,
-          rotateY: 0,
         }}
         animate={{
           x: targetX - pieceWidth / 2,
           y: targetY - pieceHeight / 2,
           scale: 0.6,
           opacity: 1,
-          rotateY: 360,
         }}
         transition={{
           duration: 0.8,
           ease: "easeInOut",
-          rotateY: { duration: 0.6, ease: "easeInOut" },
+          scale: {
+            duration: 0.8,
+            ease: "easeInOut",
+            times: [0, 0.5, 1], // 0% -> 50% -> 100%
+            values: [1, 1.2, 0.6], // начальный -> максимум -> конечный
+          },
         }}
         style={{
           position: "fixed",
