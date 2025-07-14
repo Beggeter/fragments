@@ -81,6 +81,11 @@ const seededRandom = (seed: number): number => {
 
 export const LinePerimeterParticles: React.FC<LinePerimeterParticlesProps> = React.memo(
   ({ areas, boardWidth, boardHeight, cellSize, visible, color = "#fff", className = "" }) => {
+    // Проверяем и корректируем размеры для production сборки
+    const validBoardWidth = Math.max(boardWidth, 200);
+    const validBoardHeight = Math.max(boardHeight, 200);
+    const validCellSize = Math.max(cellSize, 30);
+    
     // Генерируем параметры частиц для каждой области
     const particles = useMemo(() => {
       const allParticles: Particle[] = [];
@@ -105,16 +110,16 @@ export const LinePerimeterParticles: React.FC<LinePerimeterParticlesProps> = Rea
         const areaHeightCells = maxY - minY + 1;
         
         // Размеры области в пикселях
-        const areaWidth = areaWidthCells * cellSize;
-        const areaHeight = areaHeightCells * cellSize;
-        const areaLeft = minX * cellSize;
-        const areaTop = minY * cellSize;
+        const areaWidth = areaWidthCells * validCellSize;
+        const areaHeight = areaHeightCells * validCellSize;
+        const areaLeft = minX * validCellSize;
+        const areaTop = minY * validCellSize;
         
         // Рассчитываем количество частиц для каждой стороны
-        const topParticles = getParticleCount(areaWidthCells, cellSize);
-        const bottomParticles = getParticleCount(areaWidthCells, cellSize);
-        const leftParticles = getParticleCount(areaHeightCells, cellSize);
-        const rightParticles = getParticleCount(areaHeightCells, cellSize);
+        const topParticles = getParticleCount(areaWidthCells, validCellSize);
+        const bottomParticles = getParticleCount(areaWidthCells, validCellSize);
+        const leftParticles = getParticleCount(areaHeightCells, validCellSize);
+        const rightParticles = getParticleCount(areaHeightCells, validCellSize);
         
         // Генерируем частицы по периметру области
         const pts: { x: number; y: number; side: string; idx: number }[] = [];
@@ -227,7 +232,7 @@ export const LinePerimeterParticles: React.FC<LinePerimeterParticlesProps> = Rea
       });
       
       return allParticles;
-    }, [areas, boardWidth, boardHeight, cellSize]);
+    }, [areas, validBoardWidth, validBoardHeight, validCellSize]);
 
     if (!visible || areas.length === 0) return null;
 
@@ -236,8 +241,8 @@ export const LinePerimeterParticles: React.FC<LinePerimeterParticlesProps> = Rea
         className={className}
         style={{
           position: "absolute",
-          width: boardWidth,
-          height: boardHeight,
+          width: validBoardWidth,
+          height: validBoardHeight,
           left: 0,
           top: 0,
           pointerEvents: "none",

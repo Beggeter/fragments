@@ -49,6 +49,10 @@ type Particle = {
 
 export const PerimeterParticles: React.FC<PerimeterParticlesProps> = React.memo(
   ({ width, height, visible, color = "#fff", className = "" }) => {
+    // Проверяем и корректируем размеры для production сборки
+    const validWidth = Math.max(width, 200); // минимальный размер 200px
+    const validHeight = Math.max(height, 200);
+    
     // Генерируем параметры частиц только при изменении размеров
     const particles = useMemo(() => {
       const pts: { x: number; y: number; side: string; idx: number }[] = [];
@@ -74,7 +78,7 @@ export const PerimeterParticles: React.FC<PerimeterParticlesProps> = React.memo(
       return pts.map((pt) => {
         const offset = -12;
         const left =
-          pt.x * (width - MIN_PARTICLE_SIZE) +
+          pt.x * (validWidth - MIN_PARTICLE_SIZE) +
           (pt.side === "left" ||
           pt.side === "corner-tl" ||
           pt.side === "corner-bl"
@@ -85,7 +89,7 @@ export const PerimeterParticles: React.FC<PerimeterParticlesProps> = React.memo(
             ? -offset
             : 0);
         const top =
-          pt.y * (height - MIN_PARTICLE_SIZE) +
+          pt.y * (validHeight - MIN_PARTICLE_SIZE) +
           (pt.side === "top" ||
           pt.side === "corner-tl" ||
           pt.side === "corner-tr"
@@ -159,7 +163,7 @@ export const PerimeterParticles: React.FC<PerimeterParticlesProps> = React.memo(
           randomColor
         };
       });
-    }, [width, height]);
+    }, [validWidth, validHeight]);
 
     if (!visible) return null;
 
@@ -168,8 +172,8 @@ export const PerimeterParticles: React.FC<PerimeterParticlesProps> = React.memo(
         className={className}
         style={{
           position: "absolute",
-          width,
-          height,
+          width: validWidth,
+          height: validHeight,
           left: 0,
           top: 0,
           pointerEvents: "none",

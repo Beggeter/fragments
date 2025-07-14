@@ -159,14 +159,37 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
         const newSize = { width: rect.width, height: rect.height };
-        setContainerSize(newSize);
-        setSize(newSize);
+        
+        // Добавляем проверки для production сборки
+        // Если размеры слишком маленькие, используем fallback
+        const minSize = 200; // минимальный размер для игрового поля
+        const fallbackSize = 350; // fallback размер для production
+        
+        if (newSize.width < minSize || newSize.height < minSize) {
+          console.warn('ComboVisualizer: размеры слишком маленькие, используем fallback', newSize);
+          // Пытаемся получить размеры из CSS переменной или используем fallback
+          const appVw = getComputedStyle(document.documentElement).getPropertyValue('--app-vw');
+          const vwValue = appVw ? parseInt(appVw) : fallbackSize;
+          const finalSize = Math.max(vwValue, fallbackSize);
+          setContainerSize({ width: finalSize, height: finalSize });
+          setSize({ width: finalSize, height: finalSize });
+        } else {
+          setContainerSize(newSize);
+          setSize(newSize);
+        }
       }
     }
     
     updateContainerSize();
+    
+    // Добавляем задержку для production сборки
+    const timeoutId = setTimeout(updateContainerSize, 100);
+    
     window.addEventListener("resize", updateContainerSize);
-    return () => window.removeEventListener("resize", updateContainerSize);
+    return () => {
+      window.removeEventListener("resize", updateContainerSize);
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   // Handle combo level changes
@@ -395,15 +418,12 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
               "--scoreplus-x-to": `${sp.to.x}px`,
               "--scoreplus-y-to": `${sp.to.y}px`,
               pointerEvents: "none",
-              color: sp.color,
-              WebkitTextStroke: "1.2px #38BDF8",
-              textShadow: undefined,
               position: "absolute",
             } as React.CSSProperties
           }
           className="scoreplus-fly text-4xl z-2000 font-extrabold font-figtree"
         >
-          +{sp.value}
+          {sp.value}
         </div>
       );
     }
@@ -415,12 +435,9 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
           left: sp.x,
           top: sp.y,
           pointerEvents: "none",
-          color: sp.color,
-          WebkitTextStroke: "1.2px #38BDF8",
-          textShadow: undefined,
           position: "absolute",
         }}
-        className="text-4xl z-2000 font-extrabold font-figtree"
+        className="text-4xl z-2000 font-extrabold font-figtree scoreplus-static"
       >
         {sp.value}
       </div>
@@ -515,8 +532,8 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
             {/* --- ПЕРИМЕТРАЛЬНЫЕ ЧАСТИЦЫ ПРИ КОМБО --- */}
             {showParticles && size.width > 0 && size.height > 0 && (
         <PerimeterParticles
-          width={size.width}
-          height={size.height}
+          width={Math.max(size.width, 200)}
+          height={Math.max(size.height, 200)}
           visible={true}
           // color={theme.background}
         />

@@ -1875,14 +1875,36 @@ export const GameBoard: React.FC<
   // --- iOS viewport width fix ---
   useEffect(() => {
     const setVw = () => {
+      // Добавляем проверки для production сборки
+      const viewportWidth = window.innerWidth || 375; // fallback для мобильных устройств
+      const minWidth = 320; // минимальная ширина
+      const maxWidth = 500; // максимальная ширина для игрового поля
+      
+      // Ограничиваем размеры разумными пределами
+      const clampedWidth = Math.max(minWidth, Math.min(viewportWidth, maxWidth));
+      
       document.documentElement.style.setProperty(
         "--app-vw",
-        `${window.innerWidth}px`
+        `${clampedWidth}px`
       );
+      
+      // Добавляем дополнительную переменную для отладки
+      if (process.env.NODE_ENV === 'development') {
+        console.log('GameBoard: установлена --app-vw:', clampedWidth, 'px');
+      }
     };
+    
+    // Устанавливаем сразу
     setVw();
+    
+    // Добавляем задержку для production сборки
+    const timeoutId = setTimeout(setVw, 50);
+    
     window.addEventListener("resize", setVw);
-    return () => window.removeEventListener("resize", setVw);
+    return () => {
+      window.removeEventListener("resize", setVw);
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   // --- вычисление потенциально взрываемых клеток (3x3 вокруг bombCenter) ---
