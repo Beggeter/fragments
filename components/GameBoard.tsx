@@ -1995,7 +1995,7 @@ export const GameBoard: React.FC<
           </div>
         </div>
 
-        <div className="flex justify-center items-center w-full -mt-8 -mb-2">
+        <div className="flex justify-center items-center w-full -mt-8 -mb-4">
           <ScoreDisplay
             ref={scoreDisplayRef}
             newScore={score}
@@ -2006,7 +2006,7 @@ export const GameBoard: React.FC<
         <BoostersPanel
           boosters={boosters}
           onBoosterClick={handleBoosterClick}
-          className="-mb-11 -z-10"
+          className="-mb-6 -z-10"
           comboLevel={lastScoreResult?.comboLevel}
           activeBooster={bombMode ? "bomb" : undefined}
           gameOver={gameOver}

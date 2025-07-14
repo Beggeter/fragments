@@ -956,9 +956,9 @@ input[type="range"].custom-range {
   min-height: fit-content;
   align-items: center;
   justify-content: center;
-  transition: border-color 1s ease;
-  border-color: var(--outline-color);
-  filter: drop-shadow(0 0 2px var(--outline-color))
+  /* transition: border-color 1s ease;
+  border-color: var(--outline-color); */
+  /* filter: drop-shadow(0 0 2px var(--outline-color)) */
 }
 
 .fade-in-menu {

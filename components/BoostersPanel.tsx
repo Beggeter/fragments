@@ -32,16 +32,16 @@ export const BoostersPanel: React.FC<BoostersPanelProps> = ({
 
   return (
     <div
-      className={`booster-container bg-gray-800 px-4 py-4 h-14 
-        rounded-4xl rounded-bl-none rounded-br-none -mt-6
-          border-2 border-b-0 shadow-xl ${className}`}
+      className={`booster-container bg-gray-800/60 px-6  h-14 pb-2 pt-3
+        rounded-full  -mt-6
+          border-1 border-white/20  backdrop-blur-xl ${className}`}
       style={
         {
           "--outline-color": theme.borderMiddle,
         } as React.CSSProperties
       }
     >
-      <div className="flex justify-between gap-2 ">
+      <div className="flex justify-between gap-3 ">
         {boosters.map((booster) => {
           const isDisabled = !!activeBooster && activeBooster !== booster.name;
           const isAvailable = booster.quantity > 0;
