@@ -98,6 +98,7 @@ const HomePage: React.FC = () => {
   const [showSpinnerAnimation, setShowSpinnerAnimation] = useState(false);
   const [boardRect, setBoardRect] = useState<DOMRect | null>(null);
   const [clearedLine, setClearedLine] = useState<number | null>(null);
+  const [clearedLines, setClearedLines] = useState<Set<number>>(new Set());
   const [particlesInit, setParticlesInit] = useState(false);
   // Track where the shop was opened from
   const [shopReturnTo, setShopReturnTo] = useState<Screen | null>(null);
@@ -135,8 +136,9 @@ const HomePage: React.FC = () => {
     []
   );
 
-  const handleLineBreakpoint = useCallback((lineIdx: number) => {
-    setClearedLine(Math.abs(7 - lineIdx));
+  const handleLineBreakpoint = useCallback((lineIdx: number, rowIdx: number) => {
+    setClearedLine(rowIdx);
+    setClearedLines(prev => new Set([...prev, rowIdx]));
     // Сбросить после короткой задержки, чтобы не очищать повторно
     setTimeout(() => setClearedLine(null), 100);
   }, []);
@@ -144,12 +146,32 @@ const HomePage: React.FC = () => {
   // функция для запуска спиннера
   const handleShowSpinnerAnimation = useCallback(() => {
     setShowSpinnerAnimation(true);
+    setClearedLines(new Set()); // Сбрасываем отслеживание линий
   }, []);
 
   // функция для завершения анимации спиннера
   const handleSpinnerFinish = useCallback(() => {
     setShowSpinnerAnimation(false);
-  }, []);
+    
+    // Гарантированно очищаем все линии, которые могли быть пропущены из-за лагов
+    if (clearedLines.size < 8) {
+      // Если не все линии были очищены, очищаем оставшиеся
+      const remainingLines = Array.from({ length: 8 }, (_, i) => i)
+        .filter(i => !clearedLines.has(i));
+      
+      remainingLines.forEach(lineIdx => {
+        setTimeout(() => {
+          setClearedLine(lineIdx);
+          setTimeout(() => setClearedLine(null), 50);
+        }, lineIdx * 50); // Небольшая задержка между линиями
+      });
+    }
+    
+    // Очищаем отслеживание линий
+    setTimeout(() => {
+      setClearedLines(new Set());
+    }, 500);
+  }, [clearedLines]);
 
   const {
     isAdmin,

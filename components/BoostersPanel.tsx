@@ -46,15 +46,15 @@ export const BoostersPanel: React.FC<BoostersPanelProps> = ({
           const isDisabled = !!activeBooster && activeBooster !== booster.name;
           const isAvailable = booster.quantity > 0;
           // Цвета для пузырика
-          // let bubbleColor = "#2868C3";
-          // let bubbleBorder = "#3AA3FB";
-          // if (booster.id === "bomb") {
-          //   bubbleColor = "#A90E24";
-          //   bubbleBorder = "#E53142";
-          // } else if (booster.id === "whirlwind") {
-          //   bubbleColor = "#481C8D";
-          //   bubbleBorder = "#6E2DAE";
-          // }
+          let bubbleColor = "#2868C3";
+          let bubbleBorder = "#3AA3FB";
+          if (booster.id === "bomb") {
+            bubbleColor = "#A90E24";
+            bubbleBorder = "#E53142";
+          } else if (booster.id === "whirlwind") {
+            bubbleColor = "#481C8D";
+            bubbleBorder = "#6E2DAE";
+          }
           return (
             <ClickEffect key={booster.id}>
               <button
@@ -78,7 +78,8 @@ export const BoostersPanel: React.FC<BoostersPanelProps> = ({
                       } `}
                   style={{
                     // pointerEvents: "none",
-                    background: isAvailable ? `#1e2939 ` : "#16a34a",
+                    background: isAvailable ? bubbleColor : "#16a34a",
+                    borderColor: isAvailable ? bubbleBorder : "#16a34a",
                     boxShadow: "0 1px 4px 0 rgba(0,0,0,0.18)",
                     textShadow: "0 1px 2px rgba(0,0,0,0.18)",
                     zIndex: 2,

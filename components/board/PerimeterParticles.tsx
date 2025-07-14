@@ -96,39 +96,55 @@ export const PerimeterParticles: React.FC<PerimeterParticlesProps> = React.memo(
             ? -offset
             : 0);
 
-        // Рандомные параметры
-        const baseDist = 2;
-        const randomDist = baseDist + Math.random() * 8;
-        const randomAngle = (Math.random() - 0.5) * 1.5;
-        const randomDelay = Math.random() * 100;
-        const randomDuration = ANIMATION_DURATION - Math.random() * 400;
-        const randomSize =
-          MIN_PARTICLE_SIZE + Math.random() * 4;
-        const randomRotation = Math.random() * 120;
+        // Рандомные параметры - увеличенная вариативность
+        const baseDist = 3;
+        const randomDist = baseDist + Math.random() * 15; // Увеличили максимальное расстояние
+        const randomAngle = (Math.random() - 0.5) * 3.14; // Полный круг вместо ограниченного угла
+        const randomDelay = Math.random() * 200; // Увеличили задержку
+        const randomDuration = ANIMATION_DURATION - Math.random() * 600; // Больше вариативности в длительности
+        const randomSize = MIN_PARTICLE_SIZE + Math.random() * 8; // Увеличили максимальный размер
+        const randomRotation = Math.random() * 360; // Полный оборот
         const randomColor = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
 
 
         let transformTo = "";
         if (pt.side === "top") {
-          const xOffset = Math.sin(randomAngle) * randomDist;
-          transformTo = `translate(${xOffset}px, -${randomDist}px)`;
+          // Для верхней стороны - летим вверх и в случайном направлении по горизонтали
+          const xOffset = Math.cos(randomAngle) * randomDist * 0.8;
+          const yOffset = -randomDist - Math.abs(Math.sin(randomAngle) * randomDist * 0.5);
+          transformTo = `translate(${xOffset}px, ${yOffset}px)`;
         } else if (pt.side === "bottom") {
-          const xOffset = Math.sin(randomAngle) * randomDist;
-          transformTo = `translate(${xOffset}px, ${randomDist}px)`;
+          // Для нижней стороны - летим вниз и в случайном направлении по горизонтали
+          const xOffset = Math.cos(randomAngle) * randomDist * 0.8;
+          const yOffset = randomDist + Math.abs(Math.sin(randomAngle) * randomDist * 0.5);
+          transformTo = `translate(${xOffset}px, ${yOffset}px)`;
         } else if (pt.side === "left") {
-          const yOffset = Math.sin(randomAngle) * randomDist;
-          transformTo = `translate(-${randomDist}px, ${yOffset}px)`;
+          // Для левой стороны - летим влево и в случайном направлении по вертикали
+          const xOffset = -randomDist - Math.abs(Math.cos(randomAngle) * randomDist * 0.5);
+          const yOffset = Math.sin(randomAngle) * randomDist * 0.8;
+          transformTo = `translate(${xOffset}px, ${yOffset}px)`;
         } else if (pt.side === "right") {
-          const yOffset = Math.sin(randomAngle) * randomDist;
-          transformTo = `translate(${randomDist}px, ${yOffset}px)`;
+          // Для правой стороны - летим вправо и в случайном направлении по вертикали
+          const xOffset = randomDist + Math.abs(Math.cos(randomAngle) * randomDist * 0.5);
+          const yOffset = Math.sin(randomAngle) * randomDist * 0.8;
+          transformTo = `translate(${xOffset}px, ${yOffset}px)`;
         } else if (pt.side === "corner-tl") {
-          transformTo = `translate(-${randomDist}px, -${randomDist}px)`;
+          // Для углов - более случайное направление
+          const xOffset = -randomDist * (0.5 + Math.random() * 0.5);
+          const yOffset = -randomDist * (0.5 + Math.random() * 0.5);
+          transformTo = `translate(${xOffset}px, ${yOffset}px)`;
         } else if (pt.side === "corner-tr") {
-          transformTo = `translate(${randomDist}px, -${randomDist}px)`;
+          const xOffset = randomDist * (0.5 + Math.random() * 0.5);
+          const yOffset = -randomDist * (0.5 + Math.random() * 0.5);
+          transformTo = `translate(${xOffset}px, ${yOffset}px)`;
         } else if (pt.side === "corner-br") {
-          transformTo = `translate(${randomDist}px, ${randomDist}px)`;
+          const xOffset = randomDist * (0.5 + Math.random() * 0.5);
+          const yOffset = randomDist * (0.5 + Math.random() * 0.5);
+          transformTo = `translate(${xOffset}px, ${yOffset}px)`;
         } else if (pt.side === "corner-bl") {
-          transformTo = `translate(-${randomDist}px, ${randomDist}px)`;
+          const xOffset = -randomDist * (0.5 + Math.random() * 0.5);
+          const yOffset = randomDist * (0.5 + Math.random() * 0.5);
+          transformTo = `translate(${xOffset}px, ${yOffset}px)`;
         }
 
         return {
@@ -163,13 +179,34 @@ export const PerimeterParticles: React.FC<PerimeterParticlesProps> = React.memo(
       >
         <style>{`
           @keyframes perimeter-particle-explode {
-            0% { opacity: 0; }
-            10% { opacity: 0.2; }
-            20% { opacity: 0.4; }
-            40% { opacity: 0.8; transform: var(--particle-transform); }
-            60% { opacity: 1; transform: var(--particle-transform);}
-            80% { opacity: 0.5; transform: var(--particle-transform);}
-            100% { opacity: 0;  transform: var(--particle-transform);}
+            0% { 
+              opacity: 0; 
+              transform: scale(0.3) rotate(0deg);
+            }
+            10% { 
+              opacity: 0.3; 
+              transform: scale(0.8) rotate(var(--particle-rotation));
+            }
+            20% { 
+              opacity: 0.6; 
+              transform: scale(1.1) rotate(var(--particle-rotation));
+            }
+            40% { 
+              opacity: 0.9; 
+              transform: var(--particle-transform) scale(1) rotate(var(--particle-rotation));
+            }
+            60% { 
+              opacity: 1; 
+              transform: var(--particle-transform) scale(0.9) rotate(var(--particle-rotation));
+            }
+            80% { 
+              opacity: 0.4; 
+              transform: var(--particle-transform) scale(0.7) rotate(var(--particle-rotation));
+            }
+            100% { 
+              opacity: 0; 
+              transform: var(--particle-transform) scale(0.5) rotate(var(--particle-rotation));
+            }
           }
         `}</style>
         {particles.map((pt, i) => (
@@ -186,10 +223,10 @@ export const PerimeterParticles: React.FC<PerimeterParticlesProps> = React.memo(
               top: pt.top,
               pointerEvents: "none",
               zIndex: 1,
-              // transform: `rotate(${pt.randomRotation}deg)`,
               animation: `perimeter-particle-explode ${pt.randomDuration}ms cubic-bezier(0.4, 0, 0.2, 1) forwards`,
               animationDelay: `${pt.randomDelay}ms`,
               ["--particle-transform" as any]: `${pt.transformTo}`,
+              ["--particle-rotation" as any]: `${pt.randomRotation}deg`,
               willChange: "transform, opacity"
             }}
           >
@@ -203,23 +240,38 @@ export const PerimeterParticles: React.FC<PerimeterParticlesProps> = React.memo(
               </filter>
             </defs> */}
             
-            {i % 2 === 0 ? (
+            {i % 4 === 0 ? (
+              // Квадрат
               <rect x="20" y="20" width="60" height="60" 
                     fill="white" 
-                    // stroke="#ffff00" 
-                    // strokeWidth="5"
                     style={{
-                      filter: "drop-shadow(0 0 14px #ffff00)"
+                      filter: "drop-shadow(0 0 8px #ffff00)"
                     }}
               />
-            ) : (
+            ) : i % 4 === 1 ? (
+              // Звезда
               <path 
-              d="M43 0.573095C36.2804 28.3069 27.5969 38.2595 0.573593 42.9995C28.493 47.8597 38.3632 56.5588 43 85.4259C46.4865 56.5515 55.2865 46.0561 85.4264 42.9995C58.0896 38.1858 48.6892 29.0552 43 0.573095Z"
-              fill="white" 
-                // stroke="#ffff00" 
-                // strokeWidth="5"
+                d="M43 0.573095C36.2804 28.3069 27.5969 38.2595 0.573593 42.9995C28.493 47.8597 38.3632 56.5588 43 85.4259C46.4865 56.5515 55.2865 46.0561 85.4264 42.9995C58.0896 38.1858 48.6892 29.0552 43 0.573095Z"
+                fill="white" 
                 style={{
-                  filter: "drop-shadow(0 0 14px #ffff00)"
+                  filter: "drop-shadow(0 0 8px #ffff00)"
+                }}
+              />
+            ) : i % 4 === 2 ? (
+              // Круг
+              <circle cx="50" cy="50" r="30" 
+                      fill="white" 
+                      style={{
+                        filter: "drop-shadow(0 0 8px #ffff00)"
+                      }}
+              />
+            ) : (
+              // Ромб
+              <path 
+                d="M50 20 L80 50 L50 80 L20 50 Z"
+                fill="white" 
+                style={{
+                  filter: "drop-shadow(0 0 8px #ffff00)"
                 }}
               />
             )}

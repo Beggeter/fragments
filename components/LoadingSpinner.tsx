@@ -139,9 +139,7 @@ const Line = ({
           if (!triggeredRowsRef.current[rowIdx] && latestY <= rowY) {
             triggeredRowsRef.current[rowIdx] = true;
             if (onLineBreakpoint) {
-              if (lineIdx != rowIdx) {
-                onLineBreakpoint(lineIdx, rowIdx);
-              }
+              onLineBreakpoint(lineIdx, rowIdx);
             }
           }
         });
@@ -272,10 +270,19 @@ export const LoadingSpinner = ({
     setFinishedCount((prev) => {
       const next = prev + 1;
       if (next === 8 && onFinish) {
+        // Гарантированно вызываем onLineBreakpoint для всех линий перед завершением
+        if (onLineBreakpoint) {
+          for (let i = 0; i < 8; i++) {
+            setTimeout(() => {
+              onLineBreakpoint(i, i);
+            }, i * 10); // Небольшая задержка между вызовами
+          }
+        }
+        
         // Используем setTimeout чтобы избежать вызова setState во время рендеринга
         setTimeout(() => {
           onFinish();
-        }, 0);
+        }, 100);
       }
       return next;
     });

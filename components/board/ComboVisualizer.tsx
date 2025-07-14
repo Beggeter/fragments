@@ -532,6 +532,11 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
           const left = Math.max(0, Math.min(comboPos.x - totalWidth / 2, containerSize.width - totalWidth));
           const top = Math.max(0, Math.min(comboPos.y - comboHeight / 2, containerSize.height - comboHeight));
           
+          // Высота шрифта "Combo" примерно 48px
+          const fontSize = 48;
+          const circleDiameter = fontSize;
+          const circleRadius = circleDiameter / 2;
+          
           return (
             <div
               className={`combo-text ${showComboText ? "show" : ""}`}
@@ -540,10 +545,94 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
                 top,
               }}
             >
+              {/* Полупрозрачные круги с градиентом */}
+              <div className="combo-background-circles">
+                {/* Круг 1 - левый */}
+                <div 
+                  className="combo-circle circle-1"
+                  style={{
+                    position: 'absolute',
+                    width: `${circleDiameter}px`,
+                    height: `${circleDiameter}px`,
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(255, 255, 0, 0.4) 0%, rgba(255, 255, 0, 0.2) 50%, rgba(255, 255, 0, 0.05) 80%, transparent 100%)',
+                    left: `${totalWidth / 2 - circleRadius * 2}px`,
+                    top: `${comboHeight / 2}px`,
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: -1,
+                    animation: 'combo-circle-pulse 2s ease-in-out infinite'
+                  }}
+                />
+                {/* Круг 2 */}
+                <div 
+                  className="combo-circle circle-2"
+                  style={{
+                    position: 'absolute',
+                    width: `${circleDiameter}px`,
+                    height: `${circleDiameter}px`,
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(255, 255, 0, 0.3) 0%, rgba(0, 150, 255, 0.2) 40%, rgba(0, 150, 255, 0.1) 70%, transparent 100%)',
+                    left: `${totalWidth / 2 - circleRadius}px`,
+                    top: `${comboHeight / 2}px`,
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: -2,
+                    animation: 'combo-circle-pulse 2s ease-in-out infinite 0.4s'
+                  }}
+                />
+                {/* Круг 3 - центр */}
+                <div 
+                  className="combo-circle circle-3"
+                  style={{
+                    position: 'absolute',
+                    width: `${circleDiameter}px`,
+                    height: `${circleDiameter}px`,
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(255, 255, 0, 0.25) 0%, rgba(0, 150, 255, 0.25) 50%, rgba(0, 150, 255, 0.15) 80%, transparent 100%)',
+                    left: `${totalWidth / 2}px`,
+                    top: `${comboHeight / 2}px`,
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: -3,
+                    animation: 'combo-circle-pulse 2s ease-in-out infinite 0.8s'
+                  }}
+                />
+                {/* Круг 4 */}
+                <div 
+                  className="combo-circle circle-4"
+                  style={{
+                    position: 'absolute',
+                    width: `${circleDiameter}px`,
+                    height: `${circleDiameter}px`,
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(0, 150, 255, 0.3) 0%, rgba(0, 150, 255, 0.2) 60%, rgba(0, 150, 255, 0.1) 80%, transparent 100%)',
+                    left: `${totalWidth / 2 + circleRadius}px`,
+                    top: `${comboHeight / 2}px`,
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: -4,
+                    animation: 'combo-circle-pulse 2s ease-in-out infinite 1.2s'
+                  }}
+                />
+                {/* Круг 5 - правый */}
+                <div 
+                  className="combo-circle circle-5"
+                  style={{
+                    position: 'absolute',
+                    width: `${circleDiameter}px`,
+                    height: `${circleDiameter}px`,
+                    borderRadius: '50%',
+                    background: 'radial-gradient(circle, rgba(0, 150, 255, 0.4) 0%, rgba(0, 150, 255, 0.2) 70%, rgba(0, 150, 255, 0.05) 90%, transparent 100%)',
+                    left: `${totalWidth / 2 + circleRadius * 2}px`,
+                    top: `${comboHeight / 2}px`,
+                    transform: 'translate(-50%, -50%)',
+                    zIndex: -5,
+                    animation: 'combo-circle-pulse 2s ease-in-out infinite 1.6s'
+                  }}
+                />
+              </div>
+              
               <svg
                 width={totalWidth}
                 height={comboHeight}
-                style={{ display: "block" }}
+                style={{ display: "block", position: "relative", zIndex: 1 }}
               >
                 <text
                   ref={comboRef}
