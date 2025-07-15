@@ -84,13 +84,9 @@ export const useUser = () => {
         console.log("Token expiry:", tokenData.exp, "Current time:", now);
         
         if (tokenData.exp > now) {
-          console.log("Token is valid, setting user state");
-          setUserState({
-            user,
-            sessionToken,
-            isLoading: false,
-            isAuthenticated: true,
-          });
+          console.log("Token is valid, refreshing user data from server");
+          // Всегда получаем свежие данные с сервера, особенно баланс
+          await refreshUserData(user.telegramId, sessionToken);
           return;
         } else {
           console.log("Token expired, logging out");
@@ -108,10 +104,41 @@ export const useUser = () => {
     setUserState(prev => ({ ...prev, isLoading: false }));
   };
 
+  const refreshUserData = async (telegramId: number, sessionToken: string) => {
+    try {
+      const res = await fetch(`/api/users/${telegramId}`);
+      if (res.ok) {
+        const freshUser = await res.json();
+        console.log("Fresh user data loaded from server:", freshUser);
+        
+        // Обновляем localStorage БЕЗ currency - баланс всегда с сервера
+        const userDataForStorage = { ...freshUser };
+        delete userDataForStorage.currency;
+        localStorage.setItem('userData', JSON.stringify(userDataForStorage));
+        
+        setUserState({
+          user: freshUser,
+          sessionToken,
+          isLoading: false,
+          isAuthenticated: true,
+        });
+      } else {
+        console.error('Failed to refresh user data');
+        setUserState(prev => ({ ...prev, isLoading: false }));
+      }
+    } catch (error) {
+      console.error('Error refreshing user data:', error);
+      setUserState(prev => ({ ...prev, isLoading: false }));
+    }
+  };
+
   const loginUser = (user: User, sessionToken: string) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('sessionToken', sessionToken);
-      localStorage.setItem('userData', JSON.stringify(user));
+      // Сохраняем данные пользователя БЕЗ баланса
+      const userDataForStorage = { ...user };
+      delete userDataForStorage.currency;
+      localStorage.setItem('userData', JSON.stringify(userDataForStorage));
     }
     
     setUserState({
@@ -139,8 +166,12 @@ export const useUser = () => {
   const updateUser = (updates: Partial<User>) => {
     if (userState.user) {
       const updatedUser = { ...userState.user, ...updates };
+      
+      // Обновляем localStorage БЕЗ currency
       if (typeof window !== 'undefined') {
-        localStorage.setItem('userData', JSON.stringify(updatedUser));
+        const userDataForStorage = { ...updatedUser };
+        delete userDataForStorage.currency;
+        localStorage.setItem('userData', JSON.stringify(userDataForStorage));
       }
       
       setUserState(prev => ({
@@ -150,8 +181,34 @@ export const useUser = () => {
     }
   };
 
+  // Функция для обновления баланса - всегда получает свежие данные с сервера
+  const refreshBalance = async () => {
+    if (userState.user) {
+      try {
+        const res = await fetch(`/api/users/${userState.user.telegramId}`);
+        if (res.ok) {
+          const freshUser = await res.json();
+          setUserState(prev => ({
+            ...prev,
+            user: prev.user ? { ...prev.user, currency: freshUser.currency } : null,
+          }));
+          return freshUser.currency;
+        }
+      } catch (error) {
+        console.error('Error refreshing balance:', error);
+      }
+    }
+    return userState.user?.currency || 0;
+  };
+
+  // Функция для обновления валюты - теперь НЕ сохраняет в localStorage
   const updateCurrency = (newAmount: number) => {
-    updateUser({ currency: newAmount });
+    if (userState.user) {
+      setUserState(prev => ({
+        ...prev,
+        user: prev.user ? { ...prev.user, currency: newAmount } : null,
+      }));
+    }
   };
 
   return {
@@ -160,6 +217,7 @@ export const useUser = () => {
     logout,
     updateUser,
     updateCurrency,
+    refreshBalance,
     checkUserSession,
   };
 }; 

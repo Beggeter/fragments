@@ -275,7 +275,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
   const storeScrollRef = useRef<HTMLDivElement>(null);
 
   // BACKEND: Получить баланс игрока из стора/пропсов. Заглушка для currency (осколки).
-  const { user, updateCurrency, checkUserSession } = useUser();
+  const { user, updateCurrency, checkUserSession, refreshBalance } = useUser();
   const balance = user?.currency ?? 0;
 
   const [selectedShardPack, setSelectedShardPack] = useState<ShardPack | null>(
@@ -292,21 +292,24 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
   // Функция для обновления баланса после покупки
   const handleBalanceUpdate = useCallback(async () => {
     try {
-      // Перезапрашиваем актуальные данные пользователя с сервера
-      await checkUserSession();
+      setIsBalanceLoading(true);
       
-      // Если это админ, обновляем adminBalance тоже
       if (isAdmin) {
-        setIsBalanceLoading(true);
+        // Для админа получаем баланс отдельно
         const res = await fetch("/api/users/610936383/currency");
         const data = await res.json();
         setAdminBalance(typeof data.balance === "number" ? data.balance : 0);
-        setIsBalanceLoading(false);
+      } else {
+        // Для обычного пользователя получаем актуальный баланс с сервера
+        await refreshBalance();
       }
+      
+      setIsBalanceLoading(false);
     } catch (error) {
       console.error('Error updating balance:', error);
+      setIsBalanceLoading(false);
     }
-  }, [checkUserSession, isAdmin]);
+  }, [refreshBalance, isAdmin]);
 
   // Функция для скролла к подпискам только внутри store-scroll
   const scrollToSubscriptions = () => {
