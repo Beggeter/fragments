@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { UserService, BoosterService, CurrencyService } from '@/lib/db/services';
 import { PaymentPayload } from '@/types/shop';
 import { CurrencyTransactionType } from '@/lib/db/types';
+import TelegramBot from 'node-telegram-bot-api';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -11,6 +12,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const update = req.body;
     console.log('📥 Telegram webhook received:', JSON.stringify(update, null, 2));
+
+    // Обрабатываем pre_checkout_query (обязательно для Telegram Stars)
+    if (update.pre_checkout_query) {
+      const preCheckoutQuery = update.pre_checkout_query;
+      console.log('🔍 Processing pre_checkout_query:', {
+        id: preCheckoutQuery.id,
+        currency: preCheckoutQuery.currency,
+        totalAmount: preCheckoutQuery.total_amount,
+        payloadLength: preCheckoutQuery.invoice_payload?.length
+      });
+
+      try {
+        // Создаем экземпляр бота для ответа на pre_checkout_query
+        const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN!, { polling: false });
+
+        // Отвечаем "OK" для подтверждения, что товар доступен
+        await bot.answerPreCheckoutQuery(preCheckoutQuery.id, true);
+        
+        console.log('✅ Pre-checkout query answered successfully');
+        return res.status(200).json({ ok: true });
+      } catch (preCheckoutError) {
+        console.error('❌ Error answering pre-checkout query:', preCheckoutError);
+        
+        // Если произошла ошибка, отвечаем с ошибкой
+        try {
+          const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN!, { polling: false });
+          await bot.answerPreCheckoutQuery(preCheckoutQuery.id, false, 'Временная ошибка сервера');
+        } catch (e) {
+          console.error('❌ Failed to answer pre-checkout query with error:', e);
+        }
+        
+        return res.status(500).json({ error: 'Pre-checkout error' });
+      }
+    }
 
     // Обрабатываем команды бота
     if (update.message?.text === '/start') {
