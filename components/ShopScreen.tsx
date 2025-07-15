@@ -494,6 +494,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
           booster={selectedBooster}
           playerBalance={isAdmin ? adminBalance ?? 333 : balance}
           onInsufficientFunds={handleInsufficientFunds}
+          userId={user?.id}
         />
       )}
       {selectedSub && (

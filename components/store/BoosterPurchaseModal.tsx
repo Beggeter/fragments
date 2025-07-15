@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { CreateInvoiceRequest, CreateInvoiceResponse } from '@/types/shop';
 
 interface BoosterPurchaseModalProps {
   isOpen: boolean;
@@ -14,7 +15,12 @@ interface BoosterPurchaseModalProps {
   };
   playerBalance: number;
   onInsufficientFunds?: () => void;
+  userId?: number; // Добавляем userId для интеграции с платежами
 }
+
+const isTelegramWebApp = () => {
+  return typeof window !== 'undefined' && window.Telegram?.WebApp;
+};
 
 const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
   isOpen,
@@ -23,19 +29,110 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
   booster,
   playerBalance,
   onInsufficientFunds,
+  userId,
 }) => {
   const maxQuantity = Math.floor(playerBalance / booster.price);
-  const [quantity, setQuantity] = useState(maxQuantity);
-  const {t} = useTranslation()
+  const [quantity, setQuantity] = useState(Math.max(1, maxQuantity));
+  const [isLoadingStars, setIsLoadingStars] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const {t} = useTranslation();
+
   useEffect(() => {
     if (isOpen) {
-      setQuantity(maxQuantity);
+      setQuantity(Math.max(1, maxQuantity));
+      setError(null);
     }
   }, [isOpen, maxQuantity]);
 
   const handleQuantityChange = (newQuantity: number) => {
     if (newQuantity >= 1 && newQuantity <= maxQuantity) {
       setQuantity(newQuantity);
+    }
+  };
+
+  // Получаем Telegram ID пользователя
+  const getTelegramChatId = (): number | null => {
+    if (isTelegramWebApp() && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
+      return window.Telegram.WebApp.initDataUnsafe.user.id;
+    }
+    return null;
+  };
+
+  // Покупка через Telegram Stars
+  const handlePayWithStars = async () => {
+    setIsLoadingStars(true);
+    setError(null);
+
+    try {
+      if (!userId) {
+        setError('Пользователь не авторизован');
+        return;
+      }
+
+      const telegramChatId = getTelegramChatId();
+      if (!telegramChatId) {
+        setError('Telegram ID не найден. Убедитесь, что вы запустили приложение через Telegram.');
+        return;
+      }
+
+      console.log('🚀 Creating booster invoice:', {
+        userId,
+        boosterId: booster.id,
+        quantity,
+        price: booster.price * quantity,
+        telegramChatId
+      });
+
+      // Создаем запрос на создание инвойса
+      const invoiceRequest: CreateInvoiceRequest = {
+        userId: userId,
+        item: {
+          type: 'booster',
+          itemId: booster.id,
+          quantity: quantity,
+          metadata: {
+            boosterName: booster.name,
+            boosterIcon: booster.icon,
+            unitPrice: booster.price,
+            totalPrice: booster.price * quantity
+          }
+        },
+        telegramChatId: telegramChatId
+      };
+
+      // Отправляем запрос на создание инвойса
+      const response = await fetch('/api/payment/create-invoice', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(invoiceRequest)
+      });
+
+      const result: CreateInvoiceResponse = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Ошибка создания инвойса');
+      }
+
+      console.log('✅ Booster invoice created successfully:', result);
+
+      // Показываем уведомление пользователю
+      if (isTelegramWebApp() && window.Telegram?.WebApp) {
+        const webApp = window.Telegram.WebApp as any;
+        if (webApp.showAlert) {
+          webApp.showAlert('Инвойс отправлен! Проверьте чат с ботом для оплаты.');
+        }
+      }
+
+      // Закрываем модальное окно
+      onClose();
+
+    } catch (e: any) {
+      console.error('❌ Error creating booster invoice:', e);
+      setError('Ошибка создания инвойса: ' + (e.message || 'Неизвестная ошибка'));
+    } finally {
+      setIsLoadingStars(false);
     }
   };
 
@@ -79,10 +176,18 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
           </div>
         </div>
 
+        {/* Цена в Stars */}
+        <div className="flex items-center justify-center mb-4 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
+          <img src="/tgstar.svg" alt="star" className="w-6 h-6 mr-2" />
+          <span className="text-xl font-bold text-yellow-400">
+            {quantity > 1 ? `${booster.price} × ${quantity} = ${totalCost}` : booster.price}
+          </span>
+        </div>
+
         {/* Выбор количества */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-lg font-bold text-white font-mulish">{t("shop.quantity")}:</span>
+            <span className="text-lg font-bold text-white font-mulish">Количество:</span>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => handleQuantityChange(quantity - 1)}
@@ -96,7 +201,7 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
               </span>
               <button
                 onClick={() => handleQuantityChange(quantity + 1)}
-                disabled={quantity >= maxQuantity}
+                disabled={quantity >= 10} // Ограничиваем максимальное количество для покупки за Stars
                 className="flex justify-center items-center w-8 h-8 text-lg font-black rounded-full border shadow-md backdrop-blur-md transition-all bg-blue-500/20 border-blue-400/30 hover:bg-blue-500/30 hover:border-blue-400/50 font-mulish disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 +
@@ -109,43 +214,66 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
             <input
               type="range"
               min="1"
-              max={maxQuantity}
+              max="10"
               value={quantity}
               onChange={(e) => setQuantity(parseInt(e.target.value))}
               className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer custom-range"
             />
-           
           </div>
-
-          {/* Максимальное количество */}
-          {/* <div className="text-sm text-white/70 text-center font-mulish">
-            Максимум: {maxQuantity} шт. (по {booster.price} кристаллов)
-          </div> */}
         </div>
 
-        {/* Кнопка покупки или недостаточно средств */}
-        {isInsufficient ? (
-          <button
-            type="button"
-            onClick={() => {
-              if (onInsufficientFunds) onInsufficientFunds();
-              onClose();
-            }}
-            className="w-full px-6 py-4 text-lg font-bold rounded-2xl transition-all bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg hover:from-red-600 hover:to-red-700 flex items-center justify-center gap-3"
-          >
-            <img src="/crystal.svg" alt="crystal" className="w-8 h-8" />
-            <span className="text-2xl font-bold font-figtree">Недостаточно</span>
-          </button>
-        ) : (
-          <button
-            onClick={() => onConfirm(quantity)}
-            disabled={totalCost > playerBalance || quantity < 1}
-            className="w-full px-6 py-4 text-lg font-bold rounded-2xl transition-all bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-mulish flex items-center justify-center gap-3"
-          >
-            <img src="/crystal.svg" alt="crystal" className="w-8 h-8" />
-            <span className="text-2xl font-bold font-figtree">{totalCost}</span>
-          </button>
+        {error && (
+          <div className="text-red-400 mb-4 text-center text-sm bg-red-500/10 rounded-lg p-3 border border-red-500/20">
+            {error}
+          </div>
         )}
+
+        {/* Кнопки покупки */}
+        <div className="space-y-3">
+          {/* Покупка за Telegram Stars */}
+          <button
+            onClick={handlePayWithStars}
+            disabled={isLoadingStars || quantity < 1}
+            className="w-full px-6 py-4 text-lg font-bold rounded-2xl transition-all bg-gradient-to-r from-yellow-400 to-yellow-500 text-white shadow-lg hover:from-yellow-500 hover:to-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+          >
+            <img src="/tgstar.svg" alt="star" className="w-8 h-8" />
+            <span className="text-lg font-bold">
+              {isLoadingStars ? 'Создание инвойса...' : `💫 Купить за ${totalCost} Stars`}
+            </span>
+          </button>
+
+          {/* Покупка за осколки (для пользователей с достаточным балансом) */}
+          {!isInsufficient ? (
+            <button
+              onClick={() => onConfirm(quantity)}
+              disabled={totalCost > playerBalance || quantity < 1}
+              className="w-full px-6 py-4 text-lg font-bold rounded-2xl transition-all bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-mulish flex items-center justify-center gap-3"
+            >
+              <img src="/crystal.svg" alt="crystal" className="w-8 h-8" />
+              <span className="text-lg font-bold">Купить за {totalCost} осколков</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                if (onInsufficientFunds) onInsufficientFunds();
+                onClose();
+              }}
+              className="w-full px-6 py-4 text-lg font-bold rounded-2xl transition-all bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg hover:from-red-600 hover:to-red-700 flex items-center justify-center gap-3"
+            >
+              <img src="/crystal.svg" alt="crystal" className="w-8 h-8" />
+              <span className="text-lg font-bold">Недостаточно осколков</span>
+            </button>
+          )}
+        </div>
+
+        <button 
+          className="mt-6 w-full text-white/70 hover:text-white text-sm transition-colors" 
+          onClick={onClose} 
+          disabled={isLoadingStars}
+        >
+          Отмена
+        </button>
       </div>
     </div>
   );
