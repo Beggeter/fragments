@@ -56,9 +56,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             label: `${shardPack.amount} осколков`,
             amount: shardPack.price
           }],
-          photo_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://fragmentstgm.ru'}${shardPack.icon}`,
-          photo_width: 200,
-          photo_height: 200,
+          // Убираем photo_url так как SVG не поддерживается Telegram Stars API
         };
         break;
       }
@@ -91,9 +89,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             label: `${booster.name}${quantity > 1 ? ` x${quantity}` : ''}`,
             amount: totalPrice
           }],
-          photo_url: `${process.env.NEXT_PUBLIC_BASE_URL || 'https://fragmentstgm.ru'}${booster.icon}`,
-          photo_width: 200,
-          photo_height: 200,
+          // Убираем photo_url так как SVG не поддерживается Telegram Stars API
         };
         break;
       }
@@ -112,6 +108,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       maxSize: 128
     });
 
+    console.log('📄 Invoice data:', {
+      title: invoiceData.title,
+      description: invoiceData.description,
+      currency: invoiceData.currency,
+      prices: invoiceData.prices,
+      payloadSize: payloadSize
+    });
+
     if (payloadSize > 128) {
       console.error('❌ Payload too large:', { size: payloadSize, payload: payloadString });
       return res.status(400).json({ 
@@ -123,9 +127,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     // Отправляем инвойс пользователю
     try {
       const invoiceOptions = {
-        photo_url: invoiceData.photo_url,
-        photo_width: invoiceData.photo_width,
-        photo_height: invoiceData.photo_height,
         need_name: false,
         need_phone_number: false,
         need_email: false,
