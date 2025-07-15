@@ -38,14 +38,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           return res.status(404).json({ success: false, error: 'Shard pack not found' });
         }
 
+        // Используем короткие имена полей для экономии места в payload
         paymentPayload = {
-          userId,
-          itemType: 'shards',
-          itemId: item.itemId,
-          amount: shardPack.amount,
-          price: shardPack.price,
-          metadata: item.metadata,
-        };
+          u: userId,               // userId
+          t: 'shards',            // itemType  
+          i: item.itemId,         // itemId
+          a: shardPack.amount,    // amount
+          p: shardPack.price,     // price
+        } as any;
 
         invoiceData = {
           title: `Пакет осколков (${shardPack.amount})`,
@@ -72,15 +72,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         const quantity = item.quantity || 1;
         const totalPrice = booster.price * quantity;
 
+        // Используем короткие имена полей для экономии места в payload
         paymentPayload = {
-          userId,
-          itemType: 'booster',
-          itemId: item.itemId,
-          quantity,
-          amount: quantity,
-          price: totalPrice,
-          metadata: item.metadata,
-        };
+          u: userId,               // userId
+          t: 'booster',           // itemType
+          i: item.itemId,         // itemId  
+          q: quantity,            // quantity
+          a: quantity,            // amount
+          p: totalPrice,          // price
+        } as any;
 
         invoiceData = {
           title: `${booster.name} ${quantity > 1 ? `x${quantity}` : ''}`,
@@ -102,6 +102,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         return res.status(400).json({ success: false, error: 'Invalid item type' });
     }
 
+    // Проверяем размер payload (максимум 128 байт для Telegram Stars)
+    const payloadString = JSON.stringify(paymentPayload);
+    const payloadSize = Buffer.byteLength(payloadString, 'utf8');
+    
+    console.log('📦 Payload info:', {
+      payload: payloadString,
+      size: payloadSize,
+      maxSize: 128
+    });
+
+    if (payloadSize > 128) {
+      console.error('❌ Payload too large:', { size: payloadSize, payload: payloadString });
+      return res.status(400).json({ 
+        success: false, 
+        error: `Payload too large: ${payloadSize} bytes (max 128 bytes)` 
+      });
+    }
+
     // Отправляем инвойс пользователю
     try {
       const invoiceOptions = {
@@ -119,7 +137,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         telegramChatId,
         invoiceData.title,
         invoiceData.description,
-        JSON.stringify(paymentPayload), // payload
+        payloadString, // payload
         '', // provider_token (пустой для Telegram Stars)
         invoiceData.currency,
         invoiceData.prices,

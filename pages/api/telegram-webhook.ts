@@ -35,7 +35,24 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Парсим payload
     let paymentPayload: PaymentPayload;
     try {
-      paymentPayload = JSON.parse(payment.invoice_payload);
+      const parsedPayload = JSON.parse(payment.invoice_payload);
+      
+      // Проверяем формат payload - новый компактный или старый
+      if (parsedPayload.u !== undefined) {
+        // Новый компактный формат с короткими именами полей
+        paymentPayload = {
+          userId: parsedPayload.u,
+          itemType: parsedPayload.t,
+          itemId: parsedPayload.i,
+          quantity: parsedPayload.q,
+          amount: parsedPayload.a,
+          price: parsedPayload.p,
+        };
+      } else {
+        // Старый формат
+        paymentPayload = parsedPayload;
+      }
+      
       console.log('📋 Parsed payment payload:', paymentPayload);
     } catch (parseError) {
       console.error('❌ Failed to parse payment payload:', parseError);
