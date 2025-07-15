@@ -6,6 +6,7 @@ interface BoosterPurchaseModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: (quantity: number) => void;
+  onSuccess?: () => void; // Колбэк для успешной покупки через Telegram Stars
   booster: {
     id: string;
     name: string;
@@ -26,6 +27,7 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
   isOpen,
   onClose,
   onConfirm,
+  onSuccess,
   booster,
   playerBalance,
   onInsufficientFunds,

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useUser } from "@/hooks/useUser";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import BoosterPurchaseModal from "./store/BoosterPurchaseModal";
@@ -275,7 +275,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
   const storeScrollRef = useRef<HTMLDivElement>(null);
 
   // BACKEND: Получить баланс игрока из стора/пропсов. Заглушка для currency (осколки).
-  const { user } = useUser();
+  const { user, updateCurrency, checkUserSession } = useUser();
   const balance = user?.currency ?? 0;
 
   const [selectedShardPack, setSelectedShardPack] = useState<ShardPack | null>(
@@ -288,6 +288,25 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
     setSelectedShardPack(pack);
     setIsShardModalOpen(true);
   };
+
+  // Функция для обновления баланса после покупки
+  const handleBalanceUpdate = useCallback(async () => {
+    try {
+      // Перезапрашиваем актуальные данные пользователя с сервера
+      await checkUserSession();
+      
+      // Если это админ, обновляем adminBalance тоже
+      if (isAdmin) {
+        setIsBalanceLoading(true);
+        const res = await fetch("/api/users/610936383/currency");
+        const data = await res.json();
+        setAdminBalance(typeof data.balance === "number" ? data.balance : 0);
+        setIsBalanceLoading(false);
+      }
+    } catch (error) {
+      console.error('Error updating balance:', error);
+    }
+  }, [checkUserSession, isAdmin]);
 
   // Функция для скролла к подпискам только внутри store-scroll
   const scrollToSubscriptions = () => {
@@ -322,12 +341,35 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
     }
   }, [isAdmin]);
 
+  // Обновляем баланс при возвращении в приложение (например, после оплаты в боте)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('🔄 App became visible, refreshing balance...');
+        handleBalanceUpdate();
+      }
+    };
+
+    const handleFocus = () => {
+      console.log('🔄 App got focus, refreshing balance...');
+      handleBalanceUpdate();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [handleBalanceUpdate]);
+
   const handleBoosterClick = (booster: any) => {
     setSelectedBooster(booster);
     setIsModalOpen(true);
   };
 
-  const handlePurchaseConfirm = (quantity: number) => {
+  const handlePurchaseConfirm = async (quantity: number) => {
     /**
      * BACKEND: Покупка бустера
      * Вызвать эндпоинт/функцию для покупки бустера:
@@ -342,6 +384,8 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
     // await buyBooster({ userId: user?.id, boosterId: selectedBooster?.id, quantity })
     setIsModalOpen(false);
     setSelectedBooster(null);
+    // Обновляем баланс после покупки бустера
+    await handleBalanceUpdate();
   };
 
   const handleModalClose = () => {
@@ -413,6 +457,19 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
           ) : (
             <span>{isAdmin ? adminBalance ?? 333 : balance}</span>
           )}
+          {/* Кнопка обновления баланса */}
+          <ClickEffect>
+            <button
+              onClick={handleBalanceUpdate}
+              className="ml-2 p-1 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              disabled={isBalanceLoading}
+              title="Обновить баланс"
+            >
+              <svg className={`w-4 h-4 text-white ${isBalanceLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </ClickEffect>
         </div>
       </div>
       {/* Tab-панель */}
@@ -497,6 +554,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
           isOpen={isModalOpen}
           onClose={handleModalClose}
           onConfirm={handlePurchaseConfirm}
+          onSuccess={handleBalanceUpdate}
           booster={selectedBooster}
           playerBalance={isAdmin ? adminBalance ?? 333 : balance}
           onInsufficientFunds={handleInsufficientFunds}
@@ -521,9 +579,11 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
           }}
           pack={selectedShardPack}
           userId={user?.id}
-          onSuccess={() => {
+          onSuccess={async () => {
             setIsShardModalOpen(false);
-            setSelectedShardPack(null); /* обновить баланс, если нужно */
+            setSelectedShardPack(null);
+            // Обновляем баланс после успешной покупки
+            await handleBalanceUpdate();
           }}
         />
       )}
