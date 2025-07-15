@@ -104,6 +104,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
     // Отправляем инвойс пользователю
     try {
+      const invoiceOptions = {
+        photo_url: invoiceData.photo_url,
+        photo_width: invoiceData.photo_width,
+        photo_height: invoiceData.photo_height,
+        need_name: false,
+        need_phone_number: false,
+        need_email: false,
+        need_shipping_address: false,
+        is_flexible: false,
+      } as any; // Приводим к any для совместимости с Telegram Stars API
+
       const invoiceMessage = await bot.sendInvoice(
         telegramChatId,
         invoiceData.title,
@@ -112,18 +123,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         '', // provider_token (пустой для Telegram Stars)
         invoiceData.currency,
         invoiceData.prices,
-        {
-          photo_url: invoiceData.photo_url,
-          photo_width: invoiceData.photo_width,
-          photo_height: invoiceData.photo_height,
-          need_name: false,
-          need_phone_number: false,
-          need_email: false,
-          need_shipping_address: false,
-          send_phone_number_to_provider: false,
-          send_email_to_provider: false,
-          is_flexible: false,
-        }
+        invoiceOptions
       );
 
       console.log('✅ Invoice sent successfully:', {

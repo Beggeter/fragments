@@ -58,6 +58,13 @@ export interface CurrencyTransactionMetadata {
   adminId?: number;
   reason?: string;
   referredUserId?: number;
+  // Метаданные для платежей Telegram Stars
+  telegramPaymentChargeId?: string;
+  providerPaymentChargeId?: string;
+  itemType?: 'shards' | 'booster' | 'subscription';
+  itemId?: string;
+  price?: number;
+  currency?: string;
 }
 
 export interface GameData {
@@ -79,6 +86,7 @@ export enum UserRole {
 export enum CurrencyTransactionType {
   GAME_REWARD = 'game_reward',
   BOOSTER_PURCHASE = 'booster_purchase',
+  CURRENCY_PURCHASE = 'currency_purchase', // Покупка валюты за Stars
   ADMIN_GRANT = 'admin_grant',
   ADMIN_DEDUCT = 'admin_deduct',
   DAILY_BONUS = 'daily_bonus',

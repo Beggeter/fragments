@@ -89,7 +89,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const success = await CurrencyService.addCurrency(
           paymentPayload.userId,
           paymentPayload.amount,
-          CurrencyTransactionType.PURCHASE,
+          CurrencyTransactionType.CURRENCY_PURCHASE,
           `Покупка пакета осколков (${paymentPayload.amount} шт.) за ${paymentPayload.price} XTR`,
           {
             telegramPaymentChargeId: payment.telegram_payment_charge_id,
@@ -125,7 +125,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const quantity = paymentPayload.quantity || 1;
 
         // Получаем тип бустера из базы данных
-        const boosterTypes = await BoosterService.getBoosterTypes();
+        const boosterTypes = await BoosterService.getAllBoosterTypes();
         const boosterType = boosterTypes.find(bt => bt.name.toLowerCase() === paymentPayload.itemId.toLowerCase());
         
         if (!boosterType) {

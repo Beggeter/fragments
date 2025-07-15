@@ -180,12 +180,12 @@ async function handleBalanceCommand(chatId: number, userId?: number) {
   }
 
   try {
-    // Получаем баланс пользователя из API
-    const response = await fetch(`${WEBAPP_URL}/api/users/${userId}/currency`);
+    // Используем прямое обращение к сервису вместо HTTP запроса для избежания циркулярной зависимости
+    const { UserService } = await import('@/lib/db/services');
+    const user = await UserService.getUserByTelegramId(userId.toString());
     
-    if (response.ok) {
-      const data = await response.json();
-      const balance = data.balance || 0;
+    if (user) {
+      const balance = user.currency || 0;
       
       const balanceMessage = `💰 **Ваш баланс**
 
@@ -195,7 +195,7 @@ async function handleBalanceCommand(chatId: number, userId?: number) {
 
       await bot.sendMessage(chatId, balanceMessage, { parse_mode: 'Markdown' });
     } else {
-      await bot.sendMessage(chatId, "❌ Не удалось получить информацию о балансе. Попробуйте позже.");
+      await bot.sendMessage(chatId, "❌ Пользователь не найден. Запустите игру для создания аккаунта.");
     }
   } catch (error) {
     console.error('Error fetching balance:', error);
