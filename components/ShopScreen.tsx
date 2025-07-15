@@ -283,6 +283,12 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
   );
   const [isShardModalOpen, setIsShardModalOpen] = useState(false);
 
+  // Обработчик клика по пакету кристаллов
+  const handleShardPackClick = (pack: ShardPack) => {
+    setSelectedShardPack(pack);
+    setIsShardModalOpen(true);
+  };
+
   // Функция для скролла к подпискам только внутри store-scroll
   const scrollToSubscriptions = () => {
     if (storeScrollRef.current && subscriptionsContainerRef.current) {
@@ -439,7 +445,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
                 <div className="w-full max-w-2xl py-4 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-y-5 gap-x-6 auto-rows-[minmax(140px,auto)]">
                   {/* <ShardPackCardHorizontal key={0} {...sortedPacks[0]} /> */}
                   {sortedPacks.map((pack, i) => (
-                    <ShardPackCard key={i + 1} {...pack} />
+                    <ShardPackCard key={i + 1} {...pack} onBuy={() => handleShardPackClick(pack)} />
                   ))}
                 </div>
               );
