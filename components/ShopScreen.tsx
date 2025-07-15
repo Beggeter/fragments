@@ -9,6 +9,7 @@ import ShardPurchaseModal from "./store/ShardPurchaseModal";
 import { ShardPack } from "@/types/shop";
 import ClickEffect from "./ClickEffect";
 import { useTranslation } from "react-i18next";
+import ComingSoonModal from "./UI/ComingSoonModal";
 
 const TABS_KEYS = ['shards', 'boosters', 'zen'] as const;
 
@@ -282,6 +283,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
     null
   );
   const [isShardModalOpen, setIsShardModalOpen] = useState(false);
+  const [isComingSoonModalOpen, setIsComingSoonModalOpen] = useState(false);
 
   // Обработчик клика по пакету кристаллов
   const handleShardPackClick = (pack: ShardPack) => {
@@ -373,22 +375,76 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
   };
 
   const handlePurchaseConfirm = async (quantity: number) => {
-    /**
-     * BACKEND: Покупка бустера
-     * Вызвать эндпоинт/функцию для покупки бустера:
-     * boosterId: selectedBooster?.id
-     * quantity: число
-     * userId: user?.id
-     *
-     * После успешной покупки обновить баланс и инвентарь пользователя.
-     */
-    // TODO: реализовать покупку бустера через API
-    // Пример:
-    // await buyBooster({ userId: user?.id, boosterId: selectedBooster?.id, quantity })
-    setIsModalOpen(false);
-    setSelectedBooster(null);
-    // Обновляем баланс после покупки бустера
-    await handleBalanceUpdate();
+    if (!selectedBooster || !user?.telegramId) {
+      console.error('No selected booster or user');
+      return;
+    }
+
+    try {
+      console.log('🛒 Purchasing booster:', {
+        boosterTypeId: selectedBooster.id,
+        quantity,
+        userId: user.telegramId
+      });
+
+      const response = await fetch(`/api/users/${user.telegramId}/boosters`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'purchase',
+          boosterTypeId: selectedBooster.id,
+          quantity: quantity
+        })
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        console.log('✅ Booster purchased successfully:', result);
+        
+        // Закрываем модалку
+        setIsModalOpen(false);
+        setSelectedBooster(null);
+        
+        // Обновляем баланс после покупки бустера
+        await handleBalanceUpdate();
+        
+        // Показываем уведомление об успехе
+        if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+          const webApp = window.Telegram.WebApp as any;
+          if (webApp.showAlert) {
+            webApp.showAlert(`✅ ${result.message}`);
+          }
+        }
+      } else {
+        console.error('❌ Failed to purchase booster:', result.error);
+        
+                 // Проверяем, если недостаточно средств
+         if (result.error === 'Insufficient currency') {
+           // Предлагаем перейти к покупке кристаллов
+           handleInsufficientFunds();
+        } else {
+          // Показываем общую ошибку
+          if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+            const webApp = window.Telegram.WebApp as any;
+            if (webApp.showAlert) {
+              webApp.showAlert(`❌ Ошибка покупки: ${result.error}`);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error purchasing booster:', error);
+      
+      if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+        const webApp = window.Telegram.WebApp as any;
+        if (webApp.showAlert) {
+          webApp.showAlert('❌ Ошибка покупки бустера');
+        }
+      }
+    }
   };
 
   const handleModalClose = () => {
@@ -480,12 +536,18 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
         {TABS_KEYS.map((key) => (
           <ClickEffect key={key}>
             <button
-              onClick={() => setTab(key)}
+              onClick={() => {
+                if (key === 'zen') {
+                  setIsComingSoonModalOpen(true);
+                } else {
+                  setTab(key);
+                }
+              }}
               className={`px-6 py-2 rounded-full text-lg font-extrabold transition-colors duration-300 border border-white/20  font-figtree-mulish ${
                 tab === key
                   ? "bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg"
                   : "bg-white/10 backdrop-blur-md text-white  "
-              }`}
+              } ${key === 'zen' ? 'opacity-75 cursor-not-allowed' : ''}`}
             >
               {t(`shop.${key}`)}
             </button>
@@ -590,6 +652,13 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
           }}
         />
       )}
+      
+      {/* Coming Soon Modal для Zen */}
+      <ComingSoonModal
+        isOpen={isComingSoonModalOpen}
+        onClose={() => setIsComingSoonModalOpen(false)}
+        feature="ZEN режим"
+      />
     </div>
   );
 };
