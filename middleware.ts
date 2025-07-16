@@ -10,17 +10,33 @@ export function middleware(request: NextRequest) {
   // Защищенные API endpoints
   const protectedPaths = [
     '/api/users',
-    '/api/games',
+    '/api/games', 
     '/api/currency',
     '/api/boosters',
     '/api/leaderboard',
   ];
 
+  // Исключения - endpoints которые не требуют авторизации
+  const excludedPaths = [
+    '/api/auth/', // все endpoints авторизации
+    '/api/admin/', // админские endpoints
+    '/api/telegram', // telegram webhook
+    '/api/debug', // отладочные endpoints
+    '/api/test-', // тестовые endpoints
+  ];
+
+  // Проверяем, является ли путь защищенным
   const isProtectedPath = protectedPaths.some(path => 
     request.nextUrl.pathname.startsWith(path)
   );
 
-  if (isProtectedPath) {
+  // Проверяем, является ли путь исключением  
+  const isExcludedPath = excludedPaths.some(path => 
+    request.nextUrl.pathname.startsWith(path)
+  );
+
+  // Применяем защиту только если путь защищен И НЕ является исключением
+  if (isProtectedPath && !isExcludedPath) {
     const authHeader = request.headers.get('authorization');
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

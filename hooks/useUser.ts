@@ -106,7 +106,11 @@ export const useUser = () => {
 
   const refreshUserData = async (telegramId: number, sessionToken: string) => {
     try {
-      const res = await fetch(`/api/users/${telegramId}`);
+      const res = await fetch(`/api/users/${telegramId}`, {
+        headers: {
+          'Authorization': `Bearer ${sessionToken}`
+        }
+      });
       if (res.ok) {
         const freshUser = await res.json();
         console.log("Fresh user data loaded from server:", freshUser);
@@ -180,9 +184,13 @@ export const useUser = () => {
 
   // Функция для обновления баланса - всегда получает свежие данные с сервера
   const refreshBalance = async () => {
-    if (userState.user) {
+    if (userState.user && userState.sessionToken) {
       try {
-        const res = await fetch(`/api/users/${userState.user.telegramId}`);
+        const res = await fetch(`/api/users/${userState.user.telegramId}`, {
+          headers: {
+            'Authorization': `Bearer ${userState.sessionToken}`
+          }
+        });
         if (res.ok) {
           const freshUser = await res.json();
           setUserState(prev => ({
