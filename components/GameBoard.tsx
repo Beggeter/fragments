@@ -467,6 +467,7 @@ export const GameBoard: React.FC<
     centerX: number;
     centerY: number;
     isActive: boolean;
+    key?: number;
   } | null>(null);
 
   // Состояние для вспышки взрыва
@@ -1412,6 +1413,7 @@ export const GameBoard: React.FC<
       centerX: cx,
       centerY: cy,
       isActive: true,
+      key: Date.now(),
     });
     
     // Запускаем вспышку
@@ -1587,33 +1589,25 @@ export const GameBoard: React.FC<
   }
 
   useEffect(() => {
-    if (!clearedLine || clearedLine === null) return;
-    let updated = false;
-    let newBoard = board;
-    if (
-      clearedLine !== null &&
-      !newBoard[clearedLine].every((cell) => cell.value === 0)
-    ) {
-      newBoard = newBoard.map((row, y) =>
-        y === clearedLine ? row.map(() => ({ value: 0 })) : row
-      );
-      updated = true;
-    }
-    if (updated) {
-      Promise.resolve().then(() => {
-        useGameStore.setState({ board: newBoard });
-        setHistory((prev) => [
-          ...prev,
-          {
-            board: newBoard.map((row) => row.map((cell) => ({ ...cell }))),
-            score,
-            currentPieces: currentPieces.map((piece) => ({ ...piece })),
-            piecesPlaced: piecesPlaced,
-            // clearedLine не размещает фигуру, поэтому не сохраняем clearedCells
-          },
-        ]);
-      });
-    }
+    if (clearedLine === null || clearedLine === undefined) return;
+    
+    // Всегда очищаем указанную линию, даже если она уже пустая
+    const newBoard = board.map((row, y) =>
+      y === clearedLine ? row.map(() => ({ value: 0 })) : row
+    );
+    
+    // Убираем асинхронность для более быстрого обновления
+    useGameStore.setState({ board: newBoard });
+    setHistory((prev) => [
+      ...prev,
+      {
+        board: newBoard.map((row) => row.map((cell) => ({ ...cell }))),
+        score,
+        currentPieces: currentPieces.map((piece) => ({ ...piece })),
+        piecesPlaced: piecesPlaced,
+        // clearedLine не размещает фигуру, поэтому не сохраняем clearedCells
+      },
+    ]);
   }, [clearedLine]);
 
   const getCellFromPointer = (clientX: number, clientY: number) => {
@@ -2343,6 +2337,7 @@ export const GameBoard: React.FC<
               {/* Частицы взрыва */}
               {explosionParticles && (
                 <ExplosionParticles
+                  key={explosionParticles.key}
                   centerX={explosionParticles.centerX}
                   centerY={explosionParticles.centerY}
                   boardWidth={width}
