@@ -136,7 +136,8 @@ export const useUser = () => {
     if (typeof window !== 'undefined') {
       localStorage.setItem('sessionToken', sessionToken);
       // Сохраняем данные пользователя БЕЗ баланса
-      const { currency, ...userDataForStorage } = user;
+      const userDataForStorage = { ...user } as any;
+      delete userDataForStorage.currency;
       localStorage.setItem('userData', JSON.stringify(userDataForStorage));
     }
     
@@ -168,7 +169,8 @@ export const useUser = () => {
       
       // Обновляем localStorage БЕЗ currency
       if (typeof window !== 'undefined') {
-        const { currency, ...userDataForStorage } = updatedUser;
+        const userDataForStorage = { ...updatedUser } as any;
+        delete userDataForStorage.currency;
         localStorage.setItem('userData', JSON.stringify(userDataForStorage));
       }
       
