@@ -38,7 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Если произошла ошибка, отвечаем с ошибкой
         try {
           const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN!, { polling: false });
-          await bot.answerPreCheckoutQuery(preCheckoutQuery.id, false, { error_message: 'Временная ошибка сервера' });
+          await bot.answerPreCheckoutQuery(preCheckoutQuery.id, false, 'Временная ошибка сервера');
         } catch (e) {
           console.error('❌ Failed to answer pre-checkout query with error:', e);
         }
