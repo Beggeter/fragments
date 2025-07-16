@@ -50,7 +50,12 @@ export default function UserProfile({ telegramId }: UserProfileProps) {
       const gameData = await gameResponse.json();
       
       // Получаем данные бустеров
-      const boostersResponse = await fetch(`/api/users/${telegramId}/boosters`);
+      const sessionToken = typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : null;
+      const headers: HeadersInit = {};
+      if (sessionToken) {
+        headers['Authorization'] = `Bearer ${sessionToken}`;
+      }
+      const boostersResponse = await fetch(`/api/users/${telegramId}/boosters`, { headers });
       const boostersData = await boostersResponse.json();
 
       setUserData({
@@ -68,9 +73,14 @@ export default function UserProfile({ telegramId }: UserProfileProps) {
 
   const purchaseBooster = async (boosterTypeId: number, price: number) => {
     try {
+      const sessionToken = typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : null;
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (sessionToken) {
+        headers['Authorization'] = `Bearer ${sessionToken}`;
+      }
       const response = await fetch(`/api/users/${telegramId}/boosters`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           action: 'purchase',
           boosterTypeId,
@@ -94,9 +104,14 @@ export default function UserProfile({ telegramId }: UserProfileProps) {
 
   const useBooster = async (boosterTypeId: number) => {
     try {
+      const sessionToken = typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : null;
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (sessionToken) {
+        headers['Authorization'] = `Bearer ${sessionToken}`;
+      }
       const response = await fetch(`/api/users/${telegramId}/boosters`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           action: 'use',
           boosterTypeId,

@@ -603,7 +603,12 @@ export const GameBoard: React.FC<
       return;
     }
     console.log("Fetching boosters for telegram ID:", tgid);
-    const res = await fetch(`/api/users/${tgid}/boosters`);
+    const sessionToken = typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : null;
+    const headers: HeadersInit = {};
+    if (sessionToken) {
+      headers['Authorization'] = `Bearer ${sessionToken}`;
+    }
+    const res = await fetch(`/api/users/${tgid}/boosters`, { headers });
     const data = await res.json();
     console.log("Boosters API response:", data);
     const boostersForPanel = (data.availableBoosters as Array<any>).map(
@@ -1319,9 +1324,14 @@ export const GameBoard: React.FC<
     }
     
     console.log("Using booster:", boosterName, "for telegram ID:", tgid);
+    const sessionToken = typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : null;
+    const headers: HeadersInit = { "Content-Type": "application/json" };
+    if (sessionToken) {
+      headers['Authorization'] = `Bearer ${sessionToken}`;
+    }
     const res = await fetch(`/api/users/${tgid}/boosters`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({
         action: "use",
         boosterTypeId: boosterName, // Передаем имя бустера, а не числовой ID

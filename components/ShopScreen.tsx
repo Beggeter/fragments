@@ -387,11 +387,14 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
         userId: user.telegramId
       });
 
+      const sessionToken = typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : null;
+      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      if (sessionToken) {
+        headers['Authorization'] = `Bearer ${sessionToken}`;
+      }
       const response = await fetch(`/api/users/${user.telegramId}/boosters`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify({
           action: 'purchase',
           boosterTypeId: selectedBooster.id,
