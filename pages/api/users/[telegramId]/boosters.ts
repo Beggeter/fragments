@@ -51,7 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return res.status(400).json({ error: 'Action and boosterTypeId are required' });
         }
 
-        const boosterType = await BoosterService.getBoosterTypeById(boosterTypeId);
+        const boosterType = await BoosterService.getBoosterTypeByName(boosterTypeId);
         if (!boosterType) {
           return res.status(404).json({ error: 'Booster type not found' });
         }
@@ -65,7 +65,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
           const purchaseSuccess = await CurrencyService.purchaseBooster(
             user.id,
-            boosterTypeId,
+            boosterType.id,
             boosterType.price * quantity
           );
 
@@ -73,7 +73,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(500).json({ error: 'Failed to purchase booster' });
           }
 
-          await BoosterService.addUserBooster(user.id, boosterTypeId, quantity);
+          await BoosterService.addUserBooster(user.id, boosterType.id, quantity);
           
           const newBalance = await CurrencyService.getUserBalance(user.id);
           return res.status(200).json({
@@ -84,12 +84,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         } else if (action === 'use') {
           // Использование бустера
-          const canUse = await BoosterService.canUseBooster(user.id, boosterTypeId, quantity);
+          const canUse = await BoosterService.canUseBooster(user.id, boosterType.id, quantity);
           if (!canUse) {
             return res.status(400).json({ error: 'Not enough boosters to use' });
           }
 
-          const useSuccess = await BoosterService.useBooster(user.id, boosterTypeId, quantity);
+          const useSuccess = await BoosterService.useBooster(user.id, boosterType.id, quantity);
           if (!useSuccess) {
             return res.status(500).json({ error: 'Failed to use booster' });
           }

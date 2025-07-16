@@ -186,6 +186,9 @@ const HomePage: React.FC = () => {
     isAuthenticated,
     loginUser,
     logout,
+    updateCurrency,
+    updateUser,
+    refreshBalance,
   } = useUser();
 
   // Инициализация: определяем контекст и показываем соответствующий экран
@@ -388,7 +391,48 @@ const HomePage: React.FC = () => {
     setCurrentScreen("main menu");
   };
 
-  const handleGameOver = () => {
+  const handleGameOver = async () => {
+    try {
+      const { score } = useGameStore.getState();
+      const telegramId = user?.telegramId || (isAdmin && process.env.NODE_ENV === 'development' ? '610936383' : null);
+      
+      if (telegramId && score > 0) {
+        console.log('🎮 Sending game over data:', { telegramId, score });
+        
+        // Отправляем результат игры на сервер
+        const response = await fetch(`/api/users/${telegramId}/game`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            gameId: 1, // временный ID
+            finalScore: score,
+            level: 1,
+            gameData: {
+              gameDuration: Date.now(), // можно добавить реальную продолжительность
+              piecesPlaced: useGameStore.getState().piecesPlaced || 0,
+            }
+          })
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log('✅ Game over processed:', result);
+          
+          // Получаем актуальный баланс с сервера
+          await refreshBalance();
+          
+          // Обновляем рекорд если он изменился
+          if (result.newRecord !== undefined && user) {
+            updateUser({ record: result.newRecord });
+          }
+        } else {
+          console.error('❌ Failed to process game over:', response.status);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error processing game over:', error);
+    }
+    
     setCurrentScreen("gameover");
   };
 

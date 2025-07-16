@@ -1298,17 +1298,12 @@ export const GameBoard: React.FC<
 
   // --- Добавляю функцию списывания бустера ---
   const useBooster = async (boosterName: string) => {
-    let boosterTypeId: number | undefined;
     const booster = boosters.find((b) => b.id === boosterName);
     if (!booster) {
       console.log("Booster not found:", boosterName);
       return false;
     }
-    boosterTypeId = booster.boosterTypeId || booster.id;
-    if (!boosterTypeId) {
-      console.log("No boosterTypeId for booster:", boosterName);
-      return false;
-    }
+    
     let tgid: number | undefined = user?.telegramId;
     // Только для админа в режиме разработки используем тестовый ID
     if (
@@ -1322,13 +1317,14 @@ export const GameBoard: React.FC<
       console.log("No telegram ID available for using booster");
       return false;
     }
+    
     console.log("Using booster:", boosterName, "for telegram ID:", tgid);
     const res = await fetch(`/api/users/${tgid}/boosters`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         action: "use",
-        boosterTypeId,
+        boosterTypeId: boosterName, // Передаем имя бустера, а не числовой ID
         quantity: 1,
       }),
     });

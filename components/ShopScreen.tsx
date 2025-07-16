@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useUser } from "@/hooks/useUser";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import BoosterPurchaseModal from "./store/BoosterPurchaseModal";
@@ -9,6 +9,7 @@ import ShardPurchaseModal from "./store/ShardPurchaseModal";
 import { ShardPack } from "@/types/shop";
 import ClickEffect from "./ClickEffect";
 import { useTranslation } from "react-i18next";
+import ComingSoonModal from "./UI/ComingSoonModal";
 
 const TABS_KEYS = ['shards', 'boosters', 'zen'] as const;
 
@@ -275,13 +276,42 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
   const storeScrollRef = useRef<HTMLDivElement>(null);
 
   // BACKEND: Получить баланс игрока из стора/пропсов. Заглушка для currency (осколки).
-  const { user } = useUser();
+  const { user, updateCurrency, checkUserSession, refreshBalance } = useUser();
   const balance = user?.currency ?? 0;
 
   const [selectedShardPack, setSelectedShardPack] = useState<ShardPack | null>(
     null
   );
   const [isShardModalOpen, setIsShardModalOpen] = useState(false);
+  const [isComingSoonModalOpen, setIsComingSoonModalOpen] = useState(false);
+
+  // Обработчик клика по пакету кристаллов
+  const handleShardPackClick = (pack: ShardPack) => {
+    setSelectedShardPack(pack);
+    setIsShardModalOpen(true);
+  };
+
+  // Функция для обновления баланса после покупки
+  const handleBalanceUpdate = useCallback(async () => {
+    try {
+      setIsBalanceLoading(true);
+      
+      if (isAdmin) {
+        // Для админа получаем баланс отдельно
+        const res = await fetch("/api/users/610936383/currency");
+        const data = await res.json();
+        setAdminBalance(typeof data.balance === "number" ? data.balance : 0);
+      } else {
+        // Для обычного пользователя получаем актуальный баланс с сервера
+        await refreshBalance();
+      }
+      
+      setIsBalanceLoading(false);
+    } catch (error) {
+      console.error('Error updating balance:', error);
+      setIsBalanceLoading(false);
+    }
+  }, [refreshBalance, isAdmin]);
 
   // Функция для скролла к подпискам только внутри store-scroll
   const scrollToSubscriptions = () => {
@@ -316,26 +346,105 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
     }
   }, [isAdmin]);
 
+  // Обновляем баланс при возвращении в приложение (например, после оплаты в боте)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('🔄 App became visible, refreshing balance...');
+        handleBalanceUpdate();
+      }
+    };
+
+    const handleFocus = () => {
+      console.log('🔄 App got focus, refreshing balance...');
+      handleBalanceUpdate();
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [handleBalanceUpdate]);
+
   const handleBoosterClick = (booster: any) => {
     setSelectedBooster(booster);
     setIsModalOpen(true);
   };
 
-  const handlePurchaseConfirm = (quantity: number) => {
-    /**
-     * BACKEND: Покупка бустера
-     * Вызвать эндпоинт/функцию для покупки бустера:
-     * boosterId: selectedBooster?.id
-     * quantity: число
-     * userId: user?.id
-     *
-     * После успешной покупки обновить баланс и инвентарь пользователя.
-     */
-    // TODO: реализовать покупку бустера через API
-    // Пример:
-    // await buyBooster({ userId: user?.id, boosterId: selectedBooster?.id, quantity })
-    setIsModalOpen(false);
-    setSelectedBooster(null);
+  const handlePurchaseConfirm = async (quantity: number) => {
+    if (!selectedBooster || !user?.telegramId) {
+      console.error('No selected booster or user');
+      return;
+    }
+
+    try {
+      console.log('🛒 Purchasing booster:', {
+        boosterTypeId: selectedBooster.id,
+        quantity,
+        userId: user.telegramId
+      });
+
+      const response = await fetch(`/api/users/${user.telegramId}/boosters`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          action: 'purchase',
+          boosterTypeId: selectedBooster.id,
+          quantity: quantity
+        })
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        console.log('✅ Booster purchased successfully:', result);
+        
+        // Закрываем модалку
+        setIsModalOpen(false);
+        setSelectedBooster(null);
+        
+        // Обновляем баланс после покупки бустера
+        await handleBalanceUpdate();
+        
+        // Показываем уведомление об успехе
+        if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+          const webApp = window.Telegram.WebApp as any;
+          if (webApp.showAlert) {
+            webApp.showAlert(`✅ ${result.message}`);
+          }
+        }
+      } else {
+        console.error('❌ Failed to purchase booster:', result.error);
+        
+                 // Проверяем, если недостаточно средств
+         if (result.error === 'Insufficient currency') {
+           // Предлагаем перейти к покупке кристаллов
+           handleInsufficientFunds();
+        } else {
+          // Показываем общую ошибку
+          if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+            const webApp = window.Telegram.WebApp as any;
+            if (webApp.showAlert) {
+              webApp.showAlert(`❌ Ошибка покупки: ${result.error}`);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error purchasing booster:', error);
+      
+      if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+        const webApp = window.Telegram.WebApp as any;
+        if (webApp.showAlert) {
+          webApp.showAlert('❌ Ошибка покупки бустера');
+        }
+      }
+    }
   };
 
   const handleModalClose = () => {
@@ -407,6 +516,19 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
           ) : (
             <span>{isAdmin ? adminBalance ?? 333 : balance}</span>
           )}
+          {/* Кнопка обновления баланса */}
+          <ClickEffect>
+            <button
+              onClick={handleBalanceUpdate}
+              className="ml-2 p-1 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+              disabled={isBalanceLoading}
+              title="Обновить баланс"
+            >
+              <svg className={`w-4 h-4 text-white ${isBalanceLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </ClickEffect>
         </div>
       </div>
       {/* Tab-панель */}
@@ -414,12 +536,18 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
         {TABS_KEYS.map((key) => (
           <ClickEffect key={key}>
             <button
-              onClick={() => setTab(key)}
+              onClick={() => {
+                if (key === 'zen') {
+                  setIsComingSoonModalOpen(true);
+                } else {
+                  setTab(key);
+                }
+              }}
               className={`px-6 py-2 rounded-full text-lg font-extrabold transition-colors duration-300 border border-white/20  font-figtree-mulish ${
                 tab === key
                   ? "bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg"
                   : "bg-white/10 backdrop-blur-md text-white  "
-              }`}
+              } ${key === 'zen' ? 'opacity-75 cursor-not-allowed' : ''}`}
             >
               {t(`shop.${key}`)}
             </button>
@@ -439,7 +567,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
                 <div className="w-full max-w-2xl py-4 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-y-5 gap-x-6 auto-rows-[minmax(140px,auto)]">
                   {/* <ShardPackCardHorizontal key={0} {...sortedPacks[0]} /> */}
                   {sortedPacks.map((pack, i) => (
-                    <ShardPackCard key={i + 1} {...pack} />
+                    <ShardPackCard key={i + 1} {...pack} onBuy={() => handleShardPackClick(pack)} />
                   ))}
                 </div>
               );
@@ -491,9 +619,11 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
           isOpen={isModalOpen}
           onClose={handleModalClose}
           onConfirm={handlePurchaseConfirm}
+          onSuccess={handleBalanceUpdate}
           booster={selectedBooster}
           playerBalance={isAdmin ? adminBalance ?? 333 : balance}
           onInsufficientFunds={handleInsufficientFunds}
+          userId={user?.id}
         />
       )}
       {selectedSub && (
@@ -514,12 +644,21 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
           }}
           pack={selectedShardPack}
           userId={user?.id}
-          onSuccess={() => {
+          onSuccess={async () => {
             setIsShardModalOpen(false);
-            setSelectedShardPack(null); /* обновить баланс, если нужно */
+            setSelectedShardPack(null);
+            // Обновляем баланс после успешной покупки
+            await handleBalanceUpdate();
           }}
         />
       )}
+      
+      {/* Coming Soon Modal для Zen */}
+      <ComingSoonModal
+        isOpen={isComingSoonModalOpen}
+        onClose={() => setIsComingSoonModalOpen(false)}
+        feature="ZEN режим"
+      />
     </div>
   );
 };
