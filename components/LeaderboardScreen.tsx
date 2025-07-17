@@ -256,7 +256,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
 
                       {/* Аватар и имя пользователя в контейнере */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center bg-black/10 backdrop-blur-md rounded-2xl px-3 py-2  border-black/20">
+                        <div className="flex items-center bg-transparent backdrop-blur-md rounded-2xl px-3 py-2  border-black/20">
                           <div className="flex-shrink-0 mr-3">
                             <img
                               src={entry.avatarUrl || "/record.png"}

@@ -3,9 +3,11 @@
   "short_name": "Fragments",
   "description": "Play Fragments game!",
   "start_url": ".",
-  "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#1a1a2e",
+  "theme_color": "#1a1a2e",
+  "display_override": ["fullscreen", "standalone"],
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",
@@ -19,5 +21,7 @@
       "type": "image/png",
       "purpose": "maskable"
     }
-  ]
+  ],
+  "scope": "/",
+  "prefer_related_applications": false
 }

@@ -7,10 +7,21 @@ interface SettingsState {
   setVibrationValue: (value: number) => void;
   soundEnabled: boolean;
   setSoundEnabled: (enabled: boolean) => void;
+  fullscreenEnabled: boolean;
+  setFullscreenEnabled: (enabled: boolean) => void;
   setLanguage: (lang: string) => void;
 }
 
 export const useSettingsStore = create<SettingsState>((set) => {
+  // Инициализируем настройки из localStorage
+  const getInitialFullscreenEnabled = () => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("fullscreenEnabled");
+      return saved !== null ? saved === "true" : true; // По умолчанию включен
+    }
+    return true;
+  };
+
   return {
     vibrationValue: 40,
     setVibrationValue: (value) => {
@@ -19,6 +30,27 @@ export const useSettingsStore = create<SettingsState>((set) => {
     },
     soundEnabled: true,
     setSoundEnabled: (enabled) => set({ soundEnabled: enabled }),
+    fullscreenEnabled: getInitialFullscreenEnabled(),
+    setFullscreenEnabled: (enabled) => {
+      // Управляем полноэкранным режимом Telegram WebApp
+      if (typeof window !== "undefined" && window.Telegram?.WebApp) {
+        const tg = window.Telegram.WebApp;
+        if (enabled && tg.requestFullscreen && !tg.isFullscreen) {
+          console.log('🎮 Enabling immersive fullscreen via settings');
+          tg.requestFullscreen();
+        } else if (!enabled && tg.exitFullscreen && tg.isFullscreen) {
+          console.log('🎮 Disabling immersive fullscreen via settings');
+          tg.exitFullscreen();
+        }
+      }
+      
+      // Сохраняем настройку
+      if (typeof window !== "undefined") {
+        localStorage.setItem("fullscreenEnabled", enabled.toString());
+      }
+      
+      set({ fullscreenEnabled: enabled });
+    },
     setLanguage: (lang) => {
       i18n.changeLanguage(lang);
       if (typeof window !== "undefined") {

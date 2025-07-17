@@ -18,6 +18,25 @@ declare global {
         expand: () => void;
         close: () => void;
         openInvoice?: (...args: any[]) => void;
+        // Viewport properties
+        viewportHeight: number;
+        viewportStableHeight: number;
+        isExpanded: boolean;
+        // Theme and appearance
+        setHeaderColor?: (color: string) => void;
+        // Closing confirmation
+        disableClosingConfirmation?: () => void;
+        enableClosingConfirmation?: () => void;
+        // Events
+        onEvent?: (eventType: string, callback: () => void) => void;
+        offEvent?: (eventType: string, callback: () => void) => void;
+        // Platform info
+        platform?: string;
+        version?: string;
+        // Fullscreen mode (immersive)
+        isFullscreen?: boolean;
+        requestFullscreen?: () => void;
+        exitFullscreen?: () => void;
         MainButton: {
           text: string;
           color: string;

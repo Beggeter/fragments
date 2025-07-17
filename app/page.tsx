@@ -221,6 +221,22 @@ const HomePage: React.FC = () => {
 
         const tg = window.Telegram?.WebApp;
         if (tg) {
+          // Убеждаемся что приложение в полноэкранном режиме
+          console.log("📱 Обеспечиваем полноэкранный режим");
+          tg.expand();
+          
+          // Пытаемся активировать immersive fullscreen
+          // Проверяем настройку пользователя
+          const fullscreenEnabled = localStorage.getItem('fullscreenEnabled');
+          const shouldEnableFullscreen = fullscreenEnabled !== 'false'; // По умолчанию включен
+          
+          if (tg.requestFullscreen && !tg.isFullscreen && shouldEnableFullscreen) {
+            console.log("🎮 Запрашиваем immersive fullscreen режим");
+            tg.requestFullscreen();
+          } else if (!shouldEnableFullscreen) {
+            console.log("🎮 Fullscreen отключен в настройках пользователя");
+          }
+          
           const user = tg.initDataUnsafe?.user;
           if (user) {
             try {

@@ -70,6 +70,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const setVibration = useSettingsStore((state) => state.setVibrationValue);
   const soundEnabled = useSettingsStore((state) => state.soundEnabled);
   const setSoundEnabled = useSettingsStore((state) => state.setSoundEnabled);
+  const fullscreenEnabled = useSettingsStore((state) => state.fullscreenEnabled);
+  const setFullscreenEnabled = useSettingsStore((state) => state.setFullscreenEnabled);
   const { setLanguage } = useSettingsStore();
 
   // Вибрация только вкл/выкл
@@ -154,6 +156,25 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
               onToggle={() => setSoundEnabled(!soundEnabled)}
             />
           </div>
+
+          {/* Fullscreen Toggle - показываем только в Telegram WebApp */}
+          {typeof window !== "undefined" && window.Telegram?.WebApp && (
+            <div
+              className="settings-gradient backdrop-blur-xl rounded-3xl px-8 py-4 flex items-center justify-between min-h-[9vh] cursor-pointer filter drop-shadow-[2px_2px_2px_rgba(0,0,0,0.4)]"
+              onClick={() => setFullscreenEnabled(!fullscreenEnabled)}
+            >
+              <div className="flex items-center gap-4 menu-shadow">
+                <span className="text-2xl">🔲</span>
+                <span className="text-[1.4rem] font-extrabold text-white font-figtree-mulish">
+                  {t("settings.fullscreen")}
+                </span>
+              </div>
+              <ToggleSwitch
+                isEnabled={fullscreenEnabled}
+                onToggle={() => setFullscreenEnabled(!fullscreenEnabled)}
+              />
+            </div>
+          )}
           {/* <div className="settings-gradient backdrop-blur-xl rounded-3xl px-8 py-4 flex items-center justify-between min-h-[9vh] mb-4">
           <div className="flex items-center gap-4 menu-shadow">
             <span className="text-2xl">🌐</span>
