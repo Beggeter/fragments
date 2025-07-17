@@ -1,42 +1,107 @@
 {
-  "одна строка": [
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 1, 1, 1, 1],
-    [0, 0, 0, 0, 0, 0, 0, 0]
+  "board": [
+    [
+      { "value": 1, "color": "orange" },
+      { "value": 1, "color": "yellow" },
+      { "value": 0 },
+      { "value": 1, "color": "yellow" },
+      { "value": 1, "color": "yellow" },
+      { "value": 1, "color": "yellow" },
+      { "value": 0 },
+      { "color": "yellow", "value": 1 }
+    ],
+    [
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 }
+    ],
+    [
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 1, "color": "yellow" },
+      { "value": 0 },
+      { "value": 1, "color": "purple" },
+      { "value": 0 },
+      { "value": 0 }
+    ],
+    [
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 1, "color": "blue" },
+      { "value": 1, "color": "green" }
+    ],
+    [
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 1, "color": "blue" },
+      { "value": 1, "color": "blue" },
+      { "value": 1, "color": "green" }
+    ],
+    [
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 }
+    ],
+    [
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 1, "color": "red" },
+      { "value": 0 },
+      { "value": 1, "color": "blue" },
+      { "value": 1, "color": "blue" },
+      { "value": 1, "color": "blue" },
+      { "value": 1, "color": "green" }
+    ],
+    [
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 0 },
+      { "value": 1, "color": "green" }
+    ]
   ],
-  "один столбец": [
-    [0, 0, 0, 1, 0, 0, 0, 0],
-    [0, 0, 0, 1, 0, 0, 0, 0],
-    [0, 0, 0, 1, 0, 0, 0, 0],
-    [0, 0, 0, 1, 0, 0, 0, 0],
-    [0, 0, 0, 1, 0, 0, 0, 0],
-    [0, 0, 0, 1, 0, 0, 0, 0],
-    [0, 0, 0, 1, 0, 0, 0, 0],
-    [0, 0, 0, 1, 0, 0, 0, 0]
+  "currentPieces": [
+    {
+      "id": "block-17",
+      "uniqueId": "block-17_1751911562465_0",
+      "name": "Block 18",
+      "matrix": [
+        [{ "value": 0 }, { "value": 0 }, { "value": 1 }],
+        [{ "value": 0 }, { "value": 0 }, { "value": 1 }],
+        [{ "value": 1 }, { "value": 1 }, { "value": 1 }]
+      ],
+      "difficulty": "medium",
+      "color": "red"
+    },
+    {
+      "id": "block-5",
+      "uniqueId": "block-5_1751911562466_1",
+      "name": "Block 6",
+      "matrix": [[{ "value": 1 }], [{ "value": 1 }], [{ "value": 1 }]],
+      "difficulty": "medium",
+      "color": "orange"
+    }
   ],
-  "две линии рядом": [
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [0, 0, 0, 0, 0, 0, 0, 0],
-    [1, 1, 1, 1, 1, 1, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1],
-    [0, 0, 0, 0, 0, 0, 0, 0]
-  ],
-  "пересечение": [
-    [0, 0, 0, 1, 0, 0, 0, 0],
-    [0, 0, 0, 1, 0, 0, 0, 0],
-    [0, 0, 0, 1, 0, 0, 0, 0],
-    [0, 0, 0, 1, 0, 0, 0, 0],
-    [0, 0, 0, 1, 0, 0, 0, 0],
-    [1, 1, 1, 1, 1, 1, 1, 1],
-    [0, 0, 0, 1, 0, 0, 0, 0],
-    [0, 0, 0, 1, 0, 0, 0, 0]
-  ]
+  "score": 4790
 }
