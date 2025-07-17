@@ -22,6 +22,17 @@ declare global {
         viewportHeight: number;
         viewportStableHeight: number;
         isExpanded: boolean;
+        viewport?: {
+          height: number;
+          stableHeight: number;
+          isExpanded: boolean;
+          safeArea?: {
+            top: number;
+            bottom: number;
+            left: number;
+            right: number;
+          };
+        };
         // Theme and appearance
         setHeaderColor?: (color: string) => void;
         // Closing confirmation

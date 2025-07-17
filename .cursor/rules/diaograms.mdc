@@ -1,0 +1,5 @@
+---
+description: не создавай диаграммы
+globs:
+alwaysApply: true
+---
