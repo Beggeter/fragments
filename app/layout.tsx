@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Figtree, Geist, Geist_Mono, Manrope, Mulish } from "next/font/google";
 import "./globals.css";
+import "./ios-animations.css";
 import Script from "next/script";
 import { I18nProvider } from "./i18n-provider";
 

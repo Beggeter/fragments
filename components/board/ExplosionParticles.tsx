@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 
 interface ExplosionParticlesProps {
@@ -28,6 +28,52 @@ interface Particle {
   rotation: number;
 }
 
+// Определяем производительность устройства
+const getDevicePerformance = (): 'low' | 'medium' | 'high' => {
+  // Проверяем количество ядер
+  const cores = navigator.hardwareConcurrency || 1;
+  
+  // Проверяем память (если доступно)
+  const memory = (navigator as any).deviceMemory || 4;
+  
+  // Проверяем GPU через WebGL
+  const canvas = document.createElement('canvas');
+  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  
+  if (gl) {
+    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+    if (debugInfo) {
+      const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+      if (renderer.includes('Intel') || renderer.includes('Mali') || renderer.includes('PowerVR')) {
+        return 'low';
+      }
+      if (renderer.includes('Adreno') || renderer.includes('Mali-G')) {
+        return 'medium';
+      }
+    }
+  }
+  
+  // Определяем по количеству ядер и памяти
+  if (cores <= 2 || memory <= 2) return 'low';
+  if (cores <= 4 || memory <= 4) return 'medium';
+  return 'high';
+};
+
+// Получаем количество частиц в зависимости от производительности
+const getParticleCount = (type: ParticleType, performance: 'low' | 'medium' | 'high'): number => {
+  const baseCounts = {
+    fire: 15,
+    spark: 10, 
+    debris: 6,
+    star: 6,
+    smoke: 8,
+    glitter: 6
+  };
+  
+  const multipliers = { low: 0.4, medium: 0.7, high: 1.0 };
+  return Math.floor(baseCounts[type] * multipliers[performance]);
+};
+
 const ExplosionParticles: React.FC<ExplosionParticlesProps> = ({
   centerX,
   centerY,
@@ -39,6 +85,9 @@ const ExplosionParticles: React.FC<ExplosionParticlesProps> = ({
   onComplete,
 }) => {
   const [particles, setParticles] = useState<Particle[]>([]);
+  
+  // Мемоизируем производительность устройства
+  const devicePerformance = useMemo(() => getDevicePerformance(), []);
 
   useEffect(() => {
     if (isActive) {
@@ -47,11 +96,11 @@ const ExplosionParticles: React.FC<ExplosionParticlesProps> = ({
       const centerXPx = centerX * (cellSize + gap) + cellSize / 2;
       const centerYPx = centerY * (cellSize + gap) + cellSize / 2;
       
-      // Генерируем разные типы частиц
+      // Генерируем разные типы частиц с адаптивным количеством
       const particleTypes: ParticleType[] = ["fire", "spark", "debris", "star", "smoke", "glitter"];
       
       particleTypes.forEach((type, typeIndex) => {
-        const count = type === "fire" ? 15 : type === "spark" ? 10 : type === "smoke" ? 8 : 6;
+        const count = getParticleCount(type, devicePerformance);
         
         for (let i = 0; i < count; i++) {
           const angle = (Math.PI * 2 * i) / count + (typeIndex * Math.PI / 6);
@@ -96,7 +145,7 @@ const ExplosionParticles: React.FC<ExplosionParticlesProps> = ({
       
       return () => clearTimeout(timer);
     }
-  }, [isActive, centerX, centerY, boardWidth, boardHeight, cellSize, gap, onComplete]);
+  }, [isActive, centerX, centerY, boardWidth, boardHeight, cellSize, gap, onComplete, devicePerformance]);
 
   if (!isActive || particles.length === 0) return null;
 
@@ -118,6 +167,7 @@ const ExplosionParticles: React.FC<ExplosionParticlesProps> = ({
                  particle.type === "debris" ? `0 0 ${particle.size}px ${particle.color}` :
                  "none",
       zIndex: 20,
+      willChange: 'transform, opacity', // Критично для производительности
     };
 
     // Специальные стили для разных типов частиц

@@ -10,9 +10,10 @@ import { useTranslation } from "react-i18next";
 
 interface GameOverProps {
   onPlayAgain: () => void;
+  onBackToMenu: () => void;
 }
 
-export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain }) => {
+export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu }) => {
   const { score } = useGameStore();
   const { user } = useUser();
   const { isAdmin } = useAdminAuth();
@@ -56,24 +57,24 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain }) => {
       {/* Фоновая анимация как в MainMenu */}
       <BackgroundAnimation className="absolute inset-0 -z-10" />
       <div className="flex flex-col items-center gap-15 max-w-md w-[90vw]">
-        <h2 className="text-6xl font-bold font-figtree text-white mb-2 tracking-wide menu-shadow">
-          Game Over
+        <h2 className="text-6xl font-bold font-figtree-mulish text-white mb-2 tracking-wide menu-shadow">
+          {t('game_over.title')}
         </h2>
         <div className="flex flex-col gap-5">
           <div className="flex flex-col items-center gap-1 max-w-md w-[90vw]">
-            <p className="text-3xl font-figtree text-white font-bold mb-2">
+            <p className="text-3xl font-figtree-mulish text-white font-bold mb-2">
               {t('game_over.your_score')}
             </p>
-            <div className="text-5xl font-extrabold font-figtree text-green-400 mb-4 menu-shadow">
+            <div className="text-5xl font-extrabold font-figtree-mulish text-green-400 mb-4 menu-shadow">
               {score}
             </div>
           </div>
           <div className="flex flex-col items-center gap-1 max-w-md w-[90vw]">
-            <p className="text-2xl font-figtree text-white font-bold mb-2">
+            <p className="text-2xl font-figtree-mulish text-white font-bold mb-2">
               {t('game_over.high_score')}
             </p>
             {isRecordLoading ? (
-              <div className="text-4xl font-extrabold font-figtree text-amber-400 mb-4 menu-shadow">
+              <div className="text-4xl font-extrabold font-figtree-mulish text-amber-400 mb-4 menu-shadow">
                 <LoadingNumberAnimation
                   isLoading={true}
                   minDigits={4}
@@ -81,20 +82,28 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain }) => {
                 />
               </div>
             ) : (
-              <div className="text-4xl font-extrabold font-figtree text-amber-400 mb-4 menu-shadow">
+              <div className="text-4xl font-extrabold font-figtree-mulish text-amber-400 mb-4 menu-shadow">
                 {highScore}
               </div>
             )}
           </div>
         </div>
-        <MenuButton
-          // text={t('game_over.play_again')}
-          text={'Play Again'}
-          gradientClass="green-gradient"
-          className="rounded-3xl px-8 py-4  font-bold  w-[60%]"
-          textClasses="font-black italic text-3xl"
-          onClick={onPlayAgain}
-        />
+        <div className="flex flex-col gap-4 w-full items-center">
+          <MenuButton
+            text={t('game_over.play_again')}
+            gradientClass="green-gradient"
+            className="rounded-3xl px-8 py-4 font-bold w-[60%]"
+            textClasses="font-black italic text-3xl"
+            onClick={onPlayAgain}
+          />
+          <MenuButton
+            text={t('game_over.back_to_menu')}
+            gradientClass="orange-gradient"
+            className="rounded-3xl px-8 py-4 font-bold w-[60%]"
+            textClasses="font-black italic text-3xl"
+            onClick={onBackToMenu}
+          />
+        </div>
       </div>
     </div>
   );

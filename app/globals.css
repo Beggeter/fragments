@@ -1351,3 +1351,50 @@ input[type="range"].custom-range {
   }
 }
 
+/* Оптимизации для партиклов */
+.particle-optimized {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+/* Уменьшаем количество эффектов для слабых устройств */
+@media (max-width: 480px) {
+  .particle-optimized {
+    will-change: auto;
+  }
+}
+
+/* iOS Safari оптимизации для анимаций */
+@supports (-webkit-touch-callout: none) {
+  /* iOS Safari specific styles */
+  .ios-animation-fix {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+    will-change: transform, opacity;
+    transform-style: preserve-3d;
+  }
+  
+  /* Принудительное включение аппаратного ускорения для iOS */
+  .ios-hardware-acceleration {
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
+    -webkit-backface-visibility: hidden;
+    -webkit-perspective: 1000px;
+  }
+  
+  /* Исправление для анимаций на границах контейнера */
+  .ios-boundary-fix {
+    overflow: visible;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Оптимизация для Framer Motion на iOS */
+  [data-framer-motion] {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+}
+

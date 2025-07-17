@@ -1,0 +1,74 @@
+/* iOS Safari оптимизации для анимаций */
+
+/* Принудительное включение аппаратного ускорения для iOS */
+.ios-hardware-acceleration {
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  -webkit-backface-visibility: hidden;
+  -webkit-perspective: 1000px;
+  will-change: transform, opacity;
+}
+
+/* Исправление для анимаций на границах контейнера */
+.ios-boundary-fix {
+  overflow: visible;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Оптимизация для Framer Motion на iOS */
+[data-framer-motion] {
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Специальные стили для iOS Safari */
+@supports (-webkit-touch-callout: none) {
+  .ios-animation-fix {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000px;
+    will-change: transform, opacity;
+    transform-style: preserve-3d;
+  }
+  
+  /* Принудительное включение аппаратного ускорения для iOS */
+  .ios-hardware-acceleration {
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
+    -webkit-backface-visibility: hidden;
+    -webkit-perspective: 1000px;
+  }
+  
+  /* Исправление для анимаций на границах контейнера */
+  .ios-boundary-fix {
+    overflow: visible;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* Оптимизация для Framer Motion на iOS */
+  [data-framer-motion] {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+  }
+}
+
+/* Дополнительные оптимизации для whirlwind анимации на iOS */
+@supports (-webkit-touch-callout: none) {
+  .whirlwind-container {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    perspective: 1000px;
+    -webkit-perspective: 1000px;
+    will-change: transform;
+  }
+  
+  .whirlwind-cell {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    will-change: transform, opacity;
+  }
+} 

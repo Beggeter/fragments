@@ -1363,11 +1363,22 @@ export const GameBoard: React.FC<
     const cellSize = boardRef.current
       ? boardRef.current.offsetWidth / gridW
       : 40;
+    
+    // Определяем производительность устройства
+    const cores = navigator.hardwareConcurrency || 1;
+    const memory = (navigator as any).deviceMemory || 4;
+    const isLowPerformance = cores <= 2 || memory <= 2;
+    
     const cells = [];
     const maxDist = 120;
     const minDist = 80;
-    for (let dy = -1; dy <= 1; dy++) {
-      for (let dx = -1; dx <= 1; dx++) {
+    
+    // Уменьшаем количество разлетающихся клеток для слабых устройств
+    const cellCount = isLowPerformance ? 4 : 9;
+    let processedCells = 0;
+    
+    for (let dy = -1; dy <= 1 && processedCells < cellCount; dy++) {
+      for (let dx = -1; dx <= 1 && processedCells < cellCount; dx++) {
         const x = cx + dx;
         const y = cy + dy;
         if (x >= 0 && x < gridW && y >= 0 && y < gridH) {
@@ -1399,10 +1410,12 @@ export const GameBoard: React.FC<
               dy: dyy,
               rot,
             });
+            processedCells++;
           }
         }
       }
     }
+    
     setExplodingCells({ cells, cellSize });
     
     // Запускаем волну взрыва
@@ -1412,13 +1425,15 @@ export const GameBoard: React.FC<
       isActive: true,
     });
     
-    // Запускаем частицы взрыва
-    setExplosionParticles({
-      centerX: cx,
-      centerY: cy,
-      isActive: true,
-      key: Date.now(),
-    });
+    // Запускаем частицы взрыва только на мощных устройствах
+    if (!isLowPerformance) {
+      setExplosionParticles({
+        centerX: cx,
+        centerY: cy,
+        isActive: true,
+        key: Date.now(),
+      });
+    }
     
     // Запускаем вспышку
     setExplosionFlash({
@@ -1427,11 +1442,13 @@ export const GameBoard: React.FC<
       centerY: cy * (dynamicCellSize || DEFAULT_CELL_SIZE) + (dynamicCellSize || DEFAULT_CELL_SIZE) / 2,
     });
     
-    // Добавляем тряску экрана
-    document.body.classList.add("screen-shake");
-    setTimeout(() => {
-      document.body.classList.remove("screen-shake");
-    }, 500);
+    // Добавляем тряску экрана только на мощных устройствах
+    if (!isLowPerformance) {
+      document.body.classList.add("screen-shake");
+      setTimeout(() => {
+        document.body.classList.remove("screen-shake");
+      }, 500);
+    }
     
     // Очищаем клетки сразу!
     const newBoard = board.map((row, rowIdx) =>

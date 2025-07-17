@@ -24,7 +24,8 @@
     "title": "Game Over",
     "your_score": "Your score:",
     "high_score": "High score:",
-    "play_again": "Play Again"
+    "play_again": "Play Again",
+    "back_to_menu": "Back to Menu"
   },
   "shop": {
     "shards": "Shards",

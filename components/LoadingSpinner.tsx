@@ -7,6 +7,14 @@ const CELL_SIZE = 43;
 const GAP_PX = 2;
 const BOARD_SIZE = 8;
 
+// Определяем iOS Safari
+const isIOS = () => {
+  if (typeof window === 'undefined') return false;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && 
+         /Safari/.test(navigator.userAgent) && 
+         !/Chrome/.test(navigator.userAgent);
+};
+
 const getCellParams = () => {
   const xSpread = (Math.random() - 0.5) * 40;
   const rot1 = (Math.random() - 0.5) * 30;
@@ -73,6 +81,8 @@ const Line = ({
   onLineBreakpoint?: (lineIdx: number, rowIdx: number) => void;
 }) => {
   const [clearedLines, setClearedLines] = useState();
+  const iOSDevice = isIOS();
+  
   // Временные точки анимации
   const frac = flyDuration / totalDuration;
   const times = [0, frac, frac + 0.25 * (1 - frac), frac + 0.6 * (1 - frac), 1];
@@ -108,15 +118,6 @@ const Line = ({
     }),
     1,
   ].sort((a, b) => a - b);
-
-  // Логирование для отладки анимации
-  // console.log(`Line ${lineIdx}:`);
-  // console.log('  startY:', startY);
-  // console.log('  topBounce:', topBounce);
-  // console.log('  finalY:', finalY);
-  // console.log('  topBounce - finalY:', topBounce - finalY);
-  // console.log('  breakpoints:', breakpoints);
-  // console.log('  scaleXTimes:', scaleXTimes);
 
   const scaleX = useTransform(
     y,
@@ -163,6 +164,13 @@ const Line = ({
         top: 0,
         y,
         scaleX,
+        // iOS Safari оптимизации
+        ...(iOSDevice && {
+          transform: 'translateZ(0)',
+          backfaceVisibility: 'hidden',
+          perspective: '1000px',
+          willChange: 'transform',
+        }),
       }}
       initial={false}
       animate={false}
@@ -204,6 +212,15 @@ const Line = ({
             height: CELL_SIZE,
             display: "block",
             opacity: 0.85,
+            // iOS Safari оптимизации
+            ...(iOSDevice && {
+              transform: 'translateZ(0)',
+              backfaceVisibility: 'hidden',
+              perspective: '1000px',
+              willChange: 'transform, opacity',
+              // Принудительное включение аппаратного ускорения
+              transformStyle: 'preserve-3d',
+            }),
           }}
         />
       ))}
@@ -233,6 +250,7 @@ export const LoadingSpinner = ({
   const boardHeight = height ?? 0;
   const boardWidth = width ?? 0;
   const EXTRA = 200; // запас вверх для анимации
+  const iOSDevice = isIOS();
 
   // Генерируем линии и параметры только один раз
   const linesRef = useRef(getAllLines());
@@ -299,6 +317,13 @@ export const LoadingSpinner = ({
         top: -EXTRA,
         overflowY: "hidden",
         pointerEvents: "none",
+        // iOS Safari оптимизации
+        ...(iOSDevice && {
+          transform: 'translateZ(0)',
+          backfaceVisibility: 'hidden',
+          perspective: '1000px',
+          willChange: 'transform',
+        }),
       }}
     >
       {/* DEBUG: горизонтальные линии на брейкпоинтах */}

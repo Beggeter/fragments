@@ -13,6 +13,7 @@ import { ResourceLoader } from "@/utils/ResourceLoader";
 import { BlockColor } from "@/lib/data/types";
 import { LoadingScreen } from "@/components/LoadingScreen";
 import LoadingSpinner from "../components/LoadingSpinner";
+import LoadingSpinnerIOS from "../components/LoadingSpinnerIOS";
 import ShopScreen from "../components/ShopScreen";
 import LeaderboardScreen from "../components/LeaderboardScreen";
 import PieceReturnAnimation from "../components/board/PieceReturnAnimation";
@@ -27,64 +28,38 @@ type Screen =
   | "shop"
   | "leaderboard";
 
-// Функция для надежного определения Telegram WebApp
-const isLaunchedInTelegram = (): boolean => {
-  if (typeof window === "undefined") {
-    console.log("🔍 SSR: window не определен");
-    return false;
-  }
+  // Функция для надежного определения Telegram WebApp
+  const isLaunchedInTelegram = (): boolean => {
+    if (typeof window === "undefined") {
+      return false;
+    }
 
-  // Проверяем наличие Telegram WebApp объекта
-  const hasTelegramWebApp = !!(window.Telegram && window.Telegram.WebApp);
+    // Проверяем наличие Telegram WebApp объекта
+    const hasTelegramWebApp = !!(window.Telegram && window.Telegram.WebApp);
 
-  // Проверяем наличие tgWebAppData в URL (самый надежный способ)
-  const urlParams = new URLSearchParams(window.location.search);
-  const hasTgWebAppData = urlParams.has("tgWebAppData");
+    // Проверяем наличие tgWebAppData в URL (самый надежный способ)
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasTgWebAppData = urlParams.has("tgWebAppData");
 
-  // Проверяем наличие initData в Telegram WebApp
-  const hasInitData = !!window.Telegram?.WebApp?.initData;
+    // Проверяем наличие initData в Telegram WebApp
+    const hasInitData = !!window.Telegram?.WebApp?.initData;
 
-  // Проверяем наличие пользователя в initDataUnsafe
-  const hasUser = !!window.Telegram?.WebApp?.initDataUnsafe?.user;
+    // Проверяем наличие пользователя в initDataUnsafe
+    const hasUser = !!window.Telegram?.WebApp?.initDataUnsafe?.user;
 
-  // Проверяем, что initData не пустая строка
-  const hasValidInitData = !!(
-    window.Telegram?.WebApp?.initData &&
-    window.Telegram.WebApp.initData.length > 0
-  );
+    // Проверяем, что initData не пустая строка
+    const hasValidInitData = !!(
+      window.Telegram?.WebApp?.initData &&
+      window.Telegram.WebApp.initData.length > 0
+    );
 
-  // Дополнительная отладка
-  console.log("🔍 Детальная проверка контекста запуска:");
-  console.log("  - window.Telegram:", window.Telegram);
-  console.log("  - window.Telegram?.WebApp:", window.Telegram?.WebApp);
-  console.log(
-    "  - window.Telegram?.WebApp?.initData:",
-    window.Telegram?.WebApp?.initData
-  );
-  console.log(
-    "  - window.Telegram?.WebApp?.initDataUnsafe:",
-    window.Telegram?.WebApp?.initDataUnsafe
-  );
-  console.log("  - URL:", window.location.href);
-  console.log("  - URL params:", urlParams.toString());
-  console.log("  - Telegram WebApp объект:", hasTelegramWebApp);
-  console.log("  - tgWebAppData в URL:", hasTgWebAppData);
-  console.log("  - initData:", hasInitData);
-  console.log("  - hasValidInitData:", hasValidInitData);
-  console.log("  - user в initDataUnsafe:", hasUser);
+    // Считаем Telegram WebApp только если есть tgWebAppData в URL ИЛИ валидные данные в объекте
+    // Это более строгая проверка, которая исключает ложные срабатывания в браузере
+    const isTelegram =
+      hasTgWebAppData || (hasTelegramWebApp && (hasValidInitData || hasUser));
 
-  // Считаем Telegram WebApp только если есть tgWebAppData в URL ИЛИ валидные данные в объекте
-  // Это более строгая проверка, которая исключает ложные срабатывания в браузере
-  const isTelegram =
-    hasTgWebAppData || (hasTelegramWebApp && (hasValidInitData || hasUser));
-
-  console.log(
-    "📱 Итоговый результат:",
-    isTelegram ? "Telegram WebApp" : "Обычный браузер"
-  );
-
-  return isTelegram;
-};
+    return isTelegram;
+  };
 
 const HomePage: React.FC = () => {
   // --- все хуки должны быть до любых return! ---
@@ -207,7 +182,6 @@ const HomePage: React.FC = () => {
       const existingAdminToken = localStorage.getItem("adminToken");
 
       if (existingSessionToken || existingAdminToken) {
-        console.log("✅ Найден существующий токен, пропускаем инициализацию");
         setIsInitialized(true);
         return;
       }
@@ -217,13 +191,11 @@ const HomePage: React.FC = () => {
 
       if (isInTelegram) {
         // В Telegram: пытаемся автоматическую авторизацию
-        console.log("📱 Telegram: запускаем автоматическую авторизацию");
         setIsTelegramAutoAuth(true);
 
         const tg = window.Telegram?.WebApp;
         if (tg) {
           // Убеждаемся что приложение в полноэкранном режиме
-          console.log("📱 Обеспечиваем полноэкранный режим");
           tg.expand();
           
           // Пытаемся активировать immersive fullscreen
@@ -232,10 +204,7 @@ const HomePage: React.FC = () => {
           const shouldEnableFullscreen = fullscreenEnabled !== 'false'; // По умолчанию включен
           
           if (tg.requestFullscreen && !tg.isFullscreen && shouldEnableFullscreen) {
-            console.log("🎮 Запрашиваем immersive fullscreen режим");
             tg.requestFullscreen();
-          } else if (!shouldEnableFullscreen) {
-            console.log("🎮 Fullscreen отключен в настройках пользователя");
           }
           
           const user = tg.initDataUnsafe?.user;
@@ -247,7 +216,6 @@ const HomePage: React.FC = () => {
               const authDate = urlParams.get("auth_date");
 
               if (hash) {
-                console.log("🔐 Telegram: пытаемся авторизовать пользователя");
                 const authData = {
                   ...user,
                   hash: hash,
@@ -263,9 +231,6 @@ const HomePage: React.FC = () => {
 
                 const data = await response.json();
                 if (response.ok) {
-                  console.log(
-                    "✅ Telegram: автоматическая авторизация успешна"
-                  );
                   localStorage.setItem("sessionToken", data.sessionToken);
                   localStorage.setItem("userData", JSON.stringify(data.user));
                   loginUser(data.user, data.sessionToken);
@@ -273,27 +238,18 @@ const HomePage: React.FC = () => {
                   setCurrentScreen("main menu");
                   setIsInitialized(true);
                   return;
-                } else {
-                  console.log(
-                    "❌ Telegram: автоматическая авторизация не удалась"
-                  );
                 }
               }
             } catch (error) {
-              console.error(
-                "💥 Telegram: ошибка автоматической авторизации:",
-                error
-              );
+              // Ошибка авторизации - показываем экран входа
             }
           }
         }
 
         // Если автоматическая авторизация не удалась, показываем Telegram login
-        console.log("📱 Telegram: показываем экран Telegram login");
         setCurrentScreen("telegram login");
       } else {
         // В браузере: сразу показываем админ-логин
-        console.log("🌐 Браузер: показываем админ-логин");
         setCurrentScreen("admin login");
       }
 
@@ -337,7 +293,6 @@ const HomePage: React.FC = () => {
       currentScreen !== "shop" &&
       currentScreen !== "leaderboard"
     ) {
-      console.log("✅ Пользователь авторизован, переключаем на главное меню");
       setCurrentScreen("main menu");
     }
 
@@ -346,10 +301,8 @@ const HomePage: React.FC = () => {
     if (!isAuthenticated && !isAdmin && isInitialized && !currentScreen) {
       const isInTelegram = isLaunchedInTelegram();
       if (isInTelegram) {
-        console.log("📱 Telegram: показываем Telegram login");
         setCurrentScreen("telegram login");
       } else {
-        console.log("🌐 Браузер: показываем админ-логин");
         setCurrentScreen("admin login");
       }
     }
@@ -405,6 +358,8 @@ const HomePage: React.FC = () => {
   };
 
   const handleGoToMenu = () => {
+    // Очищаем игру при возврате в меню
+    useGameStore.getState().resetGame();
     setCurrentScreen("main menu");
   };
 
@@ -413,19 +368,7 @@ const HomePage: React.FC = () => {
       const { score } = useGameStore.getState();
       const telegramId = user?.telegramId || (isAdmin && process.env.NODE_ENV === 'development' ? '610936383' : null);
       
-      console.log('🎮 Game Over - Debug Info:', {
-        score,
-        user,
-        isAdmin,
-        telegramId,
-        userRecord: user?.record,
-        nodeEnv: process.env.NODE_ENV,
-        hasSessionToken: !!sessionToken,
-      });
-      
       if (telegramId && score > 0) {
-        console.log('🎮 Sending game over data:', { telegramId, score });
-        
         // Подготавливаем заголовки с авторизацией для production
         const headers: Record<string, string> = {
           'Content-Type': 'application/json'
@@ -434,7 +377,6 @@ const HomePage: React.FC = () => {
         // Добавляем токен авторизации если он есть (нужно для production)
         if (sessionToken) {
           headers['Authorization'] = `Bearer ${sessionToken}`;
-          console.log('🔐 Added authorization token to request');
         }
         
         // Отправляем результат игры на сервер
@@ -452,38 +394,31 @@ const HomePage: React.FC = () => {
           })
         });
 
-        console.log('📡 Response status:', response.status);
-        const responseText = await response.text();
-        console.log('📡 Response text:', responseText);
-
         if (response.ok) {
-          const result = JSON.parse(responseText);
-          console.log('✅ Game over processed:', result);
+          const result = JSON.parse(await response.text());
           
           // Получаем актуальный баланс с сервера
           await refreshBalance();
           
           // Обновляем рекорд если он изменился
           if (result.newRecord !== undefined && user) {
-            console.log('🏆 Updating record from', user.record, 'to', result.newRecord);
             updateUser({ record: result.newRecord });
           }
-        } else {
-          console.error('❌ Failed to process game over:', response.status, responseText);
         }
-      } else {
-        console.log('⚠️ Skipping game over API call:', {
-          hasTelegramId: !!telegramId,
-          hasScore: score > 0,
-          telegramId,
-          score
-        });
       }
     } catch (error) {
-      console.error('❌ Error processing game over:', error);
+      // Ошибка обработки game over - игнорируем
     }
     
     setCurrentScreen("gameover");
+  };
+
+  // Определяем iOS Safari
+  const isIOS = () => {
+    if (typeof window === 'undefined') return false;
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) && 
+           /Safari/.test(navigator.userAgent) && 
+           !/Chrome/.test(navigator.userAgent);
   };
 
   const handleResourcesLoaded = () => {
@@ -581,12 +516,21 @@ const HomePage: React.FC = () => {
             justifyContent: "center",
           }}
         >
-          <LoadingSpinner
-            width={boardRect.width}
-            height={boardRect.height}
-            onFinish={handleSpinnerFinish}
-            onLineBreakpoint={handleLineBreakpoint}
-          />
+          {isIOS() ? (
+            <LoadingSpinnerIOS
+              width={boardRect.width}
+              height={boardRect.height}
+              onFinish={handleSpinnerFinish}
+              onLineBreakpoint={handleLineBreakpoint}
+            />
+          ) : (
+            <LoadingSpinner
+              width={boardRect.width}
+              height={boardRect.height}
+              onFinish={handleSpinnerFinish}
+              onLineBreakpoint={handleLineBreakpoint}
+            />
+          )}
         </div>
       )}
 
@@ -694,6 +638,7 @@ const HomePage: React.FC = () => {
             setCurrentScreen("classic mode");
             useGameStore.getState().resetGame();
           }}
+          onBackToMenu={handleGoToMenu}
         />
       )}
 

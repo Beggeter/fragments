@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { motion } from "framer-motion";
 
 interface ExplosionWaveProps {
@@ -12,6 +12,16 @@ interface ExplosionWaveProps {
   onComplete?: () => void;
 }
 
+// Определяем производительность устройства (дублируем логику для простоты)
+const getDevicePerformance = (): 'low' | 'medium' | 'high' => {
+  const cores = navigator.hardwareConcurrency || 1;
+  const memory = (navigator as any).deviceMemory || 4;
+  
+  if (cores <= 2 || memory <= 2) return 'low';
+  if (cores <= 4 || memory <= 4) return 'medium';
+  return 'high';
+};
+
 const ExplosionWave: React.FC<ExplosionWaveProps> = ({
   centerX,
   centerY,
@@ -23,6 +33,9 @@ const ExplosionWave: React.FC<ExplosionWaveProps> = ({
   onComplete,
 }) => {
   const [showWave, setShowWave] = useState(false);
+  
+  // Мемоизируем производительность устройства
+  const devicePerformance = useMemo(() => getDevicePerformance(), []);
 
   useEffect(() => {
     if (isActive) {
@@ -50,6 +63,10 @@ const ExplosionWave: React.FC<ExplosionWaveProps> = ({
     Math.sqrt(boardWidthPx * boardWidthPx + boardHeightPx * boardHeightPx),
     Math.max(boardWidthPx, boardHeightPx) * 0.8
   );
+
+  // Адаптивное количество частиц
+  const rayCount = devicePerformance === 'low' ? 4 : devicePerformance === 'medium' ? 6 : 8;
+  const particleCount = devicePerformance === 'low' ? 8 : devicePerformance === 'medium' ? 12 : 16;
 
   return (
     <div
@@ -86,6 +103,7 @@ const ExplosionWave: React.FC<ExplosionWaveProps> = ({
           border: "2px solid rgba(255, 50, 50, 0.9)",
           transform: "translate(-50%, -50%)",
           boxShadow: "0 0 20px rgba(255, 50, 50, 0.6)",
+          willChange: 'transform, opacity',
         }}
       />
 
@@ -94,13 +112,13 @@ const ExplosionWave: React.FC<ExplosionWaveProps> = ({
         initial={{ scale: 0, opacity: 1 }}
         animate={{ 
           scale: maxDistance / 40,
-          opacity: [1, 0.6, 0.2, 0]
+          opacity: [0, 0.6, 0.3, 0]
         }}
         transition={{ 
           duration: 0.8, 
           delay: 0.1,
           ease: "easeOut",
-          opacity: { duration: 0.8, times: [0, 0.4, 0.8, 1] }
+          opacity: { duration: 0.8, times: [0, 0.2, 0.6, 1] }
         }}
         style={{
           position: "absolute",
@@ -109,43 +127,17 @@ const ExplosionWave: React.FC<ExplosionWaveProps> = ({
           width: 80,
           height: 80,
           borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(255, 100, 50, 0.7) 0%, rgba(255, 150, 50, 0.5) 40%, rgba(255, 200, 50, 0.3) 70%, transparent 100%)",
-          border: "1px solid rgba(255, 100, 50, 0.8)",
+          background: "radial-gradient(circle, rgba(255, 100, 100, 0.6) 0%, rgba(255, 150, 100, 0.4) 40%, rgba(255, 200, 100, 0.2) 70%, transparent 100%)",
+          border: "1px solid rgba(255, 100, 100, 0.7)",
           transform: "translate(-50%, -50%)",
-          boxShadow: "0 0 15px rgba(255, 100, 50, 0.5)",
+          boxShadow: "0 0 15px rgba(255, 100, 100, 0.4)",
+          willChange: 'transform, opacity',
         }}
       />
 
-      {/* Третичная волна */}
-      <motion.div
-        initial={{ scale: 0, opacity: 1 }}
-        animate={{ 
-          scale: maxDistance / 30,
-          opacity: [1, 0.4, 0.1, 0]
-        }}
-        transition={{ 
-          duration: 0.8, 
-          delay: 0.2,
-          ease: "easeOut",
-          opacity: { duration: 0.8, times: [0, 0.5, 0.9, 1] }
-        }}
-        style={{
-          position: "absolute",
-          left: centerXPx,
-          top: centerYPx,
-          width: 60,
-          height: 60,
-          borderRadius: "50%",
-          background: "radial-gradient(circle, rgba(255, 150, 50, 0.6) 0%, rgba(255, 200, 50, 0.4) 50%, rgba(255, 255, 50, 0.2) 80%, transparent 100%)",
-          border: "1px solid rgba(255, 150, 50, 0.7)",
-          transform: "translate(-50%, -50%)",
-          boxShadow: "0 0 10px rgba(255, 150, 50, 0.4)",
-        }}
-      />
-
-      {/* Сетка волны - линии, которые распространяются по сетке */}
-      {[...Array(8)].map((_, i) => {
-        const angle = (i * 45) * Math.PI / 180;
+      {/* Лучи взрыва */}
+      {[...Array(rayCount)].map((_, i) => {
+        const angle = (i * (360 / rayCount)) * Math.PI / 180;
         const distance = maxDistance * 0.8;
         const endX = centerXPx + Math.cos(angle) * distance;
         const endY = centerYPx + Math.sin(angle) * distance;
@@ -179,14 +171,15 @@ const ExplosionWave: React.FC<ExplosionWaveProps> = ({
               background: "radial-gradient(circle, rgba(255, 50, 50, 0.8) 0%, rgba(255, 100, 50, 0.6) 50%, transparent 100%)",
               transform: "translate(-50%, -50%)",
               boxShadow: "0 0 6px rgba(255, 50, 50, 0.6)",
+              willChange: 'transform, opacity',
             }}
           />
         );
       })}
 
       {/* Дополнительные частицы по сетке */}
-      {[...Array(16)].map((_, i) => {
-        const angle = (i * 22.5) * Math.PI / 180;
+      {[...Array(particleCount)].map((_, i) => {
+        const angle = (i * (360 / particleCount)) * Math.PI / 180;
         const distance = maxDistance * 0.6;
         const endX = centerXPx + Math.cos(angle) * distance;
         const endY = centerYPx + Math.sin(angle) * distance;
@@ -220,6 +213,7 @@ const ExplosionWave: React.FC<ExplosionWaveProps> = ({
               background: "rgba(255, 150, 50, 0.7)",
               transform: "translate(-50%, -50%)",
               boxShadow: "0 0 4px rgba(255, 150, 50, 0.5)",
+              willChange: 'transform, opacity',
             }}
           />
         );

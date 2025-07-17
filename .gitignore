@@ -35,6 +35,22 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# sensitive files
+admin-password.txt
+*.log
+debug.txt
+logs.txt
+test.txt
+dnd.txt
+game_logic.txt
+pseudoRandom.txt
+tasks.txt
+steps.json
 
 # vercel
 .vercel

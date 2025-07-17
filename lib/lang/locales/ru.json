@@ -24,7 +24,8 @@
     "title": "Конец игры",
     "your_score": "Ваш счёт:",
     "high_score": "Рекорд:",
-    "play_again": "Играть снова"
+    "play_again": "Играть снова",
+    "back_to_menu": "Вернуться в меню"
   },
   "shop": {
     "shards": "Осколки",
