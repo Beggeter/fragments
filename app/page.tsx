@@ -412,6 +412,15 @@ const HomePage: React.FC = () => {
       const { score } = useGameStore.getState();
       const telegramId = user?.telegramId || (isAdmin && process.env.NODE_ENV === 'development' ? '610936383' : null);
       
+      console.log('🎮 Game Over - Debug Info:', {
+        score,
+        user,
+        isAdmin,
+        telegramId,
+        userRecord: user?.record,
+        nodeEnv: process.env.NODE_ENV,
+      });
+      
       if (telegramId && score > 0) {
         console.log('🎮 Sending game over data:', { telegramId, score });
         
@@ -430,8 +439,12 @@ const HomePage: React.FC = () => {
           })
         });
 
+        console.log('📡 Response status:', response.status);
+        const responseText = await response.text();
+        console.log('📡 Response text:', responseText);
+
         if (response.ok) {
-          const result = await response.json();
+          const result = JSON.parse(responseText);
           console.log('✅ Game over processed:', result);
           
           // Получаем актуальный баланс с сервера
@@ -439,11 +452,19 @@ const HomePage: React.FC = () => {
           
           // Обновляем рекорд если он изменился
           if (result.newRecord !== undefined && user) {
+            console.log('🏆 Updating record from', user.record, 'to', result.newRecord);
             updateUser({ record: result.newRecord });
           }
         } else {
-          console.error('❌ Failed to process game over:', response.status);
+          console.error('❌ Failed to process game over:', response.status, responseText);
         }
+      } else {
+        console.log('⚠️ Skipping game over API call:', {
+          hasTelegramId: !!telegramId,
+          hasScore: score > 0,
+          telegramId,
+          score
+        });
       }
     } catch (error) {
       console.error('❌ Error processing game over:', error);
@@ -672,6 +693,42 @@ const HomePage: React.FC = () => {
         <LeaderboardScreen
           onBack={handleLeaderboardBack}
         />
+      )}
+
+      {/* Debug кнопка для тестирования сохранения рекорда в режиме разработки */}
+      {process.env.NODE_ENV === 'development' && currentScreen === "classic mode" && (
+        <div style={{ 
+          position: 'fixed', 
+          top: '10px', 
+          right: '10px', 
+          zIndex: 9999,
+          background: 'rgba(0,0,0,0.8)',
+          color: 'white',
+          padding: '10px',
+          borderRadius: '5px',
+          fontSize: '12px'
+        }}>
+          <div>Score: {useGameStore.getState().score}</div>
+          <div>Record: {user?.record || 0}</div>
+          <button 
+            onClick={async () => {
+              const currentScore = useGameStore.getState().score;
+              console.log('🧪 Testing handleGameOver with score:', currentScore);
+              await handleGameOver();
+            }}
+            style={{
+              background: '#ff4444',
+              color: 'white',
+              border: 'none',
+              padding: '5px 10px',
+              marginTop: '5px',
+              borderRadius: '3px',
+              cursor: 'pointer'
+            }}
+          >
+            Test Save Record
+          </button>
+        </div>
       )}
 
       {/* Fallback для отладки */}

@@ -154,17 +154,30 @@ export const useGameSave = () => {
         throw new Error(`Server save failed: ${response.status}`);
       }
 
+      const result = await response.json();
+      
+      // Проверяем, обновился ли рекорд на сервере
+      if (result.recordUpdated && result.newRecord !== undefined && user) {
+        console.log('🏆 Record updated during auto-save! Local user record updated from', user.record, 'to', result.newRecord);
+        // Здесь нужно обновить локальное состояние пользователя
+        // Но у нас нет прямого доступа к updateUser из useUser
+        // Можно использовать событие или колбэк для уведомления
+        window.dispatchEvent(new CustomEvent('recordUpdated', { 
+          detail: { newRecord: result.newRecord } 
+        }));
+      }
+
       lastServerSyncRef.current = Date.now();
-      console.log('Game saved to server');
+      console.log('Game saved to server, record updated:', result.recordUpdated);
       return true;
     } catch (error) {
       console.error('Failed to save game to server:', error);
       return false;
     }
-  }, [user?.telegramId, isAuthenticated, isAdmin]);
+  }, [user?.telegramId, isAuthenticated, isAdmin, user]);
 
   // Сохранение после хода или применения бустера
-  const saveAfterAction = useCallback(() => {
+  const saveAfterAction = useCallback(async () => {
     const gameStore = useGameStore.getState();
     
     // Сохраняем board как есть - он уже содержит Cell[][] с цветами
@@ -190,9 +203,26 @@ export const useGameSave = () => {
       version: GAME_SAVE_VERSION,
     };
 
-    // Сохраняем только в localStorage
+    // Всегда сохраняем в localStorage
     saveToLocalStorage(gameState);
-  }, [saveToLocalStorage]);
+
+    // Проверяем, нужно ли сохранить на сервер (новый рекорд или каждые 10 ходов)
+    const currentScore = gameStore.score;
+    const userRecord = user?.record || 0;
+    const shouldSaveToServer = 
+      currentScore > userRecord || // Новый рекорд - сразу сохраняем
+      gameStore.piecesPlaced % 10 === 0; // Или каждые 10 ходов
+
+    if (shouldSaveToServer && isAuthenticated) {
+      console.log('💾 Triggering server save:', {
+        reason: currentScore > userRecord ? 'new record' : 'periodic save',
+        score: currentScore,
+        record: userRecord,
+        piecesPlaced: gameStore.piecesPlaced
+      });
+      await saveToServer(gameState);
+    }
+  }, [saveToLocalStorage, saveToServer, user?.record, isAuthenticated]);
 
   // Загрузка игры с приоритетом
   const loadGame = useCallback(async (): Promise<boolean> => {

@@ -68,11 +68,15 @@ export interface CurrencyTransactionMetadata {
 }
 
 export interface GameData {
-  finalScore: number;
-  linesCleared: number;
-  piecesPlaced: number;
-  gameDuration: number; // в секундах
-  boostersUsed: number[];
+  finalScore?: number;
+  linesCleared?: number;
+  piecesPlaced?: number;
+  gameDuration?: number; // в секундах
+  boostersUsed?: number[];
+  // Дополнительные поля для отладки и аналитики
+  autoSaved?: boolean;
+  saveType?: string;
+  timestamp?: number;
 }
 
 // Enum для ролей пользователей

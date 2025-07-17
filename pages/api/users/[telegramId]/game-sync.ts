@@ -31,13 +31,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    const currentScore = gameState.score || 0;
+    
+    console.log('💾 Game-sync - Saving game state:', {
+      telegramId,
+      userId: user.id,
+      currentScore,
+      userRecord: user.record,
+      willUpdateRecord: currentScore > user.record
+    });
+
     // Найти текущую игру
     let currentGame = await GameService.getCurrentGame(user.id);
     if (currentGame) {
       await GameService.updateGame(currentGame.id, {
         boardState: { grid: gameState.board, width: gameState.board[0]?.length || 8, height: gameState.board.length || 8 },
         currentPieces: gameState.currentPieces,
-        score: gameState.score || 0,
+        score: currentScore,
       });
     } else {
       await GameService.createGame(
@@ -46,8 +56,49 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         gameState.currentPieces
       );
     }
-    return res.status(200).json({ success: true });
+
+    // ВАЖНО: Проверяем и обновляем рекорд если нужно
+    let updatedRecord = user.record;
+    let recordUpdated = false;
+    
+    if (currentScore > user.record) {
+      console.log('🏆 New record detected during auto-save! Updating from', user.record, 'to', currentScore);
+      
+      // Проверяем, нет ли уже такого же рекорда в истории (предотвращаем дубликаты)
+      const lastRecord = await GameService.getBestRecord(user.id);
+      const shouldSaveToHistory = !lastRecord || lastRecord.score !== currentScore;
+      
+      if (shouldSaveToHistory) {
+        // Сохраняем рекорд в историю только если это новый рекорд
+        await GameService.saveRecord(user.id, currentScore, 1, {
+          autoSaved: true,
+          saveType: 'auto-sync',
+          timestamp: Date.now()
+        });
+        console.log('💾 New record saved to history');
+      } else {
+        console.log('📝 Record already exists in history, skipping duplicate');
+      }
+      
+      // Обновляем рекорд пользователя
+      const userUpdateResult = await UserService.updateRecord(user.id, currentScore);
+      if (userUpdateResult) {
+        updatedRecord = currentScore;
+        recordUpdated = true;
+      } else {
+        console.error('❌ Failed to update user record during auto-save');
+      }
+      
+      console.log('✅ Record updated during auto-save');
+    }
+    
+    return res.status(200).json({ 
+      success: true, 
+      recordUpdated,
+      newRecord: updatedRecord
+    });
   } catch (e) {
+    console.error('❌ Failed to save game state:', e);
     return res.status(500).json({ error: 'Failed to save game state' });
   }
 } 

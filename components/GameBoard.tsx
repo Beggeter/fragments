@@ -931,7 +931,9 @@ export const GameBoard: React.FC<
           ]);
 
           // Сохраняем игру после размещения фигуры
-          saveAfterAction();
+          saveAfterAction().catch(error => {
+            console.error('Error saving game after action:', error);
+          });
         },
       });
     },
@@ -1092,7 +1094,9 @@ export const GameBoard: React.FC<
     ]);
 
     // Сохраняем игру после использования лазера
-    saveAfterAction();
+    saveAfterAction().catch(error => {
+      console.error('Error saving game after laser:', error);
+    });
   };
 
   // Новый обработчик undo с двухфазной анимацией
@@ -1455,7 +1459,11 @@ export const GameBoard: React.FC<
       // --- Списываем бустер только после успешного применения ---
       await useBooster("bomb");
       // Сохраняем игру после использования бомбы
-      saveAfterAction();
+      try {
+        await saveAfterAction();
+      } catch (error) {
+        console.error('Error saving game after bomb:', error);
+      }
     }, 500);
     setBombMode(false);
     setBombCenter(null);

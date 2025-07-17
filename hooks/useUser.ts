@@ -36,6 +36,34 @@ export const useUser = () => {
     checkUserSession();
   }, []);
 
+  // Обработчик события обновления рекорда из автосохранения
+  useEffect(() => {
+    const handleRecordUpdated = (event: CustomEvent) => {
+      const { newRecord } = event.detail;
+      console.log('🎯 Received recordUpdated event:', newRecord);
+      
+      setUserState(prev => {
+        if (prev.user && newRecord > prev.user.record) {
+          console.log('📈 Updating local user record from', prev.user.record, 'to', newRecord);
+          return {
+            ...prev,
+            user: {
+              ...prev.user,
+              record: newRecord
+            }
+          };
+        }
+        return prev;
+      });
+    };
+
+    window.addEventListener('recordUpdated', handleRecordUpdated as EventListener);
+    
+    return () => {
+      window.removeEventListener('recordUpdated', handleRecordUpdated as EventListener);
+    };
+  }, []);
+
   const checkUserSession = async () => {
     if (typeof window === 'undefined') {
       setUserState(prev => ({ ...prev, isLoading: false }));
