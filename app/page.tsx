@@ -400,7 +400,6 @@ const HomePage: React.FC = () => {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            gameId: 1, // временный ID
             finalScore: score,
             level: 1,
             gameData: {
@@ -420,13 +419,25 @@ const HomePage: React.FC = () => {
           // Обновляем рекорд если он изменился
           if (result.newRecord !== undefined && user) {
             updateUser({ record: result.newRecord });
+            console.log('🏆 Record updated in UI:', { oldRecord: user.record, newRecord: result.newRecord });
           }
         } else {
-          console.error('❌ Failed to process game over:', response.status);
+          const errorText = await response.text();
+          console.error('❌ Failed to process game over:', {
+            status: response.status,
+            statusText: response.statusText,
+            error: errorText
+          });
+          
+          // Показываем пользователю, что игра завершена, даже если не удалось сохранить рекорд
+          console.log('⚠️ Game over will proceed despite server error');
         }
+      } else {
+        console.log('⚠️ Skipping server call: no telegramId or score is 0:', { telegramId, score });
       }
     } catch (error) {
       console.error('❌ Error processing game over:', error);
+      // Не блокируем переход к экрану Game Over даже при ошибке
     }
     
     setCurrentScreen("gameover");
@@ -437,6 +448,12 @@ const HomePage: React.FC = () => {
     const telegramId = user?.telegramId || (isAdmin && process.env.NODE_ENV === 'development' ? '610936383' : null);
     
     if (!telegramId || !user || newScore <= user.record) {
+      console.log('🏆 Skipping real-time record update:', { 
+        telegramId: !!telegramId, 
+        hasUser: !!user, 
+        newScore, 
+        currentRecord: user?.record 
+      });
       return;
     }
 
@@ -457,7 +474,12 @@ const HomePage: React.FC = () => {
         // Обновляем рекорд в store
         useGameStore.getState().updatePlayerRecord(newScore);
       } else {
-        console.error('❌ Failed to update record:', response.status);
+        const errorText = await response.text();
+        console.error('❌ Failed to update record:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText
+        });
       }
     } catch (error) {
       console.error('❌ Error updating record:', error);
