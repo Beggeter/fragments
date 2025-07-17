@@ -1957,7 +1957,7 @@ export const GameBoard: React.FC<
       <div
         className={`flex flex-col items-center gap-5 min-h-screen bg-[var(--game-background)] p-4 no-select will-change-auto`}
       >
-        <div className="flex justify-between w-full -mb-2 items-center sm:max-w-xs sm:max-h-xs" style={{ paddingTop: 'var(--content-padding-top, 0px)' }}>
+        <div className="flex justify-between w-full -mb-2 items-center sm:max-w-xs sm:max-h-xs" style={{ paddingTop: 'var(--tg-content-safe-area-inset-top, 0px)' }}>
           <div className="flex flex-row items-center jusyify-center gap-2">
             <img
               src={trophyImg.src}

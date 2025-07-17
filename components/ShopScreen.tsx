@@ -498,7 +498,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
   return (
     <div className="flex relative flex-col min-h-screen text-white menu-bg fade-in-animation-fast">
       {/* Верхняя панель */}
-      <div className="flex justify-between items-center px-4 py-4" style={{ paddingTop: 'calc(var(--content-padding-top, 0px) + 16px)' }}>
+      <div className="flex justify-between items-center px-4 py-4" style={{ paddingTop: 'calc(var(--tg-content-safe-area-inset-top, 0px) + 16px)' }}>
         <ClickEffect>
           <img
             src="/back.svg"

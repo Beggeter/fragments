@@ -192,36 +192,6 @@ const HomePage: React.FC = () => {
     sessionToken,
   } = useUser();
 
-  // Проверка Telegram WebApp viewport.safeArea
-  useEffect(() => {
-    const checkTelegramSafeArea = () => {
-      try {
-        const safeArea = window.Telegram?.WebApp?.viewport?.safeAreaInset;
-        console.log("🔍 Checking Telegram safeArea:", {
-          telegram: window.Telegram,
-          webApp: window.Telegram?.WebApp,
-          viewport: window.Telegram?.WebApp?.viewport,
-          safeArea: safeArea
-        });
-        
-        if (safeArea?.top !== undefined) {
-          alert(`✅ Telegram safeArea.top = ${safeArea.top}px`);
-        } else {
-          alert("❌ Telegram safeArea.top недоступен");
-        }
-      } catch (error) {
-        console.error("Error checking safeArea:", error);
-        alert(`💥 Ошибка: ${error}`);
-      }
-    };
-
-    // Проверяем сразу
-    checkTelegramSafeArea();
-    
-    // Проверяем через небольшую задержку (если объект еще загружается)
-    setTimeout(checkTelegramSafeArea, 1000);
-  }, []);
-
   // Инициализация: определяем контекст и показываем соответствующий экран
   useEffect(() => {
     const initializeApp = async () => {
