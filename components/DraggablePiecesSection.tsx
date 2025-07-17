@@ -33,11 +33,18 @@ export const DraggablePiecesSection: React.FC<DraggablePiecesProps> = ({
 
   const handleStart = (
     e: React.MouseEvent | React.TouchEvent,
-    piece: Block
+    piece: Block,
+    containerIndex: number
   ) => {
     if (!piece || draggedPiece?.uniqueId === piece.uniqueId) return;
-    const { clientX, clientY } = getEventCoordinates(e);
-    onPieceStart(piece, clientX, clientY);
+    const { clientY } = getEventCoordinates(e);
+    
+    // Получаем центр контейнера фигуры по X
+    const container = e.currentTarget as HTMLElement;
+    const containerRect = container.getBoundingClientRect();
+    const centerX = containerRect.left + containerRect.width / 2;
+    
+    onPieceStart(piece, centerX, clientY);
   };
 
   return (
@@ -48,8 +55,8 @@ export const DraggablePiecesSection: React.FC<DraggablePiecesProps> = ({
           <div
             key={containerIndex}
             className="w-1/3 h-[20vh] flex justify-center items-center -mt-10 relative"
-            onMouseDown={(e) => activePiece && handleStart(e, activePiece)}
-            onTouchStart={(e) => activePiece && handleStart(e, activePiece)}
+            onMouseDown={(e) => activePiece && handleStart(e, activePiece, containerIndex)}
+            onTouchStart={(e) => activePiece && handleStart(e, activePiece, containerIndex)}
             ref={panelRefs ? panelRefs[containerIndex] : undefined}
           >
             {activePiece && (

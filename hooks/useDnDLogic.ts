@@ -9,9 +9,9 @@ import { Position } from "../lib/data/types";
 const DEFAULT_CELL_SIZE = 43.75;
 const GAP_SIZE_PX = 2;
 
-const MIN_OFFSET_Y = 0.8;
-const MAX_OFFSET_Y = 1.8;
-const MAX_OFFSET_X = 1.2;
+const MIN_OFFSET_Y = 1;
+const MAX_OFFSET_Y = 3.5;
+const MAX_OFFSET_X = 2;
 
 const useBoardAndCellSizes = () => {
   const boardRef = useRef<HTMLDivElement>(null);
@@ -81,17 +81,23 @@ export const useDnDLogic = () => {
       }
 
       const referenceHeight = window.innerHeight;
+      const referenceWidth = window.innerWidth;
+      const referenceCenter = referenceWidth / 2;
 
       const normalizedCursorY = Math.max(
         0,
         Math.min(1, cursorY / referenceHeight)
       );
 
+      // const normalizedCursorX = (cursorX - referenceCenter) / referenceCenter;
+
+      
       const dynamicOffsetY =
         MIN_OFFSET_Y + (1 - normalizedCursorY) * (MAX_OFFSET_Y - MIN_OFFSET_Y);
 
       // Фигура всегда центрируется относительно курсора по X
       const dynamicOffsetX = 1;
+
 
       return { x: dynamicOffsetX, y: dynamicOffsetY };
     },
