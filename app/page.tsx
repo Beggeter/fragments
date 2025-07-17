@@ -695,41 +695,7 @@ const HomePage: React.FC = () => {
         />
       )}
 
-      {/* Debug кнопка для тестирования сохранения рекорда в режиме разработки */}
-      {process.env.NODE_ENV === 'development' && currentScreen === "classic mode" && (
-        <div style={{ 
-          position: 'fixed', 
-          top: '10px', 
-          right: '10px', 
-          zIndex: 9999,
-          background: 'rgba(0,0,0,0.8)',
-          color: 'white',
-          padding: '10px',
-          borderRadius: '5px',
-          fontSize: '12px'
-        }}>
-          <div>Score: {useGameStore.getState().score}</div>
-          <div>Record: {user?.record || 0}</div>
-          <button 
-            onClick={async () => {
-              const currentScore = useGameStore.getState().score;
-              console.log('🧪 Testing handleGameOver with score:', currentScore);
-              await handleGameOver();
-            }}
-            style={{
-              background: '#ff4444',
-              color: 'white',
-              border: 'none',
-              padding: '5px 10px',
-              marginTop: '5px',
-              borderRadius: '3px',
-              cursor: 'pointer'
-            }}
-          >
-            Test Save Record
-          </button>
-        </div>
-      )}
+
 
       {/* Fallback для отладки */}
       {!currentScreen && <LoadingScreen />}
