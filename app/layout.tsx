@@ -106,15 +106,32 @@ export default function RootLayout({
                     document.body.classList.add('tg-fullscreen');
                     
                     setTimeout(() => {
+                      // Логируем полный объект viewport от Telegram
+                      console.log('🔍 Telegram WebApp viewport объект:', {
+                        viewport: tg.viewport,
+                        safeArea: tg.viewport?.safeArea,
+                        height: tg.viewport?.height,
+                        stableHeight: tg.viewport?.stableHeight,
+                        isExpanded: tg.viewport?.isExpanded,
+                        // Дополнительная информация о Telegram WebApp
+                        telegramVersion: tg.version,
+                        platform: tg.platform,
+                        isFullscreen: tg.isFullscreen,
+                        viewportHeight: tg.viewportHeight,
+                        viewportStableHeight: tg.viewportStableHeight
+                      });
+                      
                       // Получаем безопасные отступы от Telegram
                       let safeAreaTop = 0;
                       try {
                         safeAreaTop = tg.viewport?.safeArea?.top || 0;
+                        console.log('✅ Получен safeAreaTop от Telegram:', safeAreaTop);
                       } catch (error) {
-                        console.warn('Failed to get safeArea from Telegram:', error);
+                        console.warn('❌ Failed to get safeArea from Telegram:', error);
                         // Fallback для устройств с notch
                         const hasNotch = window.innerHeight >= 812 && window.innerWidth >= 375;
                         safeAreaTop = hasNotch ? 44 : 20;
+                        console.log('🛡️ Используется fallback safeAreaTop:', safeAreaTop);
                       }
                       
                       // Добавляем небольшой отступ для кнопок управления Telegram
