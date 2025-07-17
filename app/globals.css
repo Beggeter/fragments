@@ -4,6 +4,27 @@
 :root {
   --tg-viewport-height: 100vh;
   --tg-viewport-stable-height: 100vh;
+  /* Новые переменные для безопасных отступов */
+  --safe-area-top: 0px;
+  --safe-area-bottom: 0px;
+  --content-padding-top: 0px;
+  --content-available-height: 100vh;
+}
+
+/* Определяем safe area для всех устройств */
+@supports (env(safe-area-inset-top)) {
+  :root {
+    --safe-area-top: env(safe-area-inset-top);
+    --safe-area-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Базовая поддержка для старых устройств */
+@supports (constant(safe-area-inset-top)) {
+  :root {
+    --safe-area-top: constant(safe-area-inset-top);
+    --safe-area-bottom: constant(safe-area-inset-bottom);
+  }
 }
 
 /* Telegram WebApp Full Screen Support */
@@ -32,41 +53,80 @@ body {
   }
   
   .min-h-screen {
-    min-height: var(--tg-viewport-height, 100vh) !important;
-    min-height: var(--tg-viewport-height, -webkit-fill-available) !important;
+    min-height: var(--content-available-height, 100vh) !important;
+    min-height: var(--content-available-height, -webkit-fill-available) !important;
   }
 }
 
 /* Telegram Immersive Fullscreen Mode */
 .tg-fullscreen {
-  /* Дополнительные стили для полноэкранного режима */
-  padding-top: 0 !important;
-  margin-top: 0 !important;
+  /* В fullscreen режиме контент должен учитывать safe area */
+  --content-padding-top: max(var(--safe-area-top), 20px);
+  --content-available-height: calc(var(--tg-viewport-height, 100vh) - var(--content-padding-top));
+}
+
+/* Не в fullscreen - оставляем как есть */
+body:not(.tg-fullscreen) {
+  --content-padding-top: 0px;
+  --content-available-height: var(--tg-viewport-height, 100vh);
+}
+
+/* Универсальный класс для безопасного контента */
+.safe-content {
+  padding-top: var(--content-padding-top);
+  min-height: var(--content-available-height);
+  box-sizing: border-box;
+}
+
+/* Обновляем существующие классы для автоматической адаптации */
+.min-h-screen {
+  min-height: var(--content-available-height) !important;
+  padding-top: var(--content-padding-top);
+  box-sizing: border-box;
 }
 
 .tg-fullscreen .min-h-screen {
-  /* В полноэкранном режиме используем 100% высоты */
-  min-height: 100vh !important;
-  min-height: 100dvh !important;
+  /* В полноэкранном режиме используем рассчитанную высоту */
+  min-height: var(--content-available-height) !important;
+  min-height: calc(100dvh - var(--content-padding-top)) !important;
 }
 
 /* Стили для статус-бара в immersive режиме */
 @supports (env(safe-area-inset-top)) {
   .tg-fullscreen {
     /* Учитываем safe area для устройств с вырезом */
-    padding-top: env(safe-area-inset-top);
+    --content-padding-top: max(env(safe-area-inset-top), 20px);
   }
 }
 
 @media (max-width: 900px) {
   .min-h-screen {
     min-height: 100dvh !important;
-    min-height: var(--tg-viewport-height, 100dvh) !important;
+    min-height: var(--content-available-height, 100dvh) !important;
   }
   
   body {
     height: var(--tg-viewport-height, 100dvh);
     min-height: var(--tg-viewport-stable-height, 100dvh);
+  }
+  
+  /* Адаптивные отступы для мобильных устройств */
+  .tg-fullscreen {
+    --content-padding-top: max(var(--safe-area-top), 16px);
+  }
+}
+
+/* Дополнительные отступы для устройств с большим notch (iPhone X и новее) */
+@media (min-width: 375px) and (max-width: 414px) and (min-height: 812px) {
+  .tg-fullscreen {
+    --content-padding-top: max(var(--safe-area-top), 24px);
+  }
+}
+
+/* Планшеты и большие экраны */
+@media (min-width: 768px) {
+  .tg-fullscreen {
+    --content-padding-top: max(var(--safe-area-top), 32px);
   }
 }
 

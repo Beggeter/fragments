@@ -158,7 +158,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
 
           {/* Fullscreen Toggle - показываем только в Telegram WebApp */}
-          {typeof window !== "undefined" && window.Telegram?.WebApp && (
+          {/* {typeof window !== "undefined" && window.Telegram?.WebApp && (
             <div
               className="settings-gradient backdrop-blur-xl rounded-3xl px-8 py-4 flex items-center justify-between min-h-[9vh] cursor-pointer filter drop-shadow-[2px_2px_2px_rgba(0,0,0,0.4)]"
               onClick={() => setFullscreenEnabled(!fullscreenEnabled)}
@@ -174,7 +174,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 onToggle={() => setFullscreenEnabled(!fullscreenEnabled)}
               />
             </div>
-          )}
+          )} */}
           {/* <div className="settings-gradient backdrop-blur-xl rounded-3xl px-8 py-4 flex items-center justify-between min-h-[9vh] mb-4">
           <div className="flex items-center gap-4 menu-shadow">
             <span className="text-2xl">🌐</span>
