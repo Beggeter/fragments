@@ -253,5 +253,6 @@ export const useUser = () => {
     updateCurrency,
     refreshBalance,
     checkUserSession,
+    sessionToken: userState.sessionToken,
   };
 }; 

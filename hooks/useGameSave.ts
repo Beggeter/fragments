@@ -31,7 +31,7 @@ const GAME_SAVE_VERSION = '2.0.0'; // Новая версия для новой 
 const LOCAL_STORAGE_KEY = 'fragments_game_state';
 
 export const useGameSave = () => {
-  const { user, isAuthenticated } = useUser();
+  const { user, isAuthenticated, sessionToken } = useUser();
   const { isAdmin } = useAdminAuth();
   const lastServerSyncRef = useRef<number>(0);
 
@@ -142,11 +142,20 @@ export const useGameSave = () => {
         level: 1, // TODO: добавить логику уровней
       };
 
+      // Подготавливаем заголовки с авторизацией для production
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      
+      // Добавляем токен авторизации если он есть (нужно для production)
+      if (sessionToken) {
+        headers['Authorization'] = `Bearer ${sessionToken}`;
+        console.log('🔐 Added authorization token to game-sync request');
+      }
+
       const response = await fetch(`/api/users/${targetUserId}/game-sync`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(serverState),
       });
 

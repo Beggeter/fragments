@@ -189,6 +189,7 @@ const HomePage: React.FC = () => {
     updateCurrency,
     updateUser,
     refreshBalance,
+    sessionToken,
   } = useUser();
 
   // Инициализация: определяем контекст и показываем соответствующий экран
@@ -419,15 +420,27 @@ const HomePage: React.FC = () => {
         telegramId,
         userRecord: user?.record,
         nodeEnv: process.env.NODE_ENV,
+        hasSessionToken: !!sessionToken,
       });
       
       if (telegramId && score > 0) {
         console.log('🎮 Sending game over data:', { telegramId, score });
         
+        // Подготавливаем заголовки с авторизацией для production
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json'
+        };
+        
+        // Добавляем токен авторизации если он есть (нужно для production)
+        if (sessionToken) {
+          headers['Authorization'] = `Bearer ${sessionToken}`;
+          console.log('🔐 Added authorization token to request');
+        }
+        
         // Отправляем результат игры на сервер
         const response = await fetch(`/api/users/${telegramId}/game`, {
           method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({
             gameId: 1, // временный ID
             finalScore: score,
