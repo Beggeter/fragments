@@ -9,6 +9,7 @@ interface User {
   lastName?: string;
   username?: string;
   photoUrl?: string;
+  avatarUrl?: string;
   role: 'user' | 'admin';
   currency: number;
   createdAt: string;

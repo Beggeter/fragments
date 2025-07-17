@@ -39,7 +39,12 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
       setError(null);
 
       const userIdParam = user ? `&userId=${user.id}` : "";
-      const response = await fetch(`/api/leaderboard?limit=20${userIdParam}`);
+      const sessionToken = typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : null;
+      const headers: HeadersInit = {};
+      if (sessionToken) {
+        headers['Authorization'] = `Bearer ${sessionToken}`;
+      }
+      const response = await fetch(`/api/leaderboard?limit=20${userIdParam}`, { headers });
 
       if (!response.ok) {
         throw new Error("Failed to fetch leaderboard");
@@ -111,9 +116,9 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
     return {
       id: user.id,
       username: user.username || user.firstName || t('leaderboard.you'),
-      record: 0, // API должен предоставить реальный счет пользователя
+      record: user.record || 0,
       avatarUrl:
-        user.photoUrl || "https://api.dicebear.com/7.x/avataaars/svg?seed=User",
+        user.photoUrl || user.avatarUrl || "https://api.dicebear.com/7.x/avataaars/svg?seed=User",
       position: userPosition,
     };
   };
