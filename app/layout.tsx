@@ -107,8 +107,8 @@ export default function RootLayout({
                     
                     setTimeout(() => {
                       const computedStyle = getComputedStyle(root);
-                      const contentPaddingTop = computedStyle.getPropertyValue('--content-padding-top') || '20px';
-                      const paddingValue = parseInt(contentPaddingTop) || 20;
+                      const contentPaddingTop = computedStyle.getPropertyValue('--content-padding-top') || '44px';
+                      const paddingValue = parseInt(contentPaddingTop) || 44;
                       
                       root.style.setProperty('--content-available-height', 'calc(' + height + 'px - ' + paddingValue + 'px)');
                       
