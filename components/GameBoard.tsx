@@ -1967,7 +1967,10 @@ export const GameBoard: React.FC<
               </span>
             ) : (
               <ScoreDisplay
-                newScore={isAdmin ? adminRecord ?? 0 : user?.record ?? 0}
+                newScore={(() => {
+                  const currentRecord = isAdmin ? adminRecord ?? 0 : user?.record ?? 0;
+                  return score > currentRecord ? score : currentRecord;
+                })()}
                 variant="record"
                 showAnimation={false}
                 className=" "

@@ -22,8 +22,9 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain }) => {
   const { t } = useTranslation();
 
   useEffect(() => {
-    setHighScore(user?.record ?? 0);
-  }, [user]);
+    const userRecord = user?.record ?? 0;
+    setHighScore(score > userRecord ? score : userRecord);
+  }, [user, score]);
 
   useEffect(() => {
     if (isAdmin) {
@@ -46,9 +47,9 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain }) => {
 
   useEffect(() => {
     if (isAdmin && adminRecord !== null) {
-      setHighScore(adminRecord);
+      setHighScore(score > adminRecord ? score : adminRecord);
     }
-  }, [isAdmin, adminRecord]);
+  }, [isAdmin, adminRecord, score]);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center min-h-screen w-full">
