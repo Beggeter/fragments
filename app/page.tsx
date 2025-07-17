@@ -136,15 +136,12 @@ const HomePage: React.FC = () => {
     []
   );
 
-  const handleLineBreakpoint = useCallback(
-    (lineIdx: number, rowIdx: number) => {
-      setClearedLine(rowIdx);
-      setClearedLines((prev) => new Set([...prev, rowIdx]));
-      // Сбросить после короткой задержки, чтобы не очищать повторно
-      setTimeout(() => setClearedLine(null), 100);
-    },
-    []
-  );
+  const handleLineBreakpoint = useCallback((lineIdx: number, rowIdx: number) => {
+    setClearedLine(rowIdx);
+    setClearedLines(prev => new Set([...prev, rowIdx]));
+    // Сбросить после короткой задержки, чтобы не очищать повторно
+    setTimeout(() => setClearedLine(null), 100);
+  }, []);
 
   // функция для запуска спиннера
   const handleShowSpinnerAnimation = useCallback(() => {
@@ -155,22 +152,21 @@ const HomePage: React.FC = () => {
   // функция для завершения анимации спиннера
   const handleSpinnerFinish = useCallback(() => {
     setShowSpinnerAnimation(false);
-
+    
     // Гарантированно очищаем все линии, которые могли быть пропущены из-за лагов
     if (clearedLines.size < 8) {
       // Если не все линии были очищены, очищаем оставшиеся
-      const remainingLines = Array.from({ length: 8 }, (_, i) => i).filter(
-        (i) => !clearedLines.has(i)
-      );
-
-      remainingLines.forEach((lineIdx) => {
+      const remainingLines = Array.from({ length: 8 }, (_, i) => i)
+        .filter(i => !clearedLines.has(i));
+      
+      remainingLines.forEach(lineIdx => {
         setTimeout(() => {
           setClearedLine(lineIdx);
           setTimeout(() => setClearedLine(null), 50);
         }, lineIdx * 50); // Небольшая задержка между линиями
       });
     }
-
+    
     // Очищаем отслеживание линий
     setTimeout(() => {
       setClearedLines(new Set());
@@ -200,21 +196,19 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     const checkTelegramSafeArea = () => {
       try {
-        const safeArea = window.Telegram?.WebApp?.viewport?.safeArea;
-        // console.log("🔍 Checking Telegram safeArea:", {
-        //   telegram: window.Telegram,
-        //   webApp: window.Telegram?.WebApp,
-        //   viewport: window.Telegram?.WebApp?.viewport,
-        //   safeArea: safeArea
-        // });
-
-        // if (safeArea?.top !== undefined) {
-        //   alert(`✅ Telegram safeArea.top = ${safeArea.top}px`);
-        // } else {
-        //   alert("❌ Telegram safeArea.top недоступен");
-        // }
-
-        alert(JSON.stringify(window.Telegram?.WebApp));
+        const safeArea = window.Telegram?.WebApp?.viewport?.safeAreaInset;
+        console.log("🔍 Checking Telegram safeArea:", {
+          telegram: window.Telegram,
+          webApp: window.Telegram?.WebApp,
+          viewport: window.Telegram?.WebApp?.viewport,
+          safeArea: safeArea
+        });
+        
+        if (safeArea?.top !== undefined) {
+          alert(`✅ Telegram safeArea.top = ${safeArea.top}px`);
+        } else {
+          alert("❌ Telegram safeArea.top недоступен");
+        }
       } catch (error) {
         console.error("Error checking safeArea:", error);
         alert(`💥 Ошибка: ${error}`);
@@ -223,7 +217,7 @@ const HomePage: React.FC = () => {
 
     // Проверяем сразу
     checkTelegramSafeArea();
-
+    
     // Проверяем через небольшую задержку (если объект еще загружается)
     setTimeout(checkTelegramSafeArea, 1000);
   }, []);
@@ -261,23 +255,19 @@ const HomePage: React.FC = () => {
           // Убеждаемся что приложение в полноэкранном режиме
           console.log("📱 Обеспечиваем полноэкранный режим");
           tg.expand();
-
+          
           // Пытаемся активировать immersive fullscreen
           // Проверяем настройку пользователя
-          const fullscreenEnabled = localStorage.getItem("fullscreenEnabled");
-          const shouldEnableFullscreen = fullscreenEnabled !== "false"; // По умолчанию включен
-
-          if (
-            tg.requestFullscreen &&
-            !tg.isFullscreen &&
-            shouldEnableFullscreen
-          ) {
+          const fullscreenEnabled = localStorage.getItem('fullscreenEnabled');
+          const shouldEnableFullscreen = fullscreenEnabled !== 'false'; // По умолчанию включен
+          
+          if (tg.requestFullscreen && !tg.isFullscreen && shouldEnableFullscreen) {
             console.log("🎮 Запрашиваем immersive fullscreen режим");
             tg.requestFullscreen();
           } else if (!shouldEnableFullscreen) {
             console.log("🎮 Fullscreen отключен в настройках пользователя");
           }
-
+          
           const user = tg.initDataUnsafe?.user;
           if (user) {
             try {
@@ -451,13 +441,9 @@ const HomePage: React.FC = () => {
   const handleGameOver = async () => {
     try {
       const { score } = useGameStore.getState();
-      const telegramId =
-        user?.telegramId ||
-        (isAdmin && process.env.NODE_ENV === "development"
-          ? "610936383"
-          : null);
-
-      console.log("🎮 Game Over - Debug Info:", {
+      const telegramId = user?.telegramId || (isAdmin && process.env.NODE_ENV === 'development' ? '610936383' : null);
+      
+      console.log('🎮 Game Over - Debug Info:', {
         score,
         user,
         isAdmin,
@@ -466,24 +452,24 @@ const HomePage: React.FC = () => {
         nodeEnv: process.env.NODE_ENV,
         hasSessionToken: !!sessionToken,
       });
-
+      
       if (telegramId && score > 0) {
-        console.log("🎮 Sending game over data:", { telegramId, score });
-
+        console.log('🎮 Sending game over data:', { telegramId, score });
+        
         // Подготавливаем заголовки с авторизацией для production
         const headers: Record<string, string> = {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json'
         };
-
+        
         // Добавляем токен авторизации если он есть (нужно для production)
         if (sessionToken) {
-          headers["Authorization"] = `Bearer ${sessionToken}`;
-          console.log("🔐 Added authorization token to request");
+          headers['Authorization'] = `Bearer ${sessionToken}`;
+          console.log('🔐 Added authorization token to request');
         }
-
+        
         // Отправляем результат игры на сервер
         const response = await fetch(`/api/users/${telegramId}/game`, {
-          method: "DELETE",
+          method: 'DELETE',
           headers,
           body: JSON.stringify({
             gameId: 1, // временный ID
@@ -492,50 +478,41 @@ const HomePage: React.FC = () => {
             gameData: {
               gameDuration: Date.now(), // можно добавить реальную продолжительность
               piecesPlaced: useGameStore.getState().piecesPlaced || 0,
-            },
-          }),
+            }
+          })
         });
 
-        console.log("📡 Response status:", response.status);
+        console.log('📡 Response status:', response.status);
         const responseText = await response.text();
-        console.log("📡 Response text:", responseText);
+        console.log('📡 Response text:', responseText);
 
         if (response.ok) {
           const result = JSON.parse(responseText);
-          console.log("✅ Game over processed:", result);
-
+          console.log('✅ Game over processed:', result);
+          
           // Получаем актуальный баланс с сервера
           await refreshBalance();
-
+          
           // Обновляем рекорд если он изменился
           if (result.newRecord !== undefined && user) {
-            console.log(
-              "🏆 Updating record from",
-              user.record,
-              "to",
-              result.newRecord
-            );
+            console.log('🏆 Updating record from', user.record, 'to', result.newRecord);
             updateUser({ record: result.newRecord });
           }
         } else {
-          console.error(
-            "❌ Failed to process game over:",
-            response.status,
-            responseText
-          );
+          console.error('❌ Failed to process game over:', response.status, responseText);
         }
       } else {
-        console.log("⚠️ Skipping game over API call:", {
+        console.log('⚠️ Skipping game over API call:', {
           hasTelegramId: !!telegramId,
           hasScore: score > 0,
           telegramId,
-          score,
+          score
         });
       }
     } catch (error) {
-      console.error("❌ Error processing game over:", error);
+      console.error('❌ Error processing game over:', error);
     }
-
+    
     setCurrentScreen("gameover");
   };
 
@@ -572,18 +549,15 @@ const HomePage: React.FC = () => {
   }, []);
 
   // Колбэк для запуска анимации возвращения фигуры
-  const handlePieceReturnAnimation = useCallback(
-    (animationData: {
-      piece: any;
-      fromPosition: { x: number; y: number };
-      targetRect: DOMRect | null;
-      cellSize: number;
-      gap: number;
-    }) => {
-      setPieceReturnAnimation(animationData);
-    },
-    []
-  );
+  const handlePieceReturnAnimation = useCallback((animationData: {
+    piece: any;
+    fromPosition: { x: number; y: number };
+    targetRect: DOMRect | null;
+    cellSize: number;
+    gap: number;
+  }) => {
+    setPieceReturnAnimation(animationData);
+  }, []);
 
   // Показываем загрузку ресурсов если они еще не загружены
   if (!resourcesLoaded) {
@@ -643,6 +617,8 @@ const HomePage: React.FC = () => {
           />
         </div>
       )}
+
+      
 
       {/* Piece Return Animation */}
       {pieceReturnAnimation && boardRect && (
@@ -757,8 +733,12 @@ const HomePage: React.FC = () => {
       )}
 
       {currentScreen === "leaderboard" && (
-        <LeaderboardScreen onBack={handleLeaderboardBack} />
+        <LeaderboardScreen
+          onBack={handleLeaderboardBack}
+        />
       )}
+
+
 
       {/* Fallback для отладки */}
       {!currentScreen && <LoadingScreen />}

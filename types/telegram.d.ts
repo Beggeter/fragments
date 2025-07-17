@@ -26,7 +26,7 @@ declare global {
           height: number;
           stableHeight: number;
           isExpanded: boolean;
-          safeArea?: {
+          safeAreaInset?: {
             top: number;
             bottom: number;
             left: number;
