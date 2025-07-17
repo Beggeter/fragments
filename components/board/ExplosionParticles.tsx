@@ -38,17 +38,19 @@ const getDevicePerformance = (): 'low' | 'medium' | 'high' => {
   
   // Проверяем GPU через WebGL
   const canvas = document.createElement('canvas');
-  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+  const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl') as WebGLRenderingContext | null;
   
   if (gl) {
     const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
     if (debugInfo) {
       const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
-      if (renderer.includes('Intel') || renderer.includes('Mali') || renderer.includes('PowerVR')) {
-        return 'low';
-      }
-      if (renderer.includes('Adreno') || renderer.includes('Mali-G')) {
-        return 'medium';
+      if (renderer && typeof renderer === 'string') {
+        if (renderer.includes('Intel') || renderer.includes('Mali') || renderer.includes('PowerVR')) {
+          return 'low';
+        }
+        if (renderer.includes('Adreno') || renderer.includes('Mali-G')) {
+          return 'medium';
+        }
       }
     }
   }
