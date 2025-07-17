@@ -38,6 +38,7 @@ html, body {
 
 body {
   /* Use Telegram WebApp height if available */
+  /* padding-top: var(--tg-content-safe-area-inset-top); */
   height: var(--tg-viewport-height, 100vh);
   min-height: var(--tg-viewport-stable-height, 100vh);
 }
