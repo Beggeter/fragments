@@ -22,10 +22,49 @@ const getMainMenu = () => {
   };
 };
 
+// Приветственное сообщение для новых пользователей
+const getWelcomeMessage = () => {
+  return {
+    text: `🎮 Добро пожаловать в FRAGMENTS!\n\n` +
+      `🚀 Готов к захватывающей головоломке?\n\n` +
+      `• Собирай фигуры и зарабатывай очки\n` +
+      `• Используй мощные бустеры\n` +
+      `• Достигай Zen и соревнуйся с друзьями\n` +
+      `• Покупай улучшения через Telegram Stars\n\n` +
+      `Нажми кнопку ниже, чтобы начать игру!`,
+    reply_markup: Markup.keyboard([
+      [{ text: "🎮 НАЧАТЬ ИГРУ" }]
+    ]).resize()
+  };
+};
+
 // /start с inline-кнопками
 bot.start((ctx) => {
+  const welcome = getWelcomeMessage();
+  ctx.reply(welcome.text, welcome.reply_markup);
+});
+
+// Обработка нажатия на большую кнопку "НАЧАТЬ ИГРУ"
+bot.hears("🎮 НАЧАТЬ ИГРУ", (ctx) => {
   const menu = getMainMenu();
   ctx.reply(menu.text, menu.reply_markup);
+});
+
+// Команда /menu для быстрого доступа к главному меню
+bot.command("menu", (ctx) => {
+  const menu = getMainMenu();
+  ctx.reply(menu.text, menu.reply_markup);
+});
+
+// Команда /help
+bot.command("help", (ctx) => {
+  ctx.reply(
+    `🤖 Команды бота FRAGMENTS:\n\n` +
+    `/start - Начать игру\n` +
+    `/menu - Главное меню\n` +
+    `/help - Эта справка\n\n` +
+    `🎮 Играйте в захватывающую головоломку FRAGMENTS!`
+  );
 });
 
 // Обработка нажатий по callback_data

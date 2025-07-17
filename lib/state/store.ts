@@ -192,6 +192,8 @@ export const useGameStore = create<
     hoverCell: { x: number; y: number } | null;
     setHoverCell: (cell: { x: number; y: number } | null) => void;
     initializeGame: () => void;
+    onRecordUpdate?: (newScore: number) => Promise<void>;
+    setOnRecordUpdate: (callback: ((newScore: number) => Promise<void>) | undefined) => void;
   }
 >((set, get) => {
   // Вспомогательная функция для обработки завершения игры
@@ -307,6 +309,14 @@ export const useGameStore = create<
       const levelChanged = blockGenerator.updateDifficulty(newScore);
       const levelInfo = difficultyManager.getLevelInfo(newScore);
       
+      // Обновляем рекорд в реальном времени если нужно
+      const { onRecordUpdate } = get();
+      if (onRecordUpdate && newScore > get().playerRecord) {
+        onRecordUpdate(newScore).catch(error => {
+          console.error('Failed to update record:', error);
+        });
+      }
+      
       set({
         board: newBoard, // Используем newBoard вместо boardAfterClearing
         currentPieces: newCurrentPieces,
@@ -408,6 +418,10 @@ export const useGameStore = create<
     onGameOver: null,
     setOnGameOver: (callback: (() => void) | null) =>
       set({ onGameOver: callback }),
+    
+    onRecordUpdate: undefined,
+    setOnRecordUpdate: (callback: ((newScore: number) => Promise<void>) | undefined) =>
+      set({ onRecordUpdate: callback }),
     
     restoreGameState: (state) => {
       // Board уже содержит Cell[][] с цветами, используем как есть

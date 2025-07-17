@@ -387,10 +387,6 @@ const HomePage: React.FC = () => {
     setCurrentScreen("classic mode");
   };
 
-  const handleGoToMenu = () => {
-    setCurrentScreen("main menu");
-  };
-
   const handleGameOver = async () => {
     try {
       const { score } = useGameStore.getState();
@@ -434,6 +430,77 @@ const HomePage: React.FC = () => {
     }
     
     setCurrentScreen("gameover");
+  };
+
+  // Функция для обновления рекорда в реальном времени
+  const updateRecordInRealTime = async (newScore: number) => {
+    const telegramId = user?.telegramId || (isAdmin && process.env.NODE_ENV === 'development' ? '610936383' : null);
+    
+    if (!telegramId || !user || newScore <= user.record) {
+      return;
+    }
+
+    try {
+      console.log('🏆 Updating record in real time:', { telegramId, newScore, currentRecord: user.record });
+      
+      const response = await fetch(`/api/users/${telegramId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ record: newScore })
+      });
+
+      if (response.ok) {
+        const updatedUser = await response.json();
+        console.log('✅ Record updated successfully:', updatedUser);
+        updateUser({ record: newScore });
+        
+        // Обновляем рекорд в store
+        useGameStore.getState().updatePlayerRecord(newScore);
+      } else {
+        console.error('❌ Failed to update record:', response.status);
+      }
+    } catch (error) {
+      console.error('❌ Error updating record:', error);
+    }
+  };
+
+  // Функция для сохранения рекорда при выходе из игры
+  const saveRecordOnExit = async () => {
+    const { score } = useGameStore.getState();
+    const telegramId = user?.telegramId || (isAdmin && process.env.NODE_ENV === 'development' ? '610936383' : null);
+    
+    if (!telegramId || !user || score <= 0) {
+      return;
+    }
+
+    try {
+      console.log('💾 Saving record on exit:', { telegramId, score, currentRecord: user.record });
+      
+      // Если текущий счет больше рекорда, обновляем его
+      if (score > user.record) {
+        const response = await fetch(`/api/users/${telegramId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ record: score })
+        });
+
+        if (response.ok) {
+          const updatedUser = await response.json();
+          console.log('✅ Record saved on exit:', updatedUser);
+          updateUser({ record: score });
+        } else {
+          console.error('❌ Failed to save record on exit:', response.status);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error saving record on exit:', error);
+    }
+  };
+
+  const handleGoToMenu = async () => {
+    // Сохраняем рекорд перед выходом в меню
+    await saveRecordOnExit();
+    setCurrentScreen("main menu");
   };
 
   const handleResourcesLoaded = () => {
@@ -632,6 +699,7 @@ const HomePage: React.FC = () => {
           onRestartComplete={handleRestartComplete}
           onOpenShop={handleOpenShop}
           onPieceReturnAnimation={handlePieceReturnAnimation}
+          onRecordUpdate={updateRecordInRealTime}
         />
       )}
 

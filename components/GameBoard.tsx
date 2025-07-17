@@ -66,6 +66,7 @@ interface GameBoardProps {
   isIntentionalRestart?: boolean;
   onRestartComplete?: () => void;
   onOpenShop?: () => void;
+  onRecordUpdate?: (newScore: number) => Promise<void>;
   onPieceReturnAnimation?: (animationData: {
     piece: any;
     fromPosition: { x: number; y: number };
@@ -368,6 +369,7 @@ export const GameBoard: React.FC<
   isIntentionalRestart: externalIsIntentionalRestart,
   onRestartComplete,
   onOpenShop,
+  onRecordUpdate,
   onPieceReturnAnimation,
 }) => {
   const {
@@ -391,6 +393,7 @@ export const GameBoard: React.FC<
     resetGame,
     gameOver,
     setOnGameOver,
+    setOnRecordUpdate,
     piecesPlaced,
   } = useGameStore();
 
@@ -1024,6 +1027,18 @@ export const GameBoard: React.FC<
     height,
   });
 
+  // Устанавливаем onRecordUpdate callback в store
+  useEffect(() => {
+    setOnRecordUpdate(onRecordUpdate);
+  }, [setOnRecordUpdate, onRecordUpdate]);
+
+  // Обновляем рекорд в store при изменении пользователя
+  useEffect(() => {
+    if (user && !isAdmin) {
+      useGameStore.getState().updatePlayerRecord(user.record);
+    }
+  }, [user, isAdmin]);
+
   // Получаем рекорд для админа при монтировании/смене статуса
   useEffect(() => {
     if (isAdmin) {
@@ -1031,33 +1046,17 @@ export const GameBoard: React.FC<
       fetch("/api/users/610936383")
         .then((res) => res.json())
         .then((data) => {
-          setAdminRecord(typeof data.record === "number" ? data.record : 0);
+          const record = typeof data.record === "number" ? data.record : 0;
+          setAdminRecord(record);
+          // Обновляем рекорд в store
+          useGameStore.getState().updatePlayerRecord(record);
           setIsRecordLoading(false);
         })
         .catch(() => {
           setAdminRecord(0);
+          useGameStore.getState().updatePlayerRecord(0);
           setIsRecordLoading(false);
         });
-      [
-        {
-          id: "block-25",
-          uniqueId: "block-25_1751917052455_0",
-          color: "blue",
-          matrixSize: "2x3",
-        },
-        {
-          id: "block-2",
-          uniqueId: "block-2_1751917052455_1",
-          color: "green",
-          matrixSize: "1x4",
-        },
-        {
-          id: "block-7",
-          uniqueId: "block-7_1751917052455_2",
-          color: "yellow",
-          matrixSize: "5x1",
-        },
-      ];
     } else {
       setAdminRecord(null);
       setIsRecordLoading(false);
@@ -1093,6 +1092,8 @@ export const GameBoard: React.FC<
 
     // Сохраняем игру после использования лазера
     saveAfterAction();
+    
+    // Лазер не изменяет счет, поэтому не нужно обновлять рекорд
   };
 
   // Новый обработчик undo с двухфазной анимацией
@@ -1149,6 +1150,8 @@ export const GameBoard: React.FC<
         board: newBoard,
         score: previousState.score,
       });
+      
+      // При undo счет возвращается к предыдущему значению, поэтому не нужно обновлять рекорд
 
       console.log("🔄 Board state restored successfully!");
     };
@@ -1166,6 +1169,8 @@ export const GameBoard: React.FC<
         })),
         piecesPlaced: previousState.piecesPlaced,
       });
+      
+      // При undo счет возвращается к предыдущему значению, поэтому не нужно обновлять рекорд
 
       // Удаляем последний элемент из истории после завершения всех анимаций
       setHistory((prev) => prev.slice(0, -1));
@@ -1449,6 +1454,8 @@ export const GameBoard: React.FC<
         // Бомба не размещает фигуру, поэтому не сохраняем clearedCells
       },
     ]);
+    
+    // Бомба не изменяет счет, поэтому не нужно обновлять рекорд
     // Анимация разлёта будет проигрываться 500 мс
     setTimeout(async () => {
       setExplodingCells(null);
@@ -1608,6 +1615,8 @@ export const GameBoard: React.FC<
         // clearedLine не размещает фигуру, поэтому не сохраняем clearedCells
       },
     ]);
+    
+    // clearedLine не изменяет счет, поэтому не нужно обновлять рекорд
   }, [clearedLine]);
 
   const getCellFromPointer = (clientX: number, clientY: number) => {
@@ -1864,6 +1873,14 @@ export const GameBoard: React.FC<
         useGameStore.setState({
           score: newScore,
         });
+        
+        // Обновляем рекорд если нужно
+        const { onRecordUpdate } = useGameStore.getState();
+        if (onRecordUpdate && newScore > useGameStore.getState().playerRecord) {
+          onRecordUpdate(newScore).catch(error => {
+            console.error('Failed to update record after whirlwind:', error);
+          });
+        }
       }, 2000); // Примерное время анимации спиннера
     }
     // ... другие действия для других бустеров ...
