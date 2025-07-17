@@ -60,9 +60,8 @@ body {
 
 /* Telegram Immersive Fullscreen Mode */
 .tg-fullscreen {
-  /* В fullscreen режиме контент должен учитывать safe area и кнопки Telegram */
-  --content-padding-top: max(var(--safe-area-top), 44px);
-  --content-available-height: calc(var(--tg-viewport-height, 100vh) - var(--content-padding-top));
+  /* Отступы устанавливаются динамически через JavaScript на основе Telegram.WebApp.viewport.safeArea */
+  /* --content-padding-top и --content-available-height устанавливаются в layout.tsx */
 }
 
 /* Не в fullscreen - оставляем как есть */
@@ -110,24 +109,7 @@ body:not(.tg-fullscreen) {
     min-height: var(--tg-viewport-stable-height, 100dvh);
   }
   
-  /* Адаптивные отступы для мобильных устройств */
-  .tg-fullscreen {
-    --content-padding-top: max(var(--safe-area-top), 40px);
-  }
-}
-
-/* Дополнительные отступы для устройств с большим notch (iPhone X и новее) */
-@media (min-width: 375px) and (max-width: 414px) and (min-height: 812px) {
-  .tg-fullscreen {
-    --content-padding-top: max(var(--safe-area-top), 50px);
-  }
-}
-
-/* Планшеты и большие экраны */
-@media (min-width: 768px) {
-  .tg-fullscreen {
-    --content-padding-top: max(var(--safe-area-top), 48px);
-  }
+  /* Отступы теперь рассчитываются динамически в layout.tsx */
 }
 
 @font-face {

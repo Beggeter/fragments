@@ -106,17 +106,42 @@ export default function RootLayout({
                     document.body.classList.add('tg-fullscreen');
                     
                     setTimeout(() => {
-                      const computedStyle = getComputedStyle(root);
-                      const contentPaddingTop = computedStyle.getPropertyValue('--content-padding-top') || '44px';
-                      const paddingValue = parseInt(contentPaddingTop) || 44;
+                      // Получаем безопасные отступы от Telegram
+                      let safeAreaTop = 0;
+                      try {
+                        safeAreaTop = tg.viewport?.safeArea?.top || 0;
+                      } catch (error) {
+                        console.warn('Failed to get safeArea from Telegram:', error);
+                        // Fallback для устройств с notch
+                        const hasNotch = window.innerHeight >= 812 && window.innerWidth >= 375;
+                        safeAreaTop = hasNotch ? 44 : 20;
+                      }
                       
-                      root.style.setProperty('--content-available-height', 'calc(' + height + 'px - ' + paddingValue + 'px)');
+                      // Добавляем небольшой отступ для кнопок управления Telegram
+                      // Можно настроить через localStorage: telegramControlsOffset
+                      let telegramControlsOffset = 8;
+                      try {
+                        const savedOffset = localStorage.getItem('telegramControlsOffset');
+                        if (savedOffset !== null) {
+                          telegramControlsOffset = parseInt(savedOffset) || 8;
+                        }
+                      } catch (error) {
+                        console.warn('Failed to get controls offset from localStorage:', error);
+                      }
+                      
+                      const totalPaddingTop = safeAreaTop + telegramControlsOffset;
+                      
+                      root.style.setProperty('--content-padding-top', totalPaddingTop + 'px');
+                      root.style.setProperty('--content-available-height', 'calc(' + height + 'px - ' + totalPaddingTop + 'px)');
                       
                       console.log('Fullscreen mode activated:', {
                         height: height,
-                        contentPaddingTop: paddingValue,
-                        availableHeight: (height - paddingValue) + 'px',
-                        safeAreaTop: computedStyle.getPropertyValue('--safe-area-top'),
+                        safeAreaTop: safeAreaTop,
+                        telegramControlsOffset: telegramControlsOffset,
+                        totalPaddingTop: totalPaddingTop,
+                        availableHeight: (height - totalPaddingTop) + 'px',
+                        viewport: tg.viewport,
+                        hasViewportAPI: !!tg.viewport,
                         screenWidth: window.innerWidth,
                         screenHeight: window.innerHeight
                       });
