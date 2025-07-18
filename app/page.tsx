@@ -16,6 +16,7 @@ import LoadingSpinner from "../components/LoadingSpinner";
 import ShopScreen from "../components/ShopScreen";
 import LeaderboardScreen from "../components/LeaderboardScreen";
 import PieceReturnAnimation from "../components/board/PieceReturnAnimation";
+import TestStarsPayment from "../components/TestStarsPayment";
 
 type Screen =
   | "admin login"
@@ -714,6 +715,9 @@ const HomePage: React.FC = () => {
 
       {/* Fallback для отладки */}
       {!currentScreen && <LoadingScreen />}
+
+      {/* Тестовый компонент для Stars API (только в dev режиме) */}
+      <TestStarsPayment />
     </div>
   );
 };

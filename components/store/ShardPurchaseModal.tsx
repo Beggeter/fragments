@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { ShardPurchaseModalProps, CreateInvoiceRequest, CreateInvoiceResponse } from '@/types/shop';
-
-const isTelegramWebApp = () => {
-  return typeof window !== 'undefined' && window.Telegram?.WebApp;
-};
+import { ShardPurchaseModalProps } from '@/types/shop';
+import { 
+  isTelegramWebApp, 
+  createShardsInvoice, 
+  showTelegramAlert 
+} from '@/lib/utils/telegramStars';
 
 const ShardPurchaseModal: React.FC<ShardPurchaseModalProps> = ({ isOpen, onClose, pack, userId, onSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -11,15 +12,7 @@ const ShardPurchaseModal: React.FC<ShardPurchaseModalProps> = ({ isOpen, onClose
 
   if (!isOpen || !pack) return null;
 
-  // Получаем Telegram ID пользователя
-  const getTelegramChatId = (): number | null => {
-    if (isTelegramWebApp() && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
-      return window.Telegram.WebApp.initDataUnsafe.user.id;
-    }
-    return null;
-  };
-
-  // --- Оплата через Telegram Stars (новая система) ---
+  // --- Оплата через Telegram Stars API ---
   const handlePayWithStars = async () => {
     setIsLoading(true);
     setError(null);
@@ -31,68 +24,38 @@ const ShardPurchaseModal: React.FC<ShardPurchaseModalProps> = ({ isOpen, onClose
         return;
       }
 
-      const telegramChatId = getTelegramChatId();
-      if (!telegramChatId) {
-        setError('Telegram ID не найден. Убедитесь, что вы запустили приложение через Telegram.');
+      if (!isTelegramWebApp()) {
+        setError('Telegram WebApp не доступен. Убедитесь, что вы запустили приложение через Telegram.');
         setIsLoading(false);
         return;
       }
 
-      console.log('💎 Creating invoice for shard purchase:', {
+      console.log('💎 Creating Telegram Stars invoice for shard purchase:', {
         userId,
         packAmount: pack.amount,
-        packPrice: pack.price,
-        telegramChatId
+        packPrice: pack.price
       });
 
-      // Создаем запрос на создание инвойса
-      const invoiceRequest: CreateInvoiceRequest = {
-        userId: userId,
-        item: {
-          type: 'shards',
-          itemId: pack.amount.toString(),
-          metadata: {
-            packAmount: pack.amount,
-            packPrice: pack.price,
-            packIcon: pack.icon
-          }
-        },
-        telegramChatId: telegramChatId
-      };
+      // Создаем инвойс через Telegram Stars API
+      const result = await createShardsInvoice(userId, pack.amount, pack.price);
 
-      // Отправляем запрос на создание инвойса
-      const response = await fetch('/api/payment/create-invoice', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(invoiceRequest)
-      });
-
-      const result: CreateInvoiceResponse = await response.json();
-
-      if (!response.ok || !result.success) {
+      if (result.success) {
+        console.log('✅ Telegram Stars invoice opened successfully');
+        
+        // Показываем уведомление пользователю
+        showTelegramAlert('Инвойс открыт! Завершите оплату в Telegram.');
+        
+        // Закрываем модальное окно
+        onClose();
+        
+        // Вызываем колбэк успеха
+        onSuccess();
+      } else {
         throw new Error(result.error || 'Ошибка создания инвойса');
       }
 
-      console.log('✅ Invoice created successfully:', result);
-
-      // Показываем уведомление пользователю
-      if (isTelegramWebApp() && window.Telegram?.WebApp) {
-        const webApp = window.Telegram.WebApp as any;
-        if (webApp.showAlert) {
-          webApp.showAlert('Инвойс отправлен! Проверьте чат с ботом для оплаты.');
-        }
-      }
-
-      // Закрываем модальное окно
-      onClose();
-
-      // Показываем сообщение об успехе
-      setError(null);
-
     } catch (e: any) {
-      console.error('❌ Error creating invoice:', e);
+      console.error('❌ Error creating Telegram Stars invoice:', e);
       setError('Ошибка создания инвойса: ' + (e.message || 'Неизвестная ошибка'));
     } finally {
       setIsLoading(false);

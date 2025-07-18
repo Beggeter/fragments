@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { CreateInvoiceRequest, CreateInvoiceResponse } from '@/types/shop';
+import { 
+  isTelegramWebApp, 
+  createBoosterInvoice, 
+  showTelegramAlert 
+} from '@/lib/utils/telegramStars';
 
 interface BoosterPurchaseModalProps {
   isOpen: boolean;
@@ -18,10 +22,6 @@ interface BoosterPurchaseModalProps {
   onInsufficientFunds?: () => void;
   userId?: number; // Добавляем userId для интеграции с платежами
 }
-
-const isTelegramWebApp = () => {
-  return typeof window !== 'undefined' && window.Telegram?.WebApp;
-};
 
 const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
   isOpen,
@@ -52,15 +52,7 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
     }
   };
 
-  // Получаем Telegram ID пользователя
-  const getTelegramChatId = (): number | null => {
-    if (isTelegramWebApp() && window.Telegram?.WebApp?.initDataUnsafe?.user?.id) {
-      return window.Telegram.WebApp.initDataUnsafe.user.id;
-    }
-    return null;
-  };
-
-  // Покупка через Telegram Stars
+  // Покупка через Telegram Stars API
   const handlePayWithStars = async () => {
     setIsLoadingStars(true);
     setError(null);
@@ -71,67 +63,48 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
         return;
       }
 
-      const telegramChatId = getTelegramChatId();
-      if (!telegramChatId) {
-        setError('Telegram ID не найден. Убедитесь, что вы запустили приложение через Telegram.');
+      if (!isTelegramWebApp()) {
+        setError('Telegram WebApp не доступен. Убедитесь, что вы запустили приложение через Telegram.');
         return;
       }
 
-      console.log('🚀 Creating booster invoice:', {
+      console.log('🚀 Creating Telegram Stars booster invoice:', {
         userId,
         boosterId: booster.id,
+        boosterName: booster.name,
         quantity,
-        price: booster.price * quantity,
-        telegramChatId
+        unitPrice: booster.price,
+        totalPrice: booster.price * quantity
       });
 
-      // Создаем запрос на создание инвойса
-      const invoiceRequest: CreateInvoiceRequest = {
-        userId: userId,
-        item: {
-          type: 'booster',
-          itemId: booster.id,
-          quantity: quantity,
-          metadata: {
-            boosterName: booster.name,
-            boosterIcon: booster.icon,
-            unitPrice: booster.price,
-            totalPrice: booster.price * quantity
-          }
-        },
-        telegramChatId: telegramChatId
-      };
+      // Создаем инвойс через Telegram Stars API
+      const result = await createBoosterInvoice(
+        userId,
+        booster.id,
+        booster.name,
+        quantity,
+        booster.price
+      );
 
-      // Отправляем запрос на создание инвойса
-      const response = await fetch('/api/payment/create-invoice', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(invoiceRequest)
-      });
-
-      const result: CreateInvoiceResponse = await response.json();
-
-      if (!response.ok || !result.success) {
+      if (result.success) {
+        console.log('✅ Telegram Stars booster invoice opened successfully');
+        
+        // Показываем уведомление пользователю
+        showTelegramAlert('Инвойс открыт! Завершите оплату в Telegram.');
+        
+        // Закрываем модальное окно
+        onClose();
+        
+        // Вызываем колбэк успеха
+        if (onSuccess) {
+          onSuccess();
+        }
+      } else {
         throw new Error(result.error || 'Ошибка создания инвойса');
       }
 
-      console.log('✅ Booster invoice created successfully:', result);
-
-      // Показываем уведомление пользователю
-      if (isTelegramWebApp() && window.Telegram?.WebApp) {
-        const webApp = window.Telegram.WebApp as any;
-        if (webApp.showAlert) {
-          webApp.showAlert('Инвойс отправлен! Проверьте чат с ботом для оплаты.');
-        }
-      }
-
-      // Закрываем модальное окно
-      onClose();
-
     } catch (e: any) {
-      console.error('❌ Error creating booster invoice:', e);
+      console.error('❌ Error creating Telegram Stars booster invoice:', e);
       setError('Ошибка создания инвойса: ' + (e.message || 'Неизвестная ошибка'));
     } finally {
       setIsLoadingStars(false);
