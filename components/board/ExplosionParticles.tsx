@@ -55,7 +55,7 @@ const ExplosionParticles: React.FC<ExplosionParticlesProps> = ({
         
         for (let i = 0; i < count; i++) {
           const angle = (Math.PI * 2 * i) / count + (typeIndex * Math.PI / 6);
-          const distance = 80 + Math.random() * 120;
+          const distance = 120 + Math.random() * 180;
           const endX = centerXPx + Math.cos(angle) * distance;
           const endY = centerYPx + Math.sin(angle) * distance;
           
@@ -165,20 +165,12 @@ const ExplosionParticles: React.FC<ExplosionParticlesProps> = ({
           animate={{
             x: particle.endX,
             y: particle.endY,
-            scale: [0, 1, 0.8, 0],
-            opacity: [1, 1, 0.6, 0],
+            scale: [0, 1, 0],
+            opacity: [1, 1, 0],
           }}
           transition={{
             duration: particle.duration,
-            ease: "easeIn",
-            scale: {
-              duration: particle.duration,
-              times: [0, 0.1, 0.8, 1],
-            },
-            opacity: {
-              duration: particle.duration,
-              times: [0, 0.2, 0.8, 1],
-            },
+            ease: "easeOut",
           }}
           style={getParticleStyle(particle)}
         />
