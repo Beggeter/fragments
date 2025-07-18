@@ -877,7 +877,7 @@ export const GameBoard: React.FC<
                 color: usePlacedPieceColorInClearAnim
                   ? placedPieceColor
                   : board[y][x]?.color || placedPieceColor,
-                delay: y * 0.03,
+                delay: y * 0.01,
               });
             }
           }
@@ -886,13 +886,13 @@ export const GameBoard: React.FC<
       if (newAnims.length) {
         setClearAnimations((prev: AnimationCell[]) => [...prev, ...newAnims]);
         // Учитываем максимальный delay и длительность анимации взрыва (0.55s), плюс запас
-        const ANIMATION_DURATION = 0.3; // должно совпадать с BoardClearAnimationsOverlay
+        const ANIMATION_DURATION = 0.2; // должно совпадать с BoardClearAnimationsOverlay
         const maxDelay = Math.max(...newAnims.map((a) => a.delay ?? 0));
         setTimeout(() => {
           setClearAnimations((prev: AnimationCell[]) =>
             prev.filter((cell) => !newAnims.some((anim) => anim.id === cell.id))
           );
-        }, (maxDelay + ANIMATION_DURATION) * 1000 + 80);
+        }, (maxDelay + ANIMATION_DURATION) * 1000 + 50);
       }
     },
     []

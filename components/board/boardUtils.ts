@@ -100,25 +100,27 @@ export function handlePiecePlacement({
     // Сначала размещаем фигуру на временной доске
     const tempBoard = require("@/lib/core/engine").placeBlock(board, draggedPiece, hoverCell);
     const cellsToClear = getCellsToClear(tempBoard, draggedPiece, hoverCell);
-    if (addClearAnimations) addClearAnimations(tempBoard, cellsToClear, draggedPiece.color);
+    
+    // Сразу размещаем фигуру на доске
     placePiece(x, y);
+    
+    // Затем запускаем анимации очистки
+    if (addClearAnimations) addClearAnimations(tempBoard, cellsToClear, draggedPiece.color);
     // --- Добавляем вычисление pixelPosition только если есть очищаемые линии ---
     const hasCellsToClear = cellsToClear.some((row: any[]) => row.some((cell: any) => cell));
     if (hasCellsToClear) {
-      setTimeout(() => {
-        const { lastScoreResult } = useGameStore.getState();
-        if (
-          lastScoreResult &&
-          boardRect &&
-          dynamicCellSize &&
-          hoverCell
-        ) {
-          const pixelX = hoverCell.x * (dynamicCellSize + GAP_SIZE_PX);
-          const pixelY = hoverCell.y * (dynamicCellSize + GAP_SIZE_PX);
-          lastScoreResult.pixelPosition = { x: pixelX, y: pixelY };
-          useGameStore.setState({ lastScoreResult: { ...lastScoreResult } });
-        }
-      }, 0);
+      const { lastScoreResult } = useGameStore.getState();
+      if (
+        lastScoreResult &&
+        boardRect &&
+        dynamicCellSize &&
+        hoverCell
+      ) {
+        const pixelX = hoverCell.x * (dynamicCellSize + GAP_SIZE_PX);
+        const pixelY = hoverCell.y * (dynamicCellSize + GAP_SIZE_PX);
+        lastScoreResult.pixelPosition = { x: pixelX, y: pixelY };
+        useGameStore.setState({ lastScoreResult: { ...lastScoreResult } });
+      }
     }
     // --- конец блока pixelPosition ---
     if (onAfterPlacement) onAfterPlacement(cellsToClear, hoverCell, draggedPiece);

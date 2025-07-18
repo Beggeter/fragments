@@ -52,8 +52,8 @@ const BoardClearAnimationsOverlay: React.FC<BoardClearAnimationsOverlayProps> = 
   );
 };
 
-const MAIN_ANIM_DURATION = 0.22; // исчезновение основной клетки (чуть медленнее)
-const MINI_DELAY = 180; // задержка появления мини-клеток (мс)
+const MAIN_ANIM_DURATION = 0.15; // исчезновение основной клетки (быстрее)
+const MINI_DELAY = 100; // задержка появления мини-клеток (мс)
 
 const ExplosionCell: React.FC<{ cell: any; cellSize: number; gap: number }> = ({ cell, cellSize, gap }) => {
   const [showExplosion, setShowExplosion] = useState(false);
