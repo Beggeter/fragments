@@ -48,6 +48,7 @@ import ExplosionParticles from "./board/ExplosionParticles";
 import ExplosionFlash from "./board/ExplosionFlash";
 import { v4 as uuidv4 } from "uuid";
 import ClickEffect from "./ClickEffect";
+import LoadingSpinner from "./LoadingSpinner";
 import { useTranslation } from "react-i18next";
 
 const DEFAULT_CELL_SIZE = 43.75;
@@ -59,7 +60,6 @@ interface GameBoardProps {
   onScoreUpdate: (score: number) => void;
   onGameOver: () => void;
   onExitGame: () => void;
-  onShowSpinner?: () => void;
   onBoardRectChange?: (rect: DOMRect | null) => void;
   clearedLine?: number | null;
   onGoHome?: () => void;
@@ -354,14 +354,11 @@ const edgesToPathMemo = (() => {
   };
 })();
 
-export const GameBoard: React.FC<
-  GameBoardProps & { onShowSpinner?: () => void }
-> = ({
+export const GameBoard: React.FC<GameBoardProps> = ({
   width = 8,
   height = 8,
   onScoreUpdate,
   onGameOver,
-  onShowSpinner,
   onBoardRectChange,
   clearedLine,
   onGoHome,
@@ -580,6 +577,10 @@ export const GameBoard: React.FC<
   // Добавляем состояние для отслеживания намеренного перезапуска
   const [isIntentionalRestart, setIsIntentionalRestart] = useState(false);
 
+  // Состояние для LoadingSpinner
+  const [showSpinnerAnimation, setShowSpinnerAnimation] = useState(false);
+  const [clearedLines, setClearedLines] = useState<Set<number>>(new Set());
+
   // Создаем стабильную функцию для завершения перезапуска
   const handleRestartComplete = useCallback(() => {
     setIsIntentionalRestart(false);
@@ -587,6 +588,44 @@ export const GameBoard: React.FC<
       onRestartComplete();
     }
   }, [onRestartComplete]);
+
+  // Обработчики для LoadingSpinner
+  const handleLineBreakpoint = useCallback((lineIdx: number, rowIdx: number) => {
+    setClearedLines(prev => new Set([...prev, rowIdx]));
+    setTimeout(() => setClearedLines(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(rowIdx);
+      return newSet;
+    }), 100);
+  }, []);
+
+  const handleShowSpinnerAnimation = useCallback(() => {
+    setShowSpinnerAnimation(true);
+    setClearedLines(new Set());
+  }, []);
+
+  const handleSpinnerFinish = useCallback(() => {
+    setShowSpinnerAnimation(false);
+    setTimeout(() => {
+      setClearedLines(new Set());
+    }, 500);
+  }, []);
+
+  // Эффект для тряски экрана
+  useEffect(() => {
+    if (showSpinnerAnimation) {
+      document.body.classList.add("screen-shake");
+      const shakeTimeout = setTimeout(() => {
+        document.body.classList.remove("screen-shake");
+      }, 300);
+      return () => {
+        clearTimeout(shakeTimeout);
+        document.body.classList.remove("screen-shake");
+      };
+    } else {
+      document.body.classList.remove("screen-shake");
+    }
+  }, [showSpinnerAnimation]);
 
   // --- Вынести fetchBoosters наружу, чтобы использовать в useBooster ---
   const fetchBoosters = useCallback(async () => {
@@ -1862,9 +1901,7 @@ export const GameBoard: React.FC<
       ]);
 
       // Запускаем анимацию спиннера - поле будет очищаться поочередно во время анимации
-      if (onShowSpinner) {
-        onShowSpinner();
-      }
+      handleShowSpinnerAnimation();
       
       // Добавляем бонусные очки после завершения анимации
       setTimeout(() => {
@@ -2358,6 +2395,29 @@ export const GameBoard: React.FC<
                   isActive={explosionParticles.isActive}
                   onComplete={() => setExplosionParticles(null)}
                 />
+              )}
+
+              {/* LoadingSpinner внутри игрового поля */}
+              {showSpinnerAnimation && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    top: 0,
+                    width: "100%",
+                    height: "100%",
+                    zIndex: 9999,
+                    pointerEvents: "none",
+                    overflow: "hidden",
+                  }}
+                >
+                  <LoadingSpinner
+                    width={dynamicCellSize ? width * (dynamicCellSize + GAP_SIZE_PX) : 400}
+                    height={dynamicCellSize ? height * (dynamicCellSize + GAP_SIZE_PX) : 400}
+                    onFinish={handleSpinnerFinish}
+                    onLineBreakpoint={handleLineBreakpoint}
+                  />
+                </div>
               )}
             </div>
           </div>

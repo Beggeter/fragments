@@ -40,7 +40,7 @@ type SpinnerCell = {
 // Вынесем параметры скорости и длительности наверх, чтобы использовать их в обоих компонентах
 const FLY_SPEED = 400; // px/sec (можно подстроить)
 const BOUNCE_DURATION = 0.35; // сек, длительность взрыва
-const EXPLOSION_OFFSET = 40; // px, насколько выше поля будет взрыв
+const EXPLOSION_OFFSET = 80; // px, насколько выше поля будет взрыв - увеличили
 
 type LineProps = {
   lineIdx: number;
@@ -87,9 +87,9 @@ const Line = ({
   // --- scaleX: брейкпоинты на строках поля с учётом EXTRA ---
   const y = useMotionValue(startY);
   // Получаем те же y3, y5, y7, что и в родителе
-  const EXTRA = 200;
-  const getRowY = (rowIdx: number) =>
-    EXTRA + rowIdx * CELL_SIZE + rowIdx * GAP_PX;
+  const EXTRA = 400; // Увеличили дистанцию перемещения линий выше
+const getRowY = (rowIdx: number) =>
+  EXTRA + rowIdx * CELL_SIZE + rowIdx * GAP_PX;
   const y3 = getRowY(2);
   const y5 = getRowY(4);
   const y7 = getRowY(6);
@@ -108,15 +108,6 @@ const Line = ({
     }),
     1,
   ].sort((a, b) => a - b);
-
-  // Логирование для отладки анимации
-  // console.log(`Line ${lineIdx}:`);
-  // console.log('  startY:', startY);
-  // console.log('  topBounce:', topBounce);
-  // console.log('  finalY:', finalY);
-  // console.log('  topBounce - finalY:', topBounce - finalY);
-  // console.log('  breakpoints:', breakpoints);
-  // console.log('  scaleXTimes:', scaleXTimes);
 
   const scaleX = useTransform(
     y,
@@ -232,7 +223,7 @@ export const LoadingSpinner = ({
   const [finishedCount, setFinishedCount] = useState(0);
   const boardHeight = height ?? 0;
   const boardWidth = width ?? 0;
-  const EXTRA = 200; // запас вверх для анимации
+  const EXTRA = 400; // запас вверх для анимации - увеличили дистанцию
 
   // Генерируем линии и параметры только один раз
   const linesRef = useRef(getAllLines());

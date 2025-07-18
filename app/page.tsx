@@ -677,7 +677,6 @@ const HomePage: React.FC = () => {
           onExitGame={handleGoToMenu}
           onScoreUpdate={(newScore) => setScore(newScore)}
           onGameOver={handleGameOver}
-          onShowSpinner={handleShowSpinnerAnimation}
           onBoardRectChange={setBoardRect}
           clearedLine={clearedLine}
           onGoHome={handleGoToMenu}
