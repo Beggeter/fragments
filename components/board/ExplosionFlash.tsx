@@ -22,7 +22,7 @@ const ExplosionFlash: React.FC<ExplosionFlashProps> = ({
       const timer = setTimeout(() => {
         setShowFlash(false);
         if (onComplete) onComplete();
-      }, 300);
+      }, 200);
       return () => clearTimeout(timer);
     }
   }, [isActive, onComplete]);
@@ -36,9 +36,9 @@ const ExplosionFlash: React.FC<ExplosionFlashProps> = ({
         opacity: [0, 0.8, 0.4, 0],
       }}
       transition={{ 
-        duration: 0.3, 
+        duration: 0.2, 
         ease: "easeOut",
-        times: [0, 0.1, 0.5, 1]
+        times: [0, 0.05, 0.4, 1]
       }}
       style={{
         position: "fixed",

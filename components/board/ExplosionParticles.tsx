@@ -78,8 +78,8 @@ const ExplosionParticles: React.FC<ExplosionParticlesProps> = ({
                    type === "star" ? `hsl(${Math.random() * 60}, 100%, 80%)` : // Золотые звезды
                    type === "smoke" ? `hsl(0, 0%, ${30 + Math.random() * 40}%)` : // Серый дым
                    `hsl(${Math.random() * 360}, 100%, 70%)`, // Разноцветные блестки
-            delay: Math.random() * 0.2,
-            duration: 0.8 + Math.random() * 0.4,
+            delay: Math.random() * 0.1,
+            duration: 0.6 + Math.random() * 0.3,
             rotation: Math.random() * 360,
           };
           
@@ -92,7 +92,7 @@ const ExplosionParticles: React.FC<ExplosionParticlesProps> = ({
       const timer = setTimeout(() => {
         setParticles([]);
         if (onComplete) onComplete();
-      }, 1200);
+      }, 900);
       
       return () => clearTimeout(timer);
     }
@@ -174,11 +174,11 @@ const ExplosionParticles: React.FC<ExplosionParticlesProps> = ({
             ease: "easeOut",
             scale: {
               duration: particle.duration,
-              times: [0, 0.2, 0.8, 1],
+              times: [0, 0.1, 0.7, 1],
             },
             opacity: {
               duration: particle.duration,
-              times: [0, 0.3, 0.7, 1],
+              times: [0, 0.2, 0.6, 1],
             },
           }}
           style={getParticleStyle(particle)}
