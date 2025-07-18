@@ -71,9 +71,9 @@ const ExplosionWave: React.FC<ExplosionWaveProps> = ({
           opacity: [1, 0.8, 0.4, 0]
         }}
         transition={{ 
-          duration: 0.6, 
+          duration: 0.4, 
           ease: "easeOut",
-          opacity: { duration: 0.6, times: [0, 0.2, 0.6, 1] }
+          opacity: { duration: 0.4, times: [0, 0.1, 0.5, 1] }
         }}
         style={{
           position: "absolute",
@@ -97,10 +97,10 @@ const ExplosionWave: React.FC<ExplosionWaveProps> = ({
           opacity: [1, 0.6, 0.2, 0]
         }}
         transition={{ 
-          duration: 0.6, 
-          delay: 0.05,
+          duration: 0.4, 
+          delay: 0.02,
           ease: "easeOut",
-          opacity: { duration: 0.6, times: [0, 0.3, 0.7, 1] }
+          opacity: { duration: 0.4, times: [0, 0.2, 0.6, 1] }
         }}
         style={{
           position: "absolute",
@@ -124,10 +124,10 @@ const ExplosionWave: React.FC<ExplosionWaveProps> = ({
           opacity: [1, 0.4, 0.1, 0]
         }}
         transition={{ 
-          duration: 0.6, 
-          delay: 0.1,
+          duration: 0.4, 
+          delay: 0.05,
           ease: "easeOut",
-          opacity: { duration: 0.6, times: [0, 0.4, 0.8, 1] }
+          opacity: { duration: 0.4, times: [0, 0.3, 0.7, 1] }
         }}
         style={{
           position: "absolute",
@@ -166,10 +166,10 @@ const ExplosionWave: React.FC<ExplosionWaveProps> = ({
               y: endY,
             }}
             transition={{ 
-              duration: 0.6, 
-              delay: 0.05 + i * 0.03,
+              duration: 0.4, 
+              delay: 0.02 + i * 0.02,
               ease: "easeOut",
-              opacity: { duration: 0.6, times: [0, 0.1, 0.5, 1] }
+              opacity: { duration: 0.4, times: [0, 0.05, 0.4, 1] }
             }}
             style={{
               position: "absolute",
@@ -207,10 +207,10 @@ const ExplosionWave: React.FC<ExplosionWaveProps> = ({
               y: endY,
             }}
             transition={{ 
-              duration: 0.5, 
-              delay: 0.1 + i * 0.02,
+              duration: 0.3, 
+              delay: 0.05 + i * 0.01,
               ease: "easeOut",
-              opacity: { duration: 0.5, times: [0, 0.2, 0.6, 1] }
+              opacity: { duration: 0.3, times: [0, 0.1, 0.5, 1] }
             }}
             style={{
               position: "absolute",

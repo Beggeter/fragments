@@ -1453,7 +1453,7 @@ export const GameBoard: React.FC<
         // Бомба не размещает фигуру, поэтому не сохраняем clearedCells
       },
     ]);
-    // Анимация разлёта будет проигрываться 400 мс
+    // Анимация разлёта будет проигрываться 300 мс
     setTimeout(async () => {
       setExplodingCells(null);
       // --- Списываем бустер только после успешного применения ---
@@ -1464,7 +1464,7 @@ export const GameBoard: React.FC<
       } catch (error) {
         console.error('Error saving game after bomb:', error);
       }
-    }, 400);
+    }, 300);
     setBombMode(false);
     setBombCenter(null);
   };
@@ -2331,7 +2331,7 @@ export const GameBoard: React.FC<
                           rotate: cell.rot,
                           opacity: 0,
                         }}
-                        transition={{ duration: 0.25, ease: "easeOut" }}
+                        transition={{ duration: 0.2, ease: "easeInOut" }}
                         style={{
                           position: "absolute",
                           width: explodingCells.cellSize,
