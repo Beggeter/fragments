@@ -72,7 +72,7 @@ const MainMenu: FC<MainMenuProps> = ({ onStartClassic, onOpenShop, onOpenLeaderb
 
 const TopButtons: FC<{ onOpenShop: () => void; onOpenLeaderboard?: () => void }> = ({ onOpenShop, onOpenLeaderboard }) => {
   return (
-    <div className="flex flex-row justify-between items-start w-full z-100">
+    <div className="flex flex-row justify-between items-start w-full z-100" style={{ paddingTop: 'var(--tg-content-safe-area-inset-top, 0px)' }}>
       {/* Left side - Daily Missions and Store stacked vertically */}
       <div className="flex flex-col gap-4">
         {/* Daily Missions */}

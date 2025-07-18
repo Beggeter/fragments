@@ -1453,7 +1453,7 @@ export const GameBoard: React.FC<
         // Бомба не размещает фигуру, поэтому не сохраняем clearedCells
       },
     ]);
-    // Анимация разлёта будет проигрываться 500 мс
+    // Анимация разлёта будет проигрываться 400 мс
     setTimeout(async () => {
       setExplodingCells(null);
       // --- Списываем бустер только после успешного применения ---
@@ -1464,7 +1464,7 @@ export const GameBoard: React.FC<
       } catch (error) {
         console.error('Error saving game after bomb:', error);
       }
-    }, 500);
+    }, 400);
     setBombMode(false);
     setBombCenter(null);
   };
@@ -1957,7 +1957,7 @@ export const GameBoard: React.FC<
       <div
         className={`flex flex-col items-center gap-5 min-h-screen bg-[var(--game-background)] p-4 no-select will-change-auto`}
       >
-        <div className="flex justify-between w-full -mb-2 items-center sm:max-w-xs sm:max-h-xs">
+        <div className="flex justify-between w-full -mb-2 items-center sm:max-w-xs sm:max-h-xs" style={{ paddingTop: 'var(--tg-content-safe-area-inset-top, 0px)' }}>
           <div className="flex flex-row items-center jusyify-center gap-2">
             <img
               src={trophyImg.src}
@@ -2331,7 +2331,7 @@ export const GameBoard: React.FC<
                           rotate: cell.rot,
                           opacity: 0,
                         }}
-                        transition={{ duration: 0.28, ease: "easeIn" }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
                         style={{
                           position: "absolute",
                           width: explodingCells.cellSize,

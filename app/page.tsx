@@ -562,7 +562,9 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen menu-bg">
+    <div className="min-h-screen menu-bg" style={{
+      paddingTop: "var(--tg-content-safe-area-inset-top)"
+    }}>
       {/* Overlay spinner */}
       {showSpinnerAnimation && boardRect && (
         <div
