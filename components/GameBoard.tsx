@@ -592,6 +592,18 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   // Обработчики для LoadingSpinner
   const handleLineBreakpoint = useCallback((lineIdx: number, rowIdx: number) => {
     setClearedLines(prev => new Set([...prev, rowIdx]));
+    
+    // Добавляем небольшую задержку чтобы избежать конфликтов при быстрых обновлениях
+    setTimeout(() => {
+      // Очищаем конкретную линию когда анимация проходит через неё
+      // Используем функциональный апдейт для избежания конфликтов состояния
+      useGameStore.setState((state) => ({
+        board: state.board.map((row, y) =>
+          y === rowIdx ? row.map(() => ({ value: 0 })) : row
+        )
+      }));
+    }, lineIdx * 50); // Задержка в зависимости от номера линии
+    
     setTimeout(() => setClearedLines(prev => {
       const newSet = new Set(prev);
       newSet.delete(rowIdx);
@@ -606,6 +618,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const handleSpinnerFinish = useCallback(() => {
     setShowSpinnerAnimation(false);
+    
     setTimeout(() => {
       setClearedLines(new Set());
     }, 500);
