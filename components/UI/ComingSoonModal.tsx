@@ -7,9 +7,15 @@ interface ComingSoonModalProps {
   isOpen?: boolean;
   onClose: () => void;
   feature?: string;
+  iconSrc?: string; // Новый пропс для иконки
 }
 
-const ComingSoonModal: FC<ComingSoonModalProps> = ({ isOpen = true, onClose, feature = "ZEN режим" }) => {
+const ComingSoonModal: FC<ComingSoonModalProps> = ({ 
+  isOpen = true, 
+  onClose, 
+  feature = "ZEN режим",
+  iconSrc = "/stars.svg" // По умолчанию используем stars.svg
+}) => {
   const { t } = useTranslation();
   
   if (!isOpen) return null;
@@ -46,7 +52,7 @@ const ComingSoonModal: FC<ComingSoonModalProps> = ({ isOpen = true, onClose, fea
                 {/* Icon */}
                 <div className="mx-auto w-24 h-24 bg-gradient-to-br from-orange-400/20 to-orange-500/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-orange-400/30">
                   <img
-                    src="/stars.svg"
+                    src={iconSrc}
                     alt="Coming Soon"
                     className="w-12 h-12 opacity-90 drop-shadow-lg"
                   />

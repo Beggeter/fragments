@@ -42,7 +42,7 @@ const MainMenu: FC<MainMenuProps> = ({ onStartClassic, onOpenShop, onOpenLeaderb
 
 
         <main className="flex flex-col gap-[15vh] items-center">
-          <TopButtons onOpenShop={onOpenShop} onOpenLeaderboard={onOpenLeaderboard} />
+          <TopButtons onOpenShop={onOpenShop} onOpenLeaderboard={onOpenLeaderboard} onShowComingSoon={() => setShowComingSoon(true)} />
           <img
             src={logo.src}
             alt="FRAGMENTS"
@@ -64,13 +64,15 @@ const MainMenu: FC<MainMenuProps> = ({ onStartClassic, onOpenShop, onOpenLeaderb
       {/* Coming Soon Modal */}
       <ComingSoonModal 
         isOpen={showComingSoon} 
-        onClose={() => setShowComingSoon(false)} 
+        onClose={() => setShowComingSoon(false)}
+        feature="Daily Missions"
+        iconSrc="/bullseye.svg"
       />
     </>
   );
 };
 
-const TopButtons: FC<{ onOpenShop: () => void; onOpenLeaderboard?: () => void }> = ({ onOpenShop, onOpenLeaderboard }) => {
+const TopButtons: FC<{ onOpenShop: () => void; onOpenLeaderboard?: () => void; onShowComingSoon: () => void }> = ({ onOpenShop, onOpenLeaderboard, onShowComingSoon }) => {
   return (
     <div className="flex flex-row justify-between items-start w-full z-100" style={{ paddingTop: 'var(--tg-content-safe-area-inset-top, 0px)' }}>
       {/* Left side - Daily Missions and Store stacked vertically */}
@@ -84,10 +86,11 @@ const TopButtons: FC<{ onOpenShop: () => void; onOpenLeaderboard?: () => void }>
               <span>Missions</span>
             </>
           }
-          gradientClass="orange-gradient"
-          notificationCount={2}
-          className="w-[35vw] sm:w-1/2 md:w-1/3 max-w-3xs rounded-r-2xl menu-button-static"
-          textClasses="font-bold leading-6 text-[1.7em]"
+          gradientClass="gray-gradient-disabled"
+          notificationCount={0}
+          className="w-[35vw] sm:w-1/2 md:w-1/3 max-w-3xs rounded-r-2xl menu-button-static opacity-70"
+          textClasses="font-bold leading-6 text-[1.7em] opacity-70"
+          onClick={onShowComingSoon}
         />
         
         {/* Store */}

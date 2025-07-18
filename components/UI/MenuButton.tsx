@@ -15,6 +15,7 @@ interface MenuButtonProps {
   onClick?: () => void; // Обработчик клика
   textClasses?: string;
   imageClasses?: string;
+  disabled?: boolean; // Новый пропс для недоступного состояния
 }
 
 const MenuButton: FC<MenuButtonProps> = ({
@@ -27,6 +28,7 @@ const MenuButton: FC<MenuButtonProps> = ({
   onClick,
   textClasses = "",
   imageClasses,
+  disabled = false,
 }) => {
   // Функция для определения, является ли иконка SVG
   const isSvg = (icon: StaticImageData | string) => {
@@ -38,6 +40,7 @@ const MenuButton: FC<MenuButtonProps> = ({
   
   const vibration = useSettingsStore((state) => state.vibrationValue);
   const handleClick = () => {
+    if (disabled) return; // Не выполняем действие если кнопка недоступна
     vibrate(vibration)
     onClick?.()
   }
@@ -86,8 +89,9 @@ const MenuButton: FC<MenuButtonProps> = ({
 
   return (
     <button
-      className={`menu-button ${gradientClass} ${className}`}
+      className={`menu-button ${gradientClass} ${className} ${disabled ? 'opacity-70 cursor-not-allowed' : ''}`}
       onClick={handleClick}
+      disabled={disabled}
     >
       <span className="flex flex-row items-center gap-2 w-full justify-center">
         {/* Левая иконка */}
