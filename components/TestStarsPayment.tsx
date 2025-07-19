@@ -78,9 +78,13 @@ const TestStarsPayment: React.FC = () => {
   };
 
   const checkEnvironment = () => {
+    const webApp = (window as any).Telegram?.WebApp;
     const checks = {
       'Telegram WebApp': isTelegramWebApp(),
       'User ID': getTelegramUserId() ? 'Найден' : 'Не найден',
+      'WebApp Version': webApp?.version || 'Неизвестно',
+      'Platform': webApp?.platform || 'Неизвестно',
+      'Stars API': webApp?.mainButton?.showInvoice ? '✅ Доступен' : '❌ Недоступен',
       'Environment': process.env.NODE_ENV
     };
 

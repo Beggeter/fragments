@@ -72,6 +72,39 @@ export const validatePayloadSize = (payload: string, maxSize: number = 128): boo
   return size <= maxSize;
 };
 
+// Fallback: создает инвойс через бота (старый метод)
+export const createInvoiceViaBot = async (
+  invoice: any
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    console.log('🔄 Using fallback method: creating invoice via bot');
+    
+    const response = await fetch('/api/payment/create-invoice', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(invoice)
+    });
+
+    const data = await response.json();
+
+    if (response.ok && data.success) {
+      console.log('✅ Invoice created via bot successfully');
+      return { success: true };
+    } else {
+      throw new Error(data.error || 'Failed to create invoice via bot');
+    }
+
+  } catch (error: any) {
+    console.error('❌ Error creating invoice via bot:', error);
+    return { 
+      success: false, 
+      error: error.message || 'Failed to create invoice via bot' 
+    };
+  }
+};
+
 // Создает инвойс для покупки осколков
 export const createShardsInvoice = async (
   userId: number,
@@ -185,6 +218,19 @@ export const createTelegramStarsInvoice = async (
       throw new Error('mainButton not available in this Telegram WebApp version');
     }
 
+    // Проверяем версию Telegram WebApp
+    const version = webApp.version || '6.0';
+    const isVersionSupported = webApp.isVersionAtLeast && webApp.isVersionAtLeast('7.0');
+    
+    console.log('📱 Telegram WebApp version:', version);
+    console.log('🔍 Stars API supported:', isVersionSupported);
+
+    // Проверяем, доступен ли метод showInvoice
+    if (!webApp.mainButton.showInvoice) {
+      console.warn('⚠️ Stars API not available, trying fallback method');
+      return await createInvoiceViaBot(invoice);
+    }
+
     // Создаем инвойс через Telegram Stars API
     const result = await webApp.mainButton.showInvoice(invoice);
     
@@ -197,6 +243,13 @@ export const createTelegramStarsInvoice = async (
 
   } catch (error: any) {
     console.error('❌ Error creating Telegram Stars invoice:', error);
+    
+    // Если Stars API недоступен, пробуем fallback
+    if (error.message.includes('showInvoice') || error.message.includes('not available')) {
+      console.log('🔄 Trying fallback method...');
+      return await createInvoiceViaBot(invoice);
+    }
+    
     return { 
       success: false, 
       error: error.message || 'Failed to create invoice' 
