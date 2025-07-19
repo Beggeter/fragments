@@ -17,6 +17,7 @@ import ShopScreen from "../components/ShopScreen";
 import LeaderboardScreen from "../components/LeaderboardScreen";
 import PieceReturnAnimation from "../components/board/PieceReturnAnimation";
 import TestStarsPayment from "../components/TestStarsPayment";
+import TestInvoiceSystem from "../components/TestInvoiceSystem";
 
 type Screen =
   | "admin login"
@@ -718,6 +719,9 @@ const HomePage: React.FC = () => {
 
       {/* Тестовый компонент для Stars API (только в dev режиме) */}
       <TestStarsPayment />
+      
+      {/* Тестовый компонент для новой Invoice системы (только в dev режиме) */}
+      <TestInvoiceSystem />
     </div>
   );
 };

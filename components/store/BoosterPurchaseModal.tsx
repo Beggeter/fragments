@@ -87,10 +87,10 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
       );
 
       if (result.success) {
-        console.log('✅ Telegram Stars booster invoice opened successfully');
+        console.log('✅ Payment successful!');
         
         // Показываем уведомление пользователю
-        showTelegramAlert('Инвойс открыт! Завершите оплату в Telegram.');
+        showTelegramAlert('Оплата прошла успешно! Бустер добавлен.');
         
         // Закрываем модальное окно
         onClose();
@@ -100,7 +100,11 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
           onSuccess();
         }
       } else {
-        throw new Error(result.error || 'Ошибка создания инвойса');
+        if (result.error === 'Payment cancelled') {
+          showTelegramAlert('Оплата отменена');
+        } else {
+          throw new Error(result.error || 'Ошибка создания инвойса');
+        }
       }
 
     } catch (e: any) {

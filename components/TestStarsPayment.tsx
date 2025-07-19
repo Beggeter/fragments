@@ -31,8 +31,8 @@ const TestStarsPayment: React.FC = () => {
       const response = await createShardsInvoice(userId, 100, 50);
 
       if (response.success) {
-        setResult('✅ Инвойс для осколков открыт успешно!');
-        showTelegramAlert('Тестовый инвойс открыт!');
+        setResult('✅ Платеж за осколки прошел успешно!');
+        showTelegramAlert('Тестовый платеж успешен!');
       } else {
         setResult(`❌ Ошибка: ${response.error}`);
       }
@@ -64,8 +64,8 @@ const TestStarsPayment: React.FC = () => {
       const response = await createBoosterInvoice(userId, 'undo', 'Undo', 1, 20);
 
       if (response.success) {
-        setResult('✅ Инвойс для бустера открыт успешно!');
-        showTelegramAlert('Тестовый инвойс открыт!');
+        setResult('✅ Платеж за бустер прошел успешно!');
+        showTelegramAlert('Тестовый платеж успешен!');
       } else {
         setResult(`❌ Ошибка: ${response.error}`);
       }

@@ -40,10 +40,10 @@ const ShardPurchaseModal: React.FC<ShardPurchaseModalProps> = ({ isOpen, onClose
       const result = await createShardsInvoice(userId, pack.amount, pack.price);
 
       if (result.success) {
-        console.log('✅ Telegram Stars invoice opened successfully');
+        console.log('✅ Payment successful!');
         
         // Показываем уведомление пользователю
-        showTelegramAlert('Инвойс открыт! Завершите оплату в Telegram.');
+        showTelegramAlert('Оплата прошла успешно! Осколки начислены.');
         
         // Закрываем модальное окно
         onClose();
@@ -51,7 +51,11 @@ const ShardPurchaseModal: React.FC<ShardPurchaseModalProps> = ({ isOpen, onClose
         // Вызываем колбэк успеха
         onSuccess();
       } else {
-        throw new Error(result.error || 'Ошибка создания инвойса');
+        if (result.error === 'Payment cancelled') {
+          showTelegramAlert('Оплата отменена');
+        } else {
+          throw new Error(result.error || 'Ошибка создания инвойса');
+        }
       }
 
     } catch (e: any) {

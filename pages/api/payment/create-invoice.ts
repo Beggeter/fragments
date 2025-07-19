@@ -1,10 +1,24 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import TelegramBot from 'node-telegram-bot-api';
-import { CreateInvoiceRequest, CreateInvoiceResponse, PaymentPayload, TelegramInvoice } from '@/types/shop';
 import { SHARD_PACKS, BOOSTERS } from '@/components/store/storeItems';
 import { UserService } from '@/lib/db/services';
 
 const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN!, { polling: false });
+
+interface CreateInvoiceRequest {
+  userId: number;
+  item: {
+    type: 'shards' | 'booster';
+    itemId: string;
+    quantity?: number;
+  };
+}
+
+interface CreateInvoiceResponse {
+  success: boolean;
+  invoiceSlug?: string;
+  error?: string;
+}
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse<CreateInvoiceResponse>) {
   if (req.method !== 'POST') {
@@ -12,12 +26,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
   }
 
   try {
-    const { userId, item, telegramChatId }: CreateInvoiceRequest = req.body;
+    const { userId, item }: CreateInvoiceRequest = req.body;
 
-    if (!userId || !item || !telegramChatId) {
+    if (!userId || !item) {
       return res.status(400).json({ 
         success: false, 
-        error: 'userId, item and telegramChatId are required' 
+        error: 'userId and item are required' 
       });
     }
 
@@ -27,8 +41,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
-    let invoiceData: TelegramInvoice;
-    let paymentPayload: PaymentPayload;
+    let invoiceData: any;
+    let paymentPayload: any;
 
     // Создаем инвойс в зависимости от типа товара
     switch (item.type) {
@@ -38,14 +52,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           return res.status(404).json({ success: false, error: 'Shard pack not found' });
         }
 
-        // Используем короткие имена полей для экономии места в payload
+        // Создаем compact payload
         paymentPayload = {
           u: userId,               // userId
           t: 'shards',            // itemType  
           i: item.itemId,         // itemId
           a: shardPack.amount,    // amount
           p: shardPack.price,     // price
-        } as any;
+        };
 
         invoiceData = {
           title: `Пакет осколков (${shardPack.amount})`,
@@ -56,7 +70,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             label: `${shardPack.amount} осколков`,
             amount: shardPack.price
           }],
-          // Убираем photo_url так как SVG не поддерживается Telegram Stars API
+          need_name: false,
+          need_phone_number: false,
+          need_email: false,
+          need_shipping_address: false,
+          is_flexible: false,
         };
         break;
       }
@@ -70,7 +88,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         const quantity = item.quantity || 1;
         const totalPrice = booster.price * quantity;
 
-        // Используем короткие имена полей для экономии места в payload
+        // Создаем compact payload
         paymentPayload = {
           u: userId,               // userId
           t: 'booster',           // itemType
@@ -78,7 +96,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           q: quantity,            // quantity
           a: quantity,            // amount
           p: totalPrice,          // price
-        } as any;
+        };
 
         invoiceData = {
           title: `${booster.name} ${quantity > 1 ? `x${quantity}` : ''}`,
@@ -89,7 +107,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
             label: `${booster.name}${quantity > 1 ? ` x${quantity}` : ''}`,
             amount: totalPrice
           }],
-          // Убираем photo_url так как SVG не поддерживается Telegram Stars API
+          need_name: false,
+          need_phone_number: false,
+          need_email: false,
+          need_shipping_address: false,
+          is_flexible: false,
         };
         break;
       }
@@ -108,14 +130,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       maxSize: 128
     });
 
-    console.log('📄 Invoice data:', {
-      title: invoiceData.title,
-      description: invoiceData.description,
-      currency: invoiceData.currency,
-      prices: invoiceData.prices,
-      payloadSize: payloadSize
-    });
-
     if (payloadSize > 128) {
       console.error('❌ Payload too large:', { size: payloadSize, payload: payloadString });
       return res.status(400).json({ 
@@ -124,45 +138,47 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       });
     }
 
-    // Отправляем инвойс пользователю
+    // Создаем инвойс через Bot API
     try {
-      const invoiceOptions = {
-        need_name: false,
-        need_phone_number: false,
-        need_email: false,
-        need_shipping_address: false,
-        is_flexible: false,
-      } as any; // Приводим к any для совместимости с Telegram Stars API
-
       const invoiceMessage = await bot.sendInvoice(
-        telegramChatId,
+        userId, // Используем userId как chat_id
         invoiceData.title,
         invoiceData.description,
         payloadString, // payload
         '', // provider_token (пустой для Telegram Stars)
         invoiceData.currency,
         invoiceData.prices,
-        invoiceOptions
+        invoiceData
       );
 
-      console.log('✅ Invoice sent successfully:', {
+      // Извлекаем slug из результата sendInvoice
+      // Используем any для обхода проблем с типами
+      const invoiceSlug = (invoiceMessage as any).invoice?.invoice_id || 
+                         (invoiceMessage as any).invoice_id || 
+                         null;
+
+      if (!invoiceSlug) {
+        console.error('❌ Invoice response structure:', JSON.stringify(invoiceMessage, null, 2));
+        throw new Error('Failed to get invoice slug');
+      }
+
+      console.log('✅ Invoice created successfully:', {
         userId,
-        telegramChatId,
         itemType: item.type,
         itemId: item.itemId,
-        messageId: invoiceMessage.message_id
+        invoiceSlug
       });
 
       return res.status(200).json({
         success: true,
-        invoiceLink: `https://t.me/c/${Math.abs(telegramChatId)}/${invoiceMessage.message_id}`
+        invoiceSlug
       });
 
     } catch (telegramError: any) {
-      console.error('❌ Error sending invoice:', telegramError);
+      console.error('❌ Error creating invoice:', telegramError);
       return res.status(500).json({
         success: false,
-        error: `Failed to send invoice: ${telegramError.message}`
+        error: `Failed to create invoice: ${telegramError.message}`
       });
     }
 
