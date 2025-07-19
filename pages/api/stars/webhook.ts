@@ -91,20 +91,27 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return res.status(200).json({ ok: true }); // Отвечаем успехом, чтобы не было повторных попыток
         }
 
-        // Обрабатываем платеж в зависимости от типа товара
+                // Обрабатываем платеж в зависимости от типа товара
         switch (paymentData.itemType) {
           case 'shards':
-            await CurrencyService.addShards(user.telegramId, paymentData.amount);
+            await CurrencyService.addCurrency(
+              user.id, // Используем внутренний ID пользователя
+              paymentData.amount,
+              'STARS_PURCHASE' as any,
+              `Stars purchase: ${paymentData.amount} shards`
+            );
             console.log('✅ Shards payment processed:', {
-              userId: user.telegramId,
+              userId: user.id,
+              telegramId: user.telegramId,
               amount: paymentData.amount
             });
             break;
           
           case 'booster':
-            await BoosterService.addBooster(user.telegramId, paymentData.itemId, paymentData.quantity || 1);
+            await BoosterService.addUserBooster(user.id, parseInt(paymentData.itemId), paymentData.quantity || 1);
             console.log('✅ Booster payment processed:', {
-              userId: user.telegramId,
+              userId: user.id,
+              telegramId: user.telegramId,
               boosterId: paymentData.itemId,
               quantity: paymentData.quantity
             });
