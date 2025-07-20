@@ -22,7 +22,7 @@ const ExplosionFlash: React.FC<ExplosionFlashProps> = ({
       const timer = setTimeout(() => {
         setShowFlash(false);
         if (onComplete) onComplete();
-      }, 150);
+      }, 300);
       return () => clearTimeout(timer);
     }
   }, [isActive, onComplete]);

@@ -457,6 +457,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     centerX: number;
     centerY: number;
     isActive: boolean;
+    key?: number;
   } | null>(null);
 
   // Состояние для частиц взрыва
@@ -498,6 +499,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     previousState: any;
     restoreBoardState: () => void;
     restorePiecesState: () => void;
+  } | null>(null);
+
+  // --- Состояния для эффектов бомбы ---
+  const [bombGatherParticles, setBombGatherParticles] = useState<{
+    centerX: number;
+    centerY: number;
+    isActive: boolean;
+    targets: { x: number; y: number }[];
+    key: number;
   } | null>(null);
 
   // Функция для второй фазы undo - анимация возвращения фигуры
@@ -1462,7 +1472,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       centerX: cx,
       centerY: cy,
       isActive: true,
+      key: Date.now(), // <--- добавьте это
     });
+
+    console.log('ExplosionWave set:', { cx, cy });
     
     // Запускаем частицы взрыва
     setExplosionParticles({
@@ -1528,13 +1541,50 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     if (!cell) return;
     setBombCenter(cell);
     setBombHoldActive(true);
-    const timer = setTimeout(() => {
-      setBombHoldActive(false);
-      handleBombExplode(cell);
-      setBombMode(false);
-      setBombCenter(null);
-    }, 700);
-    setBombHoldTimer(timer);
+    // Генерируем gather-частицы
+    const gridW = board[0].length;
+    const gridH = board.length;
+    const { cx, cy } = getBombHighlightCenter(cell, gridW, gridH) || { cx: -1, cy: -1 };
+    if (cx !== -1 && cy !== -1) {
+      // Периметр 5x5 вокруг центра, исключая внутренние 3x3
+      const gatherRadius = 2; // 5x5
+      const targets: { x: number; y: number }[] = [];
+      for (let dy = -gatherRadius; dy <= gatherRadius; dy++) {
+        for (let dx = -gatherRadius; dx <= gatherRadius; dx++) {
+          // Только клетки по периметру 5x5, не входящие в 3x3
+          if (
+            Math.abs(dx) === gatherRadius ||
+            Math.abs(dy) === gatherRadius
+          ) {
+            const x = cx + dx;
+            const y = cy + dy;
+            if (x >= 0 && x < gridW && y >= 0 && y < gridH) {
+              targets.push({ x, y });
+            }
+          }
+        }
+      }
+      if (cx !== -1 && cy !== -1) {
+        const timer = setTimeout(() => {
+          setBombHoldActive(false);
+          // Имплозия перед взрывом
+          setBombGatherParticles({
+            centerX: cx,
+            centerY: cy,
+            isActive: true,
+            targets,
+            key: Date.now(),
+          });
+          setTimeout(() => {
+            setBombGatherParticles(null);
+            handleBombExplode(cell);
+            setBombMode(false);
+            setBombCenter(null);
+          }, 260); // После имплозии — взрыв
+        }, 500);
+        setBombHoldTimer(timer);
+      }
+    }
   };
 
   const handleBombMouseUp = () => {
@@ -1557,13 +1607,48 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     if (!cell) return;
     setBombCenter(cell);
     setBombHoldActive(true);
-    const timer = setTimeout(() => {
-      setBombHoldActive(false);
-      handleBombExplode(cell);
-      setBombMode(false);
-      setBombCenter(null);
-    }, 500);
-    setBombHoldTimer(timer);
+    // Генерируем gather-частицы
+    const gridW = board[0].length;
+    const gridH = board.length;
+    const { cx, cy } = getBombHighlightCenter(cell, gridW, gridH) || { cx: -1, cy: -1 };
+    if (cx !== -1 && cy !== -1) {
+      // Периметр 5x5 вокруг центра, исключая внутренние 3x3
+      const gatherRadius = 3; 
+      const targets: { x: number; y: number }[] = [];
+      for (let dy = -gatherRadius; dy <= gatherRadius; dy++) {
+        for (let dx = -gatherRadius; dx <= gatherRadius; dx++) {
+          if (
+            Math.abs(dx) === gatherRadius ||
+            Math.abs(dy) === gatherRadius
+          ) {
+            const x = cx + dx;
+            const y = cy + dy;
+            if (x >= 0 && x < gridW && y >= 0 && y < gridH) {
+              targets.push({ x, y });
+            }
+          }
+        }
+      }
+      if (cx !== -1 && cy !== -1) {
+        const timer = setTimeout(() => {
+          setBombHoldActive(false);
+          setBombGatherParticles({
+            centerX: cx,
+            centerY: cy,
+            isActive: true,
+            targets,
+            key: Date.now(),
+          });
+          setTimeout(() => {
+            setBombGatherParticles(null);
+            handleBombExplode(cell);
+            setBombMode(false);
+            setBombCenter(null);
+          }, 260);
+        }, 500);
+        setBombHoldTimer(timer);
+      }
+    }
   };
 
   const handleBombTouchEnd = handleBombMouseUp;
@@ -1896,36 +1981,38 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       setBombCenter(null);
       return;
     }
-    const ok = await useBooster(boosterId);
-    if (!ok) return;
     if (boosterId === "undo") {
-      handleUndo();
-    } else if (boosterId === "whirlwind") {
-      // Сохраняем текущее состояние для undo
-      setHistory((prev) => [
-        ...prev,
-        {
-          board: board.map((row) => row.map((cell) => ({ ...cell }))),
-          score: score,
-          currentPieces: currentPieces.map((piece) => ({ ...piece })),
-          piecesPlaced: piecesPlaced,
-          // Whirlwind не размещает фигуру, поэтому не сохраняем clearedCells
-        },
-      ]);
-
-      // Запускаем анимацию спиннера - поле будет очищаться поочередно во время анимации
-      handleShowSpinnerAnimation();
-      
-      // Добавляем бонусные очки после завершения анимации
-      setTimeout(() => {
-        const newScore = score + 300;
-        useGameStore.setState({
-          score: newScore,
-        });
-      }, 2000); // Примерное время анимации спиннера
+      handleUndo(); // Сначала мгновенно применяем undo
+      // Списываем бустер и обновляем панель в фоне
+      useBooster(boosterId).then(ok => {
+        if (!ok) {
+          alert("Ошибка списания бустера");
+        } else {
+          fetchBoosters();
+        }
+      });
+    } else {
+      const ok = await useBooster(boosterId);
+      if (!ok) return;
+      if (boosterId === "whirlwind") {
+        setHistory((prev) => [
+          ...prev,
+          {
+            board: board.map((row) => row.map((cell) => ({ ...cell }))),
+            score: score,
+            currentPieces: currentPieces.map((piece) => ({ ...piece })),
+            piecesPlaced: piecesPlaced,
+          },
+        ]);
+        handleShowSpinnerAnimation();
+        setTimeout(() => {
+          const newScore = score + 300;
+          useGameStore.setState({
+            score: newScore,
+          });
+        }, 2000);
+      }
     }
-    // ... другие действия для других бустеров ...
-
     // Сохраняем игру после использования бустера
     forceSave();
   };
@@ -2007,7 +2094,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       <div
         className={`flex flex-col items-center gap-5 min-h-screen bg-[var(--game-background)] p-4 no-select will-change-auto`}
       >
-        <div className="flex justify-between w-full -mb-2 items-center sm:max-w-xs sm:max-h-xs" style={{ paddingTop: 'var(--tg-content-safe-area-inset-top, 0px)' }}>
+        <div className="flex justify-between w-full -mb-2 items-center sm:max-w-xs sm:max-h-xs" 
+        style={{ paddingTop: 'var(--tg-content-safe-area-inset-top, 0px)' }}
+        >
           <div className="flex flex-row items-center jusyify-center gap-2">
             <img
               src={trophyImg.src}
@@ -2242,7 +2331,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 >
                   {/* Волна взрыва */}
                   {explosionWave && (
+                    console.log('Rendering ExplosionWave', explosionWave),
                     <ExplosionWave
+                      key={explosionWave.key} // <--- добавьте key
                       centerX={explosionWave.centerX}
                       centerY={explosionWave.centerY}
                       boardWidth={width}
@@ -2431,6 +2522,22 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     onLineBreakpoint={handleLineBreakpoint}
                   />
                 </div>
+              )}
+              {/* Быстрый эффект сбора частиц к краям 3x3 при удержании бомбы */}
+              {bombGatherParticles && (
+                <ExplosionParticles
+                  key={bombGatherParticles.key}
+                  centerX={bombGatherParticles.centerX}
+                  centerY={bombGatherParticles.centerY}
+                  boardWidth={width}
+                  boardHeight={height}
+                  cellSize={dynamicCellSize || DEFAULT_CELL_SIZE}
+                  gap={GAP_SIZE_PX}
+                  isActive={bombGatherParticles.isActive}
+                  mode="gather"
+                  gatherTargets={bombGatherParticles.targets}
+                  onComplete={() => {}}
+                />
               )}
             </div>
           </div>

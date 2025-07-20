@@ -10,6 +10,8 @@ interface ExplosionParticlesProps {
   gap: number;
   isActive: boolean;
   onComplete?: () => void;
+  mode?: "explode" | "gather"; // Новый проп
+  gatherTargets?: { x: number; y: number }[]; // Для режима gather
 }
 
 type ParticleType = "fire" | "spark" | "debris" | "star" | "smoke" | "glitter";
@@ -37,35 +39,32 @@ const ExplosionParticles: React.FC<ExplosionParticlesProps> = ({
   gap,
   isActive,
   onComplete,
+  mode = "explode",
+  gatherTargets = [],
 }) => {
   const [particles, setParticles] = useState<Particle[]>([]);
 
   useEffect(() => {
     if (isActive) {
-      // Создаем частицы
       const newParticles: Particle[] = [];
       const centerXPx = centerX * (cellSize + gap) + cellSize / 2;
       const centerYPx = centerY * (cellSize + gap) + cellSize / 2;
-      
-      // Генерируем разные типы частиц
-      const particleTypes: ParticleType[] = ["fire", "spark", "debris", "star", "smoke", "glitter"];
-      
-      particleTypes.forEach((type, typeIndex) => {
-        const count = type === "fire" ? 15 : type === "spark" ? 10 : type === "smoke" ? 8 : 6;
-        
-        for (let i = 0; i < count; i++) {
-          const angle = (Math.PI * 2 * i) / count + (typeIndex * Math.PI / 6);
-          const distance = 120 + Math.random() * 180;
-          const endX = centerXPx + Math.cos(angle) * distance;
-          const endY = centerYPx + Math.sin(angle) * distance;
-          
-          const particle: Particle = {
-            id: `${type}-${i}`,
+      if (mode === "gather" && gatherTargets.length > 0) {
+        // Генерируем частицы для сбора с краёв к центру
+        // Используем те же типы и цвета, что и в обычной анимации
+        const particleTypes: ParticleType[] = ["fire", "spark", "debris", "star", "smoke", "glitter"];
+        gatherTargets.forEach((target, i) => {
+          const startX = target.x * (cellSize + gap) + cellSize / 2;
+          const startY = target.y * (cellSize + gap) + cellSize / 2;
+          // Для разнообразия типов — раскидываем по кругу
+          const type = particleTypes[i % particleTypes.length];
+          newParticles.push({
+            id: `gather-${i}`,
             type,
-            x: centerXPx,
-            y: centerYPx,
-            endX,
-            endY,
+            x: startX,
+            y: startY,
+            endX: centerXPx,
+            endY: centerYPx,
             size: type === "fire" ? 10 + Math.random() * 6 : 
                   type === "spark" ? 4 + Math.random() * 3 :
                   type === "debris" ? 6 + Math.random() * 4 :
@@ -79,24 +78,60 @@ const ExplosionParticles: React.FC<ExplosionParticlesProps> = ({
                    type === "smoke" ? `hsl(0, 0%, ${30 + Math.random() * 40}%)` : // Серый дым
                    `hsl(${Math.random() * 360}, 100%, 70%)`, // Разноцветные блестки
             delay: 0,
-            duration: 0.4 + Math.random() * 0.2,
+            duration: 0.22 + Math.random() * 0.08,
             rotation: Math.random() * 360,
-          };
+          });
+        });
+      } else {
+        // Создаем частицы
+        const particleTypes: ParticleType[] = ["fire", "spark", "debris", "star", "smoke", "glitter"];
+        
+        particleTypes.forEach((type, typeIndex) => {
+          const count = type === "fire" ? 15 : type === "spark" ? 10 : type === "smoke" ? 8 : 6;
           
-          newParticles.push(particle);
-        }
-      });
-      
+          for (let i = 0; i < count; i++) {
+            const angle = (Math.PI * 2 * i) / count + (typeIndex * Math.PI / 6);
+            const distance = 120 + Math.random() * 180;
+            const endX = centerXPx + Math.cos(angle) * distance;
+            const endY = centerYPx + Math.sin(angle) * distance;
+            
+            const particle: Particle = {
+              id: `${type}-${i}`,
+              type,
+              x: centerXPx,
+              y: centerYPx,
+              endX,
+              endY,
+              size: type === "fire" ? 10 + Math.random() * 6 : 
+                    type === "spark" ? 4 + Math.random() * 3 :
+                    type === "debris" ? 6 + Math.random() * 4 :
+                    type === "star" ? 6 + Math.random() * 3 :
+                    type === "smoke" ? 12 + Math.random() * 8 :
+                    4 + Math.random() * 2,
+              color: type === "fire" ? `hsl(${0 + Math.random() * 30}, 100%, 60%)` : // Красные оттенки
+                     type === "spark" ? `hsl(${45 + Math.random() * 30}, 100%, 80%)` : // Желтые искры
+                     type === "debris" ? `hsl(${20 + Math.random() * 40}, 70%, 50%)` : // Коричневые осколки
+                     type === "star" ? `hsl(${Math.random() * 60}, 100%, 80%)` : // Золотые звезды
+                     type === "smoke" ? `hsl(0, 0%, ${30 + Math.random() * 40}%)` : // Серый дым
+                     `hsl(${Math.random() * 360}, 100%, 70%)`, // Разноцветные блестки
+              delay: 0,
+              duration: 0.4 + Math.random() * 0.2,
+              rotation: Math.random() * 360,
+            };
+            
+            newParticles.push(particle);
+          }
+        });
+      }
       setParticles(newParticles);
-      
       const timer = setTimeout(() => {
         setParticles([]);
         if (onComplete) onComplete();
-      }, 600);
-      
+      }, mode === "gather" ? 250 : 600);
       return () => clearTimeout(timer);
     }
-  }, [isActive, centerX, centerY, boardWidth, boardHeight, cellSize, gap, onComplete]);
+    // Не включаем onComplete и gatherTargets напрямую, чтобы избежать бесконечного цикла
+  }, [isActive, centerX, centerY, boardWidth, boardHeight, cellSize, gap, mode, JSON.stringify(gatherTargets)]);
 
   if (!isActive || particles.length === 0) return null;
 

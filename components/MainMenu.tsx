@@ -34,7 +34,7 @@ const MainMenu: FC<MainMenuProps> = ({ onStartClassic, onOpenShop, onOpenLeaderb
       <div
         className={`min-h-screen menu-bg text-white fade-in-animation-fast
            flex flex-col py-10 relative z-1 overflow-y-hidden
-            fade-in-menu${fadeIn ? "fade-in-menu--visible" : ""}`}
+            fade-in-menu ${fadeIn ? "fade-in-menu--visible" : ""}`}
       >
         <BackgroundAnimation className="overflow-x-hidden absolute inset-0 px-4 -top-15" />
         

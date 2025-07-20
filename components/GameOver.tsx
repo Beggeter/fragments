@@ -52,9 +52,9 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain }) => {
   }, [isAdmin, adminRecord, score]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center min-h-screen w-full">
+    <div className="fixed inset-0 z-50 flex items-center justify-center min-h-screen w-full fade-in-animation-fast">
       {/* Фоновая анимация как в MainMenu */}
-      <BackgroundAnimation className="absolute inset-0 -z-10" />
+      <BackgroundAnimation className="absolute inset-0 -z-10 -top-15" />
       <div className="flex flex-col items-center gap-15 max-w-md w-[90vw]">
         <h2 className="text-6xl font-bold font-figtree text-white mb-2 tracking-wide menu-shadow">
           Game Over

@@ -209,11 +209,11 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
           <button
             onClick={handlePayWithStars}
             disabled={isLoadingStars || quantity < 1}
-            className="w-full px-6 py-4 text-lg font-bold rounded-2xl transition-all bg-gradient-to-r from-yellow-400 to-yellow-500 text-white shadow-lg hover:from-yellow-500 hover:to-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+            className="w-full px-6 py-4 text-lg font-bold rounded-2xl transition-all bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:from-amber-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
           >
             <img src="/tgstar.svg" alt="star" className="w-8 h-8" />
-            <span className="text-lg font-bold">
-              {isLoadingStars ? 'Создание инвойса...' : `💫 Купить за ${totalCost} Stars`}
+            <span className="text-2xl font-bold font-figtree">
+              {isLoadingStars ? '...' : `${totalCost}`}
             </span>
           </button>
 
@@ -222,10 +222,10 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
             <button
               onClick={() => onConfirm(quantity)}
               disabled={totalCost > playerBalance || quantity < 1}
-              className="w-full px-6 py-4 text-lg font-bold rounded-2xl transition-all bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg hover:from-blue-600 hover:to-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-mulish flex items-center justify-center gap-3"
+              className="w-full px-6 py-4 text-lg font-bold rounded-2xl transition-all bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg hover:from-cyan-600 hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed font-mulish flex items-center justify-center gap-3"
             >
               <img src="/crystal.svg" alt="crystal" className="w-8 h-8" />
-              <span className="text-lg font-bold">Купить за {totalCost} осколков</span>
+              <span className="text-2xl font-bold font-figtree">{totalCost}</span>
             </button>
           ) : (
             <button
@@ -234,10 +234,10 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
                 if (onInsufficientFunds) onInsufficientFunds();
                 onClose();
               }}
-              className="w-full px-6 py-4 text-lg font-bold rounded-2xl transition-all bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg hover:from-red-600 hover:to-red-700 flex items-center justify-center gap-3"
+              className="w-full px-6 py-4 text-lg font-bold rounded-2xl transition-all bg-gradient-to-r from-gray-500 to-gray-600 text-white shadow-lg hover:from-gray-600 hover:to-gray-700 flex items-center justify-center gap-3"
             >
-              <img src="/crystal.svg" alt="crystal" className="w-8 h-8" />
-              <span className="text-lg font-bold">Недостаточно осколков</span>
+              <img src="/crystal.svg" alt="crystal" className="w-8 h-8 opacity-50" />
+              <span className="text-lg font-bold opacity-50">—</span>
             </button>
           )}
         </div>
