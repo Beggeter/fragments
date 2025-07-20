@@ -3,7 +3,12 @@ import TelegramBot from 'node-telegram-bot-api';
 import { SHARD_PACKS, BOOSTERS } from '@/components/store/storeItems';
 import { UserService } from '@/lib/db/services';
 
-const bot = new TelegramBot(process.env.STARS_BOT_TOKEN!, { polling: false });
+const botToken = process.env.STARS_BOT_TOKEN;
+if (!botToken) {
+  throw new Error('STARS_BOT_TOKEN environment variable is not set');
+}
+
+const bot = new TelegramBot(botToken, { polling: false });
 
 interface CreateInvoiceRequest {
   userId: number;
@@ -140,8 +145,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
 
     // Создаем инвойс через Bot API
     try {
-      const invoiceMessage = await bot.sendInvoice(
-        userId, // Используем userId как chat_id
+      const invoice_url = await bot.createInvoiceLink(
         invoiceData.title,
         invoiceData.description,
         payloadString, // payload
@@ -151,14 +155,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         invoiceData
       );
 
-      // Извлекаем invoice_url из результата sendInvoice
-      const invoice_url = (invoiceMessage as any).invoice?.invoice_url || 
-                         (invoiceMessage as any).invoice_url || 
-                         null;
-
       if (!invoice_url) {
-        console.error('❌ Invoice response structure:', JSON.stringify(invoiceMessage, null, 2));
-        throw new Error('Failed to get invoice URL');
+        console.error('❌ Failed to create invoice link');
+        throw new Error('Failed to create invoice URL');
       }
 
       console.log('✅ Invoice created successfully:', {
