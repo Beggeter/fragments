@@ -1,5 +1,5 @@
 /**
- * Простые утилиты для работы с Telegram Stars API
+ * Утилиты для работы с Telegram Stars API (TMA SDK v3)
  */
 
 // Проверяем, запущено ли приложение в Telegram WebApp
@@ -23,39 +23,6 @@ export const getTelegramUserId = (): number | null => {
 export const getTelegramUser = () => {
   const webApp = getTelegramWebApp();
   return webApp?.initDataUnsafe?.user || null;
-};
-
-// Форматирует цену для Telegram Stars (в копейках)
-export const formatStarsPrice = (price: number): number => {
-  return Math.round(price * 100); // Конвертируем в копейки
-};
-
-// Создает compact payload для экономии места
-export const createCompactPayload = (data: Record<string, any>): string => {
-  const compactData: Record<string, any> = {};
-  
-  // Маппинг длинных ключей на короткие
-  const keyMapping: Record<string, string> = {
-    userId: 'u',
-    itemType: 't',
-    itemId: 'i',
-    quantity: 'q',
-    amount: 'a',
-    price: 'p',
-    metadata: 'm'
-  };
-
-  for (const [key, value] of Object.entries(data)) {
-    const shortKey = keyMapping[key] || key;
-    compactData[shortKey] = value;
-  }
-
-  return JSON.stringify(compactData);
-};
-
-// Проверяет размер payload
-export const validatePayloadSize = (payload: string, maxSize: number = 128): boolean => {
-  return new Blob([payload]).size <= maxSize;
 };
 
 // Показывает уведомление в Telegram WebApp
@@ -99,16 +66,8 @@ export const createShardsInvoice = async (
   packPrice: number
 ): Promise<{ success: boolean; error?: string }> => {
   try {
-    // Проверяем поддержку инвойсов
     if (typeof window === 'undefined') {
       throw new Error('Not in browser environment');
-    }
-
-    // Динамически импортируем SDK
-    const { invoice } = await import('@telegram-apps/sdk');
-    
-    if (!invoice.isSupported()) {
-      throw new Error('Invoices not supported in this Telegram version');
     }
 
     console.log('💎 Creating shards invoice:', {
@@ -117,7 +76,7 @@ export const createShardsInvoice = async (
       packPrice
     });
 
-    // Создаем инвойс на сервере
+    // 1. Создаем инвойс на сервере
     const response = await fetch('/api/payment/create-invoice', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -132,17 +91,26 @@ export const createShardsInvoice = async (
 
     const data = await response.json();
     
-    if (!data.success || !data.invoiceSlug) {
+    if (!data.success || !data.invoice_url) {
       throw new Error(data.error || 'Failed to create invoice');
     }
 
-    console.log('📄 Invoice created, opening with slug:', data.invoiceSlug);
+    console.log('📄 Invoice created, opening with URL:', data.invoice_url);
 
-    // Открываем инвойс через SDK
-    const status = await invoice.open(data.invoiceSlug);
+    // 2. Открываем инвойс через TMA SDK v3
+    const { invoice } = await import('@telegram-apps/sdk');
+    
+    // Проверяем поддержку
+    if (!invoice.isSupported()) {
+      throw new Error('Invoice API not supported');
+    }
+
+    // 3. Открываем инвойс с URL
+    const status = await invoice.open(data.invoice_url, 'url');
     
     console.log('💰 Payment status:', status);
     
+    // 4. Обрабатываем результат
     if (status === 'paid') {
       console.log('✅ Payment successful');
       return { success: true };
@@ -172,16 +140,8 @@ export const createBoosterInvoice = async (
   unitPrice: number
 ): Promise<{ success: boolean; error?: string }> => {
   try {
-    // Проверяем поддержку инвойсов
     if (typeof window === 'undefined') {
       throw new Error('Not in browser environment');
-    }
-
-    // Динамически импортируем SDK
-    const { invoice } = await import('@telegram-apps/sdk');
-    
-    if (!invoice.isSupported()) {
-      throw new Error('Invoices not supported in this Telegram version');
     }
 
     console.log('🚀 Creating booster invoice:', {
@@ -192,7 +152,7 @@ export const createBoosterInvoice = async (
       unitPrice
     });
 
-    // Создаем инвойс на сервере
+    // 1. Создаем инвойс на сервере
     const response = await fetch('/api/payment/create-invoice', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -208,17 +168,26 @@ export const createBoosterInvoice = async (
 
     const data = await response.json();
     
-    if (!data.success || !data.invoiceSlug) {
+    if (!data.success || !data.invoice_url) {
       throw new Error(data.error || 'Failed to create invoice');
     }
 
-    console.log('📄 Invoice created, opening with slug:', data.invoiceSlug);
+    console.log('📄 Invoice created, opening with URL:', data.invoice_url);
 
-    // Открываем инвойс через SDK
-    const status = await invoice.open(data.invoiceSlug);
+    // 2. Открываем инвойс через TMA SDK v3
+    const { invoice } = await import('@telegram-apps/sdk');
+    
+    // Проверяем поддержку
+    if (!invoice.isSupported()) {
+      throw new Error('Invoice API not supported');
+    }
+
+    // 3. Открываем инвойс с URL
+    const status = await invoice.open(data.invoice_url, 'url');
     
     console.log('💰 Payment status:', status);
     
+    // 4. Обрабатываем результат
     if (status === 'paid') {
       console.log('✅ Payment successful');
       return { success: true };

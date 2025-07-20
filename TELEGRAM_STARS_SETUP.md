@@ -1,84 +1,81 @@
-# Настройка Telegram Stars интеграции
+# Настройка Telegram Stars с TMA SDK v3
 
-Этот документ описывает, как настроить интеграцию с Telegram Stars для прямых платежей в WebApp.
-
-## Что изменилось
-
-Вместо отправки инвойсов в чат с ботом, теперь инвойсы открываются прямо в WebApp через Telegram Stars API.
-
-### Преимущества новой системы:
-- ✅ Прямые платежи в WebApp без перехода в чат
-- ✅ Лучший пользовательский опыт
-- ✅ Меньше шагов для покупки
-- ✅ Автоматическая обработка платежей
-
-## Настройка
+## 🚀 Быстрый старт
 
 ### 1. Создание Stars бота
 
 1. Создайте нового бота через @BotFather
-2. Отправьте команду `/newbot` и следуйте инструкциям
-3. Получите токен бота
-4. Добавьте токен в переменные окружения:
+2. Получите токен бота
+3. Добавьте токен в `.env`:
 
 ```env
-# Telegram Stars Bot
 STARS_BOT_TOKEN=your_stars_bot_token_here
 ```
 
-### 2. Настройка webhook'а
-
-Для production:
+### 2. Настройка webhook
 
 ```bash
-# Замените на ваш домен
+# Для разработки с ngrok
+ngrok http 3001
+node scripts/setup-stars-webhook.js https://your-ngrok-url.ngrok.io/api/stars/webhook
+
+# Для production
 node scripts/setup-stars-webhook.js https://your-domain.com/api/stars/webhook
 ```
 
-Для разработки (с ngrok):
+### 3. Инициализация SDK
 
-```bash
-# Установите ngrok если еще не установлен
-npm install -g ngrok
+SDK автоматически инициализируется в `app/page.tsx`:
 
-# Запустите туннель
-ngrok http 3001
+```typescript
+import { init } from '@telegram-apps/sdk';
 
-# Настройте webhook с полученным URL
-node scripts/setup-stars-webhook.js https://your-ngrok-url.ngrok.io/api/stars/webhook
+// Инициализируем SDK при загрузке приложения
+await init();
 ```
 
-### 3. Проверка настройки
-
-После настройки webhook'а вы должны увидеть:
-
-```
-✅ Webhook set successfully!
-📊 Webhook info: {
-  "url": "https://your-domain.com/api/stars/webhook",
-  "has_custom_certificate": false,
-  "pending_update_count": 0,
-  "max_connections": 40
-}
-```
-
-## Как это работает
+## 🔧 Как это работает
 
 ### 1. Создание инвойса
 
-Когда пользователь нажимает "Купить за Telegram Stars":
+```typescript
+// API создает инвойс и возвращает invoice_url
+const response = await fetch('/api/payment/create-invoice', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    userId,
+    item: { type: 'shards', itemId: '100' }
+  })
+});
+
+const data = await response.json();
+// data.invoice_url - URL для открытия инвойса
+```
+
+### 2. Открытие инвойса
 
 ```typescript
-// В компоненте ShardPurchaseModal или BoosterPurchaseModal
-const result = await createShardsInvoice(userId, pack.amount, pack.price);
+import { invoice } from '@telegram-apps/sdk';
 
-if (result.success) {
-  // Инвойс открывается прямо в WebApp
-  showTelegramAlert('Инвойс открыт! Завершите оплату в Telegram.');
+// Открываем инвойс с URL
+const status = await invoice.open(invoice_url, 'url');
+
+// Обрабатываем результат
+switch (status) {
+  case 'paid':
+    console.log('✅ Платеж успешен');
+    break;
+  case 'cancelled':
+    console.log('❌ Платеж отменен');
+    break;
+  case 'failed':
+    console.log('❌ Платеж не удался');
+    break;
 }
 ```
 
-### 2. Обработка платежа
+### 3. Обработка webhook
 
 Telegram автоматически отправляет webhook на ваш сервер:
 
@@ -96,110 +93,146 @@ POST /api/stars/webhook
 }
 ```
 
-### 3. Начисление товара
+## 📱 Использование в компонентах
 
-Сервер автоматически обрабатывает платеж и начисляет товар:
+### Покупка осколков
 
 ```typescript
-// В /api/stars/webhook.ts
-const paymentData = parseCompactPayload(payment.invoice_payload);
+import { createShardsInvoice, showTelegramAlert } from '@/lib/utils/telegramStars';
 
-switch (paymentData.itemType) {
-  case 'shards':
-    await CurrencyService.addShards(user.telegramId, paymentData.amount);
-    break;
-  
-  case 'booster':
-    await BoosterService.addBooster(user.telegramId, paymentData.itemId, paymentData.quantity);
-    break;
-}
+const handleShardsPurchase = async () => {
+  try {
+    const result = await createShardsInvoice(userId, 100, 50);
+    
+    if (result.success) {
+      showTelegramAlert('Осколки успешно куплены!');
+      onSuccess();
+    } else {
+      showTelegramAlert('Ошибка: ' + result.error);
+    }
+  } catch (error) {
+    console.error('Purchase error:', error);
+  }
+};
 ```
 
-## Структура payload
+### Покупка бустера
 
-Для экономии места используется compact payload:
+```typescript
+import { createBoosterInvoice, showTelegramAlert } from '@/lib/utils/telegramStars';
 
-```json
-{
-  "u": 123456,        // userId
-  "t": "shards",      // itemType
-  "i": "100",         // itemId
-  "a": 100,           // amount
-  "p": 50             // price
-}
+const handleBoosterPurchase = async () => {
+  try {
+    const result = await createBoosterInvoice(userId, 'undo', 'Undo', 1, 20);
+    
+    if (result.success) {
+      showTelegramAlert('Бустер успешно куплен!');
+      onSuccess();
+    } else {
+      showTelegramAlert('Ошибка: ' + result.error);
+    }
+  } catch (error) {
+    console.error('Purchase error:', error);
+  }
+};
 ```
 
-## Тестирование
+## 🧪 Тестирование
 
-### 1. Тестовый режим
+### Компоненты для отладки
 
-Для тестирования используйте тестовые Stars:
+В режиме разработки доступны компоненты:
 
-1. Создайте тестового бота
-2. Получите тестовые Stars через @BotFather
-3. Протестируйте покупки
+- `TestStarsPayment` - тестирование платежей
+- `TestInvoiceSystem` - тестирование системы инвойсов
 
-### 2. Логирование
+### Проверка окружения
+
+```typescript
+import { isTelegramWebApp, getTelegramUserId } from '@/lib/utils/telegramStars';
+
+const checks = {
+  'Telegram WebApp': isTelegramWebApp(),
+  'User ID': getTelegramUserId() ? 'Найден' : 'Не найден',
+  'WebApp Version': window.Telegram?.WebApp?.version || 'Неизвестно'
+};
+```
+
+## 🔄 Настройка webhook
+
+### Для разработки
+
+```bash
+# 1. Запустите ngrok
+ngrok http 3001
+
+# 2. Скопируйте HTTPS URL (например: https://abc123.ngrok.io)
+
+# 3. Настройте webhook
+node scripts/setup-stars-webhook.js https://abc123.ngrok.io/api/stars/webhook
+```
+
+### Для production
+
+```bash
+# Настройте webhook с вашим доменом
+node scripts/setup-stars-webhook.js https://your-domain.com/api/stars/webhook
+```
+
+### Проверка webhook
+
+```bash
+# Проверить текущий webhook
+curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getWebhookInfo"
+```
+
+## ⚠️ Важные моменты
+
+1. **Инициализация SDK обязательна** - вызывается в `app/page.tsx`
+2. **Используйте invoice_url** - API возвращает URL, а не slug
+3. **Открывайте с параметром 'url'** - `invoice.open(url, 'url')`
+4. **Обрабатывайте все статусы** - paid, cancelled, failed
+5. **Настройте webhook заново** - при смене URL
+
+## 🐛 Устранение неполадок
+
+### SDK не инициализируется
+
+- Проверьте, что приложение запущено через Telegram WebApp
+- Убедитесь, что используется последняя версия Telegram
+
+### Webhook не работает
+
+- Проверьте доступность URL из интернета
+- Убедитесь, что используется HTTPS (для production)
+- Проверьте правильность токена бота
+
+### Инвойс не открывается
+
+- Проверьте, что SDK инициализирован
+- Убедитесь, что используется правильный URL
+- Проверьте поддержку API: `invoice.isSupported()`
+
+## 📊 Логирование
 
 Все операции логируются в консоль:
 
 ```
-💎 Creating Telegram Stars invoice for shard purchase: { userId: 123456, packAmount: 100, packPrice: 50 }
-✅ Telegram Stars invoice opened successfully
-💰 Processing successful payment: { currency: "XTR", total_amount: 5000, ... }
-✅ Shards payment processed: { userId: 123456, amount: 100 }
+✅ TMA SDK initialized successfully
+💎 Creating shards invoice: { userId: 123456, packAmount: 100, packPrice: 50 }
+📄 Invoice created, opening with URL: https://...
+💰 Payment status: paid
+✅ Payment successful
 ```
 
-## Устранение неполадок
+## 🎯 Результат
 
-### Ошибка "MainButton not available"
+После правильной настройки:
 
-Убедитесь, что:
-- Приложение запущено через Telegram WebApp
-- Используется последняя версия Telegram
-- WebApp поддерживает Stars API
+- ✅ Инвойсы открываются прямо в miniApp
+- ✅ Пользователи не переходят в чат
+- ✅ Мгновенные уведомления об успехе/ошибке
+- ✅ Автоматическое начисление товаров
+- ✅ Лучший пользовательский опыт
 
-### Ошибка "Payload too large"
-
-Уменьшите размер данных в payload:
-- Используйте короткие ключи
-- Уберите ненужные метаданные
-- Максимальный размер: 128 байт
-
-### Webhook не работает
-
-Проверьте:
-1. URL webhook'а доступен из интернета
-2. Используется HTTPS (для production)
-3. Токен бота правильный
-4. Сервер отвечает 200 OK
-
-### Платежи не обрабатываются
-
-Проверьте логи сервера:
-```bash
-# В консоли разработки
-npm run dev
-
-# Или в production логах
-```
-
-## Безопасность
-
-- ✅ Все webhook'и проверяются
-- ✅ Payload валидируется
-- ✅ Пользователи проверяются
-- ✅ Ошибки обрабатываются безопасно
-
-## Миграция с старой системы
-
-Старая система отправки инвойсов в чат больше не используется. Все покупки теперь происходят через Telegram Stars API прямо в WebApp.
-
-## Поддержка
-
-Если у вас возникли проблемы:
-
-1. Проверьте логи в консоли браузера и сервера
-2. Убедитесь, что webhook настроен правильно
-3. Проверьте, что бот имеет права на Stars
-4. Убедитесь, что используется HTTPS (для production) 
+Это значительно улучшает конверсию и удобство использования! 

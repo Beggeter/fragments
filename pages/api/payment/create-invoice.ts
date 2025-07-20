@@ -3,7 +3,7 @@ import TelegramBot from 'node-telegram-bot-api';
 import { SHARD_PACKS, BOOSTERS } from '@/components/store/storeItems';
 import { UserService } from '@/lib/db/services';
 
-const bot = new TelegramBot(process.env.TELEGRAM_BOT_TOKEN!, { polling: false });
+const bot = new TelegramBot(process.env.STARS_BOT_TOKEN!, { polling: false });
 
 interface CreateInvoiceRequest {
   userId: number;
@@ -16,7 +16,7 @@ interface CreateInvoiceRequest {
 
 interface CreateInvoiceResponse {
   success: boolean;
-  invoiceSlug?: string;
+  invoice_url?: string;
   error?: string;
 }
 
@@ -151,27 +151,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         invoiceData
       );
 
-      // Извлекаем slug из результата sendInvoice
-      // Используем any для обхода проблем с типами
-      const invoiceSlug = (invoiceMessage as any).invoice?.invoice_id || 
-                         (invoiceMessage as any).invoice_id || 
+      // Извлекаем invoice_url из результата sendInvoice
+      const invoice_url = (invoiceMessage as any).invoice?.invoice_url || 
+                         (invoiceMessage as any).invoice_url || 
                          null;
 
-      if (!invoiceSlug) {
+      if (!invoice_url) {
         console.error('❌ Invoice response structure:', JSON.stringify(invoiceMessage, null, 2));
-        throw new Error('Failed to get invoice slug');
+        throw new Error('Failed to get invoice URL');
       }
 
       console.log('✅ Invoice created successfully:', {
         userId,
         itemType: item.type,
         itemId: item.itemId,
-        invoiceSlug
+        invoice_url
       });
 
       return res.status(200).json({
         success: true,
-        invoiceSlug
+        invoice_url
       });
 
     } catch (telegramError: any) {

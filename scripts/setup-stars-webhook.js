@@ -1,73 +1,87 @@
 #!/usr/bin/env node
 
 /**
- * Скрипт для настройки webhook'а Telegram Stars
- * 
- * Использование:
- * node scripts/setup-stars-webhook.js <webhook-url>
- * 
- * Пример:
- * node scripts/setup-stars-webhook.js https://your-domain.com/api/stars/webhook
+ * Скрипт для настройки webhook для Telegram Stars
+ * Использование: node scripts/setup-stars-webhook.js <webhook_url>
  */
 
 const https = require('https');
 const http = require('http');
 
-async function setupWebhook(webhookUrl) {
-  try {
-    console.log('🔗 Setting up Stars webhook...');
-    console.log('📡 Webhook URL:', webhookUrl);
-
-    // Проверяем, что URL валидный
-    const url = new URL(webhookUrl);
-    if (!url.protocol.startsWith('http')) {
-      throw new Error('Webhook URL must use HTTP or HTTPS protocol');
-    }
-
-    // Отправляем запрос на настройку webhook
-    const response = await fetch('http://localhost:3001/api/stars/setup-webhook', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ webhookUrl })
-    });
-
-    const result = await response.json();
-
-    if (result.success) {
-      console.log('✅ Webhook set successfully!');
-      console.log('📊 Webhook info:', JSON.stringify(result.webhookInfo, null, 2));
-    } else {
-      console.error('❌ Failed to set webhook:', result.error);
-      process.exit(1);
-    }
-
-  } catch (error) {
-    console.error('❌ Error setting up webhook:', error.message);
-    
-    if (error.code === 'ECONNREFUSED') {
-      console.log('💡 Make sure your development server is running on port 3001');
-      console.log('   Run: npm run dev');
-    }
-    
-    process.exit(1);
-  }
-}
-
-// Получаем webhook URL из аргументов командной строки
+// Получаем параметры из командной строки
 const webhookUrl = process.argv[2];
+const botToken = process.env.STARS_BOT_TOKEN;
 
 if (!webhookUrl) {
-  console.error('❌ Webhook URL is required');
-  console.log('');
-  console.log('Usage: node scripts/setup-stars-webhook.js <webhook-url>');
-  console.log('');
-  console.log('Example:');
-  console.log('  node scripts/setup-stars-webhook.js https://your-domain.com/api/stars/webhook');
-  console.log('');
+  console.error('❌ Ошибка: Не указан URL webhook');
+  console.log('Использование: node scripts/setup-stars-webhook.js <webhook_url>');
+  console.log('Пример: node scripts/setup-stars-webhook.js https://your-domain.com/api/stars/webhook');
   process.exit(1);
 }
 
-// Настраиваем webhook
-setupWebhook(webhookUrl); 
+if (!botToken) {
+  console.error('❌ Ошибка: Не найден токен бота в переменной окружения STARS_BOT_TOKEN');
+  process.exit(1);
+}
+
+console.log('🔗 Настройка webhook для Telegram Stars...');
+console.log('📡 URL:', webhookUrl);
+console.log('🤖 Bot Token:', botToken.substring(0, 10) + '...');
+
+// Данные для запроса
+const postData = JSON.stringify({
+  url: webhookUrl,
+  allowed_updates: ['pre_checkout_query', 'successful_payment']
+});
+
+// Опции для запроса
+const options = {
+  hostname: 'api.telegram.org',
+  port: 443,
+  path: `/bot${botToken}/setWebhook`,
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'Content-Length': Buffer.byteLength(postData)
+  }
+};
+
+// Отправляем запрос
+const req = https.request(options, (res) => {
+  let data = '';
+
+  res.on('data', (chunk) => {
+    data += chunk;
+  });
+
+  res.on('end', () => {
+    try {
+      const response = JSON.parse(data);
+      
+      if (response.ok) {
+        console.log('✅ Webhook успешно настроен!');
+        console.log('📊 Информация о webhook:');
+        console.log('  URL:', response.result.url);
+        console.log('  Has custom certificate:', response.result.has_custom_certificate);
+        console.log('  Pending updates:', response.result.pending_update_count);
+        console.log('  Max connections:', response.result.max_connections);
+      } else {
+        console.error('❌ Ошибка настройки webhook:', response.description);
+        console.error('Error code:', response.error_code);
+      }
+    } catch (error) {
+      console.error('❌ Ошибка парсинга ответа:', error);
+      console.log('Ответ сервера:', data);
+    }
+  });
+});
+
+req.on('error', (error) => {
+  console.error('❌ Ошибка запроса:', error.message);
+});
+
+// Отправляем данные
+req.write(postData);
+req.end();
+
+console.log('⏳ Отправляем запрос...'); 

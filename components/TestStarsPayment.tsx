@@ -4,7 +4,7 @@ import {
   getTelegramUserId, 
   createShardsInvoice, 
   createBoosterInvoice,
-  showTelegramAlert 
+  showTelegramAlert
 } from '@/lib/utils/telegramStars';
 
 const TestStarsPayment: React.FC = () => {
@@ -84,7 +84,6 @@ const TestStarsPayment: React.FC = () => {
       'User ID': getTelegramUserId() ? 'Найден' : 'Не найден',
       'WebApp Version': webApp?.version || 'Неизвестно',
       'Platform': webApp?.platform || 'Неизвестно',
-      'Stars API': webApp?.mainButton?.showInvoice ? '✅ Доступен' : '❌ Недоступен',
       'Environment': process.env.NODE_ENV
     };
 
@@ -100,37 +99,39 @@ const TestStarsPayment: React.FC = () => {
   }
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 bg-black/80 backdrop-blur-md rounded-2xl p-4 border border-white/20 max-w-sm">
-      <h3 className="text-white font-bold mb-3">🧪 Test Stars Payment</h3>
+    <div className="fixed bottom-4 right-4 z-50 bg-black/90 backdrop-blur-sm rounded-2xl p-4 border border-white/20 max-w-sm">
+      <h3 className="text-white font-bold mb-3 text-sm">🧪 Test Stars Payment (TMA v3)</h3>
       
-      <div className="space-y-2 mb-3">
+      <div className="space-y-2">
         <button
           onClick={checkEnvironment}
-          className="w-full px-3 py-2 text-sm bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
+          className="w-full px-3 py-2 text-xs font-bold rounded-lg bg-gray-600 text-white hover:bg-gray-700"
         >
-          Проверить окружение
+          Check Environment
         </button>
         
         <button
           onClick={testShardsPurchase}
           disabled={isLoading}
-          className="w-full px-3 py-2 text-sm bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors disabled:opacity-50"
+          className="w-full px-3 py-2 text-xs font-bold rounded-lg bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
         >
-          {isLoading ? 'Тестирование...' : 'Тест осколков (100 за 50 Stars)'}
+          {isLoading ? 'Тестируем...' : 'Test Shards Purchase'}
         </button>
         
         <button
           onClick={testBoosterPurchase}
           disabled={isLoading}
-          className="w-full px-3 py-2 text-sm bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors disabled:opacity-50"
+          className="w-full px-3 py-2 text-xs font-bold rounded-lg bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50"
         >
-          {isLoading ? 'Тестирование...' : 'Тест бустера (Undo за 20 Stars)'}
+          {isLoading ? 'Тестируем...' : 'Test Booster Purchase'}
         </button>
       </div>
-
+      
       {result && (
-        <div className="text-xs text-white/80 bg-white/10 rounded-lg p-2 whitespace-pre-wrap">
-          {result}
+        <div className="mt-3 pt-2 border-t border-white/20">
+          <div className="text-xs text-white whitespace-pre-line max-h-32 overflow-y-auto">
+            {result}
+          </div>
         </div>
       )}
     </div>

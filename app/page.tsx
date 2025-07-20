@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { init } from '@telegram-apps/sdk';
 import GameBoard from "../components/GameBoard";
 import MainMenu from "@/components/MainMenu";
 import AdminLogin from "@/components/AdminLogin";
@@ -18,6 +19,7 @@ import LeaderboardScreen from "../components/LeaderboardScreen";
 import PieceReturnAnimation from "../components/board/PieceReturnAnimation";
 import TestStarsPayment from "../components/TestStarsPayment";
 import TestInvoiceSystem from "../components/TestInvoiceSystem";
+import InvoiceSupportInfo from "../components/InvoiceSupportInfo";
 
 type Screen =
   | "admin login"
@@ -197,6 +199,13 @@ const HomePage: React.FC = () => {
   // Инициализация: определяем контекст и показываем соответствующий экран
   useEffect(() => {
     const initializeApp = async () => {
+      // Инициализируем TMA SDK
+      try {
+        await init();
+        console.log('✅ TMA SDK initialized successfully');
+      } catch (error) {
+        console.warn('⚠️ TMA SDK initialization failed:', error);
+      }
       // Проверяем, что мы на клиенте
       if (typeof window === "undefined") {
         return;
@@ -722,6 +731,9 @@ const HomePage: React.FC = () => {
       
       {/* Тестовый компонент для новой Invoice системы (только в dev режиме) */}
       <TestInvoiceSystem />
+      
+      {/* Информация о поддержке Invoice API (только в dev режиме) */}
+      <InvoiceSupportInfo />
     </div>
   );
 };
