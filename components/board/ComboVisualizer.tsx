@@ -2,8 +2,19 @@
 
 import { ScoreResult } from "@/lib/data/types";
 import { ColorTheme, colorThemes, getThemeByScore } from "../UI/colorThemes";
-import React, { useState, useEffect, useRef, useLayoutEffect, useMemo } from "react";
-import { animate, useMotionValue, motion, AnimatePresence } from "framer-motion";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useLayoutEffect,
+  useMemo,
+} from "react";
+import {
+  animate,
+  useMotionValue,
+  motion,
+  AnimatePresence,
+} from "framer-motion";
 import { useGameStore } from "@/lib/state/store";
 import { vibrate } from "@/utils/helpers";
 import { useSettingsStore } from "@/lib/state/settings";
@@ -41,16 +52,16 @@ const ComboCounter: React.FC<{ value: number }> = ({ value }) => {
       // Небольшая задержка для более заметной анимации
       const delayTimer = setTimeout(() => {
         setIsAnimating(true);
-        
+
         // Запускаем анимацию
         const timer = setTimeout(() => {
           setDisplayValue(value);
           setIsAnimating(false);
         }, 300); // Время анимации
-        
+
         return () => clearTimeout(timer);
       }, 50); // Задержка перед началом анимации
-      
+
       return () => clearTimeout(delayTimer);
     }
   }, [value, displayValue]);
@@ -81,7 +92,7 @@ const ComboCounter: React.FC<{ value: number }> = ({ value }) => {
         >
           {displayValue}
         </motion.text>
-        
+
         {/* Новое число (появляется снизу при анимации) */}
         {isAnimating && (
           <motion.text
@@ -153,22 +164,27 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
 
   // Unified size calculation with better fallback
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
-  
+
   useLayoutEffect(() => {
     function updateContainerSize() {
       if (containerRef.current) {
         const rect = containerRef.current.getBoundingClientRect();
         const newSize = { width: rect.width, height: rect.height };
-        
+
         // Добавляем проверки для production сборки
         // Если размеры слишком маленькие, используем fallback
         const minSize = 200; // минимальный размер для игрового поля
         const fallbackSize = 350; // fallback размер для production
-        
+
         if (newSize.width < minSize || newSize.height < minSize) {
-          console.warn('ComboVisualizer: размеры слишком маленькие, используем fallback', newSize);
+          console.warn(
+            "ComboVisualizer: размеры слишком маленькие, используем fallback",
+            newSize
+          );
           // Пытаемся получить размеры из CSS переменной или используем fallback
-          const appVw = getComputedStyle(document.documentElement).getPropertyValue('--app-vw');
+          const appVw = getComputedStyle(
+            document.documentElement
+          ).getPropertyValue("--app-vw");
           const vwValue = appVw ? parseInt(appVw) : fallbackSize;
           const finalSize = Math.max(vwValue, fallbackSize);
           setContainerSize({ width: finalSize, height: finalSize });
@@ -179,12 +195,12 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
         }
       }
     }
-    
+
     updateContainerSize();
-    
+
     // Добавляем задержку для production сборки
     const timeoutId = setTimeout(updateContainerSize, 100);
-    
+
     window.addEventListener("resize", updateContainerSize);
     return () => {
       window.removeEventListener("resize", updateContainerSize);
@@ -197,7 +213,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
     if (lastScore?.comboLevel !== undefined) {
       if (lastScore.comboLevel > 0) {
         setIsExploding(true);
-      if (typeof onExplodeChange === "function") onExplodeChange(true);
+        if (typeof onExplodeChange === "function") onExplodeChange(true);
         // Only show combo text if container size is available
         if (containerSize.width > 0 && containerSize.height > 0) {
           setShowComboText(true);
@@ -215,12 +231,12 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
         setShowClearText(false);
         handleVibrate();
 
-      const explodeTimer = setTimeout(() => {
-        setIsExploding(false);
-        if (typeof onExplodeChange === "function") onExplodeChange(false);
-      }, 400);
-      const textTimer = setTimeout(() => setShowComboText(false), 800);
-      const particlesTimer = setTimeout(() => setShowParticles(false), 1000);
+        const explodeTimer = setTimeout(() => {
+          setIsExploding(false);
+          if (typeof onExplodeChange === "function") onExplodeChange(false);
+        }, 400);
+        const textTimer = setTimeout(() => setShowComboText(false), 800);
+        const particlesTimer = setTimeout(() => setShowParticles(false), 1000);
 
         return () => {
           clearTimeout(explodeTimer);
@@ -319,14 +335,14 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
     // Use containerSize for more reliable calculations
     const currentWidth = containerSize.width;
     const currentHeight = containerSize.height;
-    
+
     // If container size is not available, use more conservative fallback
     if (currentWidth === 0 || currentHeight === 0) {
       // Use fixed positions that work for most screen sizes
       const minSize = 320; // minimum reasonable container size
       const xs = [minSize * 0.25, minSize * 0.5, minSize * 0.75];
       const ys = [minSize * 0.25, minSize * 0.5, minSize * 0.75];
-      
+
       const positions: { x: number; y: number }[] = [];
       for (let i = 0; i < 3; i++) {
         for (let j = 0; j < 3; j++) {
@@ -339,22 +355,22 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
     // Use margins to prevent text from going to edges
     const marginX = Math.max(comboWidth / 2 + 20, 50);
     const marginY = Math.max(comboHeight / 2 + 20, 50);
-    
+
     // Ensure positions are within bounds
     const safeWidth = Math.max(currentWidth - 2 * marginX, 100);
     const safeHeight = Math.max(currentHeight - 2 * marginY, 100);
-    
+
     const xs = [
       marginX + safeWidth * 0.2,
       marginX + safeWidth * 0.5,
-      marginX + safeWidth * 0.8
+      marginX + safeWidth * 0.8,
     ];
     const ys = [
       marginY + safeHeight * 0.2,
       marginY + safeHeight * 0.5,
-      marginY + safeHeight * 0.8
+      marginY + safeHeight * 0.8,
     ];
-    
+
     const positions: { x: number; y: number }[] = [];
     for (let i = 0; i < 3; i++) {
       for (let j = 0; j < 3; j++) {
@@ -407,40 +423,130 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
     to?: { x: number; y: number };
     color: string;
   }) => {
-    if (sp.to) {
-      return (
-        <div
-          key={sp.id}
-          style={
-            {
-              "--scoreplus-x": `${sp.x}px`,
-              "--scoreplus-y": `${sp.y}px`,
-              "--scoreplus-x-to": `${sp.to.x}px`,
-              "--scoreplus-y-to": `${sp.to.y}px`,
-              pointerEvents: "none",
-              position: "absolute",
-            } as React.CSSProperties
-          }
-          className="scoreplus-fly text-4xl z-2000 font-extrabold font-figtree"
+    // Чтобы изменить размер, поменяйте значение этой константы.
+    const FONT_SIZE = 36;
+    const FONT_FAMILY = "Figtree, 'Montserrat', Arial, sans-serif";
+
+    // 1. Рассчитываем размеры пропорционально FONT_SIZE
+    const numDigits = sp.value.toString().length;
+    // Ширина: (ширина на цифру + межсимвольный интервал) + боковые отступы
+    const estimatedWidth = numDigits * (FONT_SIZE * 0.6) + FONT_SIZE * 0.5;
+    const estimatedHeight = FONT_SIZE * 1.15; // Высота с небольшим запасом
+    const strokeWidth = FONT_SIZE * 0.1; // Толщина обводки
+
+    // 2. Создаем SVG текст
+    const textElement = (
+      <>
+        <defs>
+          <linearGradient
+            id={`scoreplus-gradient-${sp.id}`}
+            x1="0%"
+            y1="0%"
+            x2="100%"
+            y2="100%"
+          >
+            <stop offset="0%" stopColor="#FFD600" />
+            <stop offset="60%" stopColor="#FF6B35" />
+            <stop offset="100%" stopColor="#FFF" />
+          </linearGradient>
+        </defs>
+        <text
+          x="50%"
+          y="50%"
+          dominantBaseline="middle"
+          textAnchor="middle"
+          fontFamily={FONT_FAMILY}
+          fontWeight="800"
+          fontSize={FONT_SIZE}
+          stroke="#fff"
+          strokeWidth={strokeWidth}
+          fill={`url(#scoreplus-gradient-${sp.id})`}
+          paintOrder="stroke"
+          style={{
+            filter: "drop-shadow(0 0 4px #000) drop-shadow(0 0 8px #fff)",
+            letterSpacing: 1,
+          }}
         >
           {sp.value}
-        </div>
+        </text>
+      </>
+    );
+
+    // 3. Анимируем SVG с динамически рассчитанными размерами
+    if (sp.to) {
+      const { to } = sp;
+      // Центрируем SVG относительно точки
+      const x_from = sp.x;
+      const y_from = sp.y - estimatedHeight / 2;
+      const x_to = to.x - estimatedWidth / 2;
+      const y_to = to.y - estimatedHeight / 2;
+
+      const keyframes = {
+        x: [x_from, x_from, x_from, x_from, x_to, x_to, x_to],
+        y: [y_from, y_from, y_from, y_from, y_to, y_to, y_to],
+        scale: [0, 1.3, 1.1, 1.05, 1, 0.8, 0.6],
+        rotate: [-10, 5, -2, 1, 0, 0, 0],
+        opacity: [0, 1, 1, 1, 0.8, 0.4, 0],
+      };
+
+      return (
+        <motion.svg
+          key={sp.id}
+          initial={{ x: x_from, y: y_from, scale: 0, opacity: 0, rotate: -10 }}
+          animate={keyframes}
+          transition={{
+            duration: 0.9,
+            ease: "easeInOut",
+            times: [0, 0.15, 0.3, 0.6, 0.75, 0.85, 1],
+          }}
+          width={estimatedWidth}
+          height={estimatedHeight}
+          viewBox={`0 0 ${estimatedWidth} ${estimatedHeight}`}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            pointerEvents: "none",
+            zIndex: 2000,
+            overflow: "visible",
+          }}
+        >
+          {textElement}
+        </motion.svg>
       );
     }
-    // fallback: просто на месте
+
+    // Fallback для статического отображения (если нужно)
+    const x_from = sp.x;
+    const y_from = sp.y - estimatedHeight / 2;
     return (
-      <div
+      <motion.svg
         key={sp.id}
-        style={{
-          left: sp.x,
-          top: sp.y,
-          pointerEvents: "none",
-          position: "absolute",
+        initial={{
+          x: x_from,
+          y: y_from,
+          opacity: 0,
+          scale: 0.5,
         }}
-        className="text-4xl z-2000 font-extrabold font-figtree scoreplus-static"
+        animate={{
+          opacity: [0, 1, 1, 0],
+          scale: [0.5, 1, 1, 0.8],
+          transition: { duration: 0.8, ease: "easeInOut" },
+        }}
+        width={estimatedWidth}
+        height={estimatedHeight}
+        viewBox={`0 0 ${estimatedWidth} ${estimatedHeight}`}
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          pointerEvents: "none",
+          zIndex: 2000,
+          overflow: "visible",
+        }}
       >
-        {sp.value}
-      </div>
+        {textElement}
+      </motion.svg>
     );
   };
 
@@ -460,12 +566,12 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
   // Отладка: включить/выключить визуализацию позиций по нажатию D
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === 'd' || e.key === 'D') {
-        setDebugMode(prev => !prev);
+      if (e.key === "d" || e.key === "D") {
+        setDebugMode((prev) => !prev);
       }
     };
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
+    window.addEventListener("keydown", handleKeyPress);
+    return () => window.removeEventListener("keydown", handleKeyPress);
   }, []);
 
   return (
@@ -474,26 +580,27 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
       className="absolute inset-0 w-full h-full pointer-events-none"
     >
       {/* Визуализация возможных позиций для Combo (отладка) */}
-      {debugMode && getPossiblePositions().map((pos, idx) => (
-        <div
-          key={idx}
-          style={{
-            position: "absolute",
-            left: pos.x,
-            top: pos.y,
-            width: 14,
-            height: 14,
-            background: "#38BDF8",
-            borderRadius: "50%",
-            border: "2px solid #fff",
-            boxShadow: "0 0 8px 2px #38BDF8",
-            transform: "translate(-50%, -50%)",
-            zIndex: 2000,
-            pointerEvents: "none",
-            opacity: 0.7,
-          }}
-        />
-      ))}
+      {debugMode &&
+        getPossiblePositions().map((pos, idx) => (
+          <div
+            key={idx}
+            style={{
+              position: "absolute",
+              left: pos.x,
+              top: pos.y,
+              width: 14,
+              height: 14,
+              background: "#38BDF8",
+              borderRadius: "50%",
+              border: "2px solid #fff",
+              boxShadow: "0 0 8px 2px #38BDF8",
+              transform: "translate(-50%, -50%)",
+              zIndex: 2000,
+              pointerEvents: "none",
+              opacity: 0.7,
+            }}
+          />
+        ))}
       {debugMode && (
         <div
           style={{
@@ -527,10 +634,10 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
         className={`absolute inset-0 p-2 -m-2 rounded-xl glowing-border ${
           isExploding ? "combo-explosion" : ""
         }`}
-                style={borderStyle}
+        style={borderStyle}
       />
-            {/* --- ПЕРИМЕТРАЛЬНЫЕ ЧАСТИЦЫ ПРИ КОМБО --- */}
-            {showParticles && size.width > 0 && size.height > 0 && (
+      {/* --- ПЕРИМЕТРАЛЬНЫЕ ЧАСТИЦЫ ПРИ КОМБО --- */}
+      {showParticles && size.width > 0 && size.height > 0 && (
         <PerimeterParticles
           width={Math.max(size.width, 200)}
           height={Math.max(size.height, 200)}
@@ -541,19 +648,32 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
 
       {lastScore &&
         lastScore.comboLevel > 0 &&
-        containerSize.width > 0 && containerSize.height > 0 && // Only render when container size is available
+        containerSize.width > 0 &&
+        containerSize.height > 0 && // Only render when container size is available
         (() => {
           const comboPos = getNearestPosition(lastScore.pixelPosition);
           // Ensure the position is within bounds and prevent negative values
           const totalWidth = comboWidth + 70 + 24;
-          const left = Math.max(0, Math.min(comboPos.x - totalWidth / 2, containerSize.width - totalWidth));
-          const top = Math.max(0, Math.min(comboPos.y - comboHeight / 2, containerSize.height - comboHeight));
-          
+          const left = Math.max(
+            0,
+            Math.min(
+              comboPos.x - totalWidth / 2,
+              containerSize.width - totalWidth
+            )
+          );
+          const top = Math.max(
+            0,
+            Math.min(
+              comboPos.y - comboHeight / 2,
+              containerSize.height - comboHeight
+            )
+          );
+
           // Высота шрифта "Combo" примерно 48px
           const fontSize = 48;
           const circleDiameter = fontSize;
           const circleRadius = circleDiameter / 2;
-          
+
           return (
             <div
               className={`combo-text ${showComboText ? "show" : ""}`}
@@ -565,87 +685,96 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
               {/* Полупрозрачные круги с градиентом */}
               <div className="combo-background-circles">
                 {/* Круг 1 - левый */}
-                <div 
+                <div
                   className="combo-circle circle-1"
                   style={{
-                    position: 'absolute',
+                    position: "absolute",
                     width: `${circleDiameter}px`,
                     height: `${circleDiameter}px`,
-                    borderRadius: '50%',
-                    background: 'radial-gradient(circle, rgba(255, 255, 0, 0.4) 0%, rgba(255, 255, 0, 0.2) 50%, rgba(255, 255, 0, 0.05) 80%, transparent 100%)',
+                    borderRadius: "50%",
+                    background:
+                      "radial-gradient(circle, rgba(255, 255, 0, 0.4) 0%, rgba(255, 255, 0, 0.2) 50%, rgba(255, 255, 0, 0.05) 80%, transparent 100%)",
                     left: `${totalWidth / 2 - circleRadius * 2}px`,
                     top: `${comboHeight / 2}px`,
-                    transform: 'translate(-50%, -50%)',
+                    transform: "translate(-50%, -50%)",
                     zIndex: -1,
-                    animation: 'combo-circle-pulse 2s ease-in-out infinite'
+                    animation: "combo-circle-pulse 2s ease-in-out infinite",
                   }}
                 />
                 {/* Круг 2 */}
-                <div 
+                <div
                   className="combo-circle circle-2"
                   style={{
-                    position: 'absolute',
+                    position: "absolute",
                     width: `${circleDiameter}px`,
                     height: `${circleDiameter}px`,
-                    borderRadius: '50%',
-                    background: 'radial-gradient(circle, rgba(255, 255, 0, 0.3) 0%, rgba(0, 150, 255, 0.2) 40%, rgba(0, 150, 255, 0.1) 70%, transparent 100%)',
+                    borderRadius: "50%",
+                    background:
+                      "radial-gradient(circle, rgba(255, 255, 0, 0.3) 0%, rgba(0, 150, 255, 0.2) 40%, rgba(0, 150, 255, 0.1) 70%, transparent 100%)",
                     left: `${totalWidth / 2 - circleRadius}px`,
                     top: `${comboHeight / 2}px`,
-                    transform: 'translate(-50%, -50%)',
+                    transform: "translate(-50%, -50%)",
                     zIndex: -2,
-                    animation: 'combo-circle-pulse 2s ease-in-out infinite 0.4s'
+                    animation:
+                      "combo-circle-pulse 2s ease-in-out infinite 0.4s",
                   }}
                 />
                 {/* Круг 3 - центр */}
-                <div 
+                <div
                   className="combo-circle circle-3"
                   style={{
-                    position: 'absolute',
+                    position: "absolute",
                     width: `${circleDiameter}px`,
                     height: `${circleDiameter}px`,
-                    borderRadius: '50%',
-                    background: 'radial-gradient(circle, rgba(255, 255, 0, 0.25) 0%, rgba(0, 150, 255, 0.25) 50%, rgba(0, 150, 255, 0.15) 80%, transparent 100%)',
+                    borderRadius: "50%",
+                    background:
+                      "radial-gradient(circle, rgba(255, 255, 0, 0.25) 0%, rgba(0, 150, 255, 0.25) 50%, rgba(0, 150, 255, 0.15) 80%, transparent 100%)",
                     left: `${totalWidth / 2}px`,
                     top: `${comboHeight / 2}px`,
-                    transform: 'translate(-50%, -50%)',
+                    transform: "translate(-50%, -50%)",
                     zIndex: -3,
-                    animation: 'combo-circle-pulse 2s ease-in-out infinite 0.8s'
+                    animation:
+                      "combo-circle-pulse 2s ease-in-out infinite 0.8s",
                   }}
                 />
                 {/* Круг 4 */}
-                <div 
+                <div
                   className="combo-circle circle-4"
                   style={{
-                    position: 'absolute',
+                    position: "absolute",
                     width: `${circleDiameter}px`,
                     height: `${circleDiameter}px`,
-                    borderRadius: '50%',
-                    background: 'radial-gradient(circle, rgba(0, 150, 255, 0.3) 0%, rgba(0, 150, 255, 0.2) 60%, rgba(0, 150, 255, 0.1) 80%, transparent 100%)',
+                    borderRadius: "50%",
+                    background:
+                      "radial-gradient(circle, rgba(0, 150, 255, 0.3) 0%, rgba(0, 150, 255, 0.2) 60%, rgba(0, 150, 255, 0.1) 80%, transparent 100%)",
                     left: `${totalWidth / 2 + circleRadius}px`,
                     top: `${comboHeight / 2}px`,
-                    transform: 'translate(-50%, -50%)',
+                    transform: "translate(-50%, -50%)",
                     zIndex: -4,
-                    animation: 'combo-circle-pulse 2s ease-in-out infinite 1.2s'
+                    animation:
+                      "combo-circle-pulse 2s ease-in-out infinite 1.2s",
                   }}
                 />
                 {/* Круг 5 - правый */}
-                <div 
+                <div
                   className="combo-circle circle-5"
                   style={{
-                    position: 'absolute',
+                    position: "absolute",
                     width: `${circleDiameter}px`,
                     height: `${circleDiameter}px`,
-                    borderRadius: '50%',
-                    background: 'radial-gradient(circle, rgba(0, 150, 255, 0.4) 0%, rgba(0, 150, 255, 0.2) 70%, rgba(0, 150, 255, 0.05) 90%, transparent 100%)',
+                    borderRadius: "50%",
+                    background:
+                      "radial-gradient(circle, rgba(0, 150, 255, 0.4) 0%, rgba(0, 150, 255, 0.2) 70%, rgba(0, 150, 255, 0.05) 90%, transparent 100%)",
                     left: `${totalWidth / 2 + circleRadius * 2}px`,
                     top: `${comboHeight / 2}px`,
-                    transform: 'translate(-50%, -50%)',
+                    transform: "translate(-50%, -50%)",
                     zIndex: -5,
-                    animation: 'combo-circle-pulse 2s ease-in-out infinite 1.6s'
+                    animation:
+                      "combo-circle-pulse 2s ease-in-out infinite 1.6s",
                   }}
                 />
               </div>
-              
+
               <svg
                 width={totalWidth}
                 height={comboHeight}
@@ -666,7 +795,11 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
                 >
                   Combo
                 </text>
-                <g transform={`translate(${comboWidth + 16}, ${comboHeight - 18})`}>
+                <g
+                  transform={`translate(${comboWidth + 16}, ${
+                    comboHeight - 18
+                  })`}
+                >
                   <ComboCounter value={lastScore.comboLevel} />
                 </g>
               </svg>
