@@ -45,6 +45,7 @@ import BoardRestoreAnimationsOverlay, {
 import PieceReturnAnimation from "./board/PieceReturnAnimation";
 import ExplosionWave from "./board/ExplosionWave";
 import ExplosionParticles from "./board/ExplosionParticles";
+import ExplosionParticlesCanvas from "./board/ExplosionParticlesCanvas";
 import ExplosionFlash from "./board/ExplosionFlash";
 import { v4 as uuidv4 } from "uuid";
 import ClickEffect from "./ClickEffect";
@@ -2488,7 +2489,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
               {/* Частицы взрыва */}
               {explosionParticles && (
-                <ExplosionParticles
+                <ExplosionParticlesCanvas
                   key={explosionParticles.key}
                   centerX={explosionParticles.centerX}
                   centerY={explosionParticles.centerY}
@@ -2525,7 +2526,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               )}
               {/* Быстрый эффект сбора частиц к краям 3x3 при удержании бомбы */}
               {bombGatherParticles && (
-                <ExplosionParticles
+                <ExplosionParticlesCanvas
                   key={bombGatherParticles.key}
                   centerX={bombGatherParticles.centerX}
                   centerY={bombGatherParticles.centerY}
