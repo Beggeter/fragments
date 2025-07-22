@@ -362,13 +362,11 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        console.log('🔄 App became visible, refreshing balance...');
         handleBalanceUpdate();
       }
     };
 
     const handleFocus = () => {
-      console.log('🔄 App got focus, refreshing balance...');
       handleBalanceUpdate();
     };
 
@@ -388,17 +386,10 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
 
   const handlePurchaseConfirm = async (quantity: number) => {
     if (!selectedBooster || !user?.telegramId) {
-      console.error('No selected booster or user');
       return;
     }
 
     try {
-      console.log('🛒 Purchasing booster:', {
-        boosterTypeId: selectedBooster.id,
-        quantity,
-        userId: user.telegramId
-      });
-
       const sessionToken = typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : null;
       const headers: HeadersInit = { 'Content-Type': 'application/json' };
       if (sessionToken) {
@@ -417,7 +408,6 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
       const result = await response.json();
 
       if (response.ok) {
-        console.log('✅ Booster purchased successfully:', result);
         
         // Закрываем модалку
         setIsModalOpen(false);
@@ -434,7 +424,6 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
           }
         }
       } else {
-        console.error('❌ Failed to purchase booster:', result.error);
         
                  // Проверяем, если недостаточно средств
          if (result.error === 'Insufficient currency') {
