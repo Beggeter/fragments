@@ -1,5 +1,13 @@
 import { NextApiRequest, NextApiResponse } from 'next';
+import TelegramBot from 'node-telegram-bot-api';
 import { UserService, CurrencyService, BoosterService } from '../../../lib/db/services';
+
+const botToken = process.env.STARS_BOT_TOKEN;
+if (!botToken) {
+  throw new Error('STARS_BOT_TOKEN environment variable is not set');
+}
+
+const bot = new TelegramBot(botToken, { polling: false });
 
 // Простая функция для парсинга compact payload
 function parseCompactPayload(payload: string): Record<string, any> {
@@ -55,24 +63,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const user = await UserService.getUserById(paymentData.userId);
         if (!user) {
           console.error('❌ User not found for pre-checkout:', paymentData.userId);
-          return res.status(200).json({ 
-            ok: false, 
-            error_code: 400, 
-            description: 'User not found' 
-          });
+          
+          // Отвечаем через answerPreCheckoutQuery
+          await bot.answerPreCheckoutQuery(query.id, false, { error_message: 'User not found' });
+          return res.status(200).json({ ok: true });
         }
 
-        // Подтверждаем платеж
+        // Подтверждаем платеж через answerPreCheckoutQuery
         console.log('✅ Pre-checkout query approved');
+        await bot.answerPreCheckoutQuery(query.id, true);
         return res.status(200).json({ ok: true });
 
       } catch (error) {
         console.error('❌ Pre-checkout query error:', error);
-        return res.status(200).json({ 
-          ok: false, 
-          error_code: 400, 
-          description: 'Invalid payload' 
-        });
+        
+        // Отвечаем через answerPreCheckoutQuery с ошибкой
+        await bot.answerPreCheckoutQuery(query.id, false, { error_message: 'Invalid payload' });
+        return res.status(200).json({ ok: true });
       }
     }
 
@@ -91,7 +98,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return res.status(200).json({ ok: true }); // Отвечаем успехом, чтобы не было повторных попыток
         }
 
-                // Обрабатываем платеж в зависимости от типа товара
+        // Обрабатываем платеж в зависимости от типа товара
         switch (paymentData.itemType) {
           case 'shards':
             await CurrencyService.addCurrency(

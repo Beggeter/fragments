@@ -10,6 +10,7 @@ import { ShardPack } from "@/types/shop";
 import ClickEffect from "./ClickEffect";
 import { useTranslation } from "react-i18next";
 import ComingSoonModal from "./UI/ComingSoonModal";
+import { createShardsInvoice, showTelegramAlert } from "@/lib/utils/telegramStars";
 
 const TABS_KEYS = ['shards', 'boosters', 'zen'] as const;
 
@@ -286,9 +287,20 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
   const [isComingSoonModalOpen, setIsComingSoonModalOpen] = useState(false);
 
   // Обработчик клика по пакету кристаллов
-  const handleShardPackClick = (pack: ShardPack) => {
-    setSelectedShardPack(pack);
-    setIsShardModalOpen(true);
+  const handleShardPackClick = async (pack: ShardPack) => {
+    if (!user?.id) {
+      showTelegramAlert('Пользователь не авторизован');
+      return;
+    }
+    const result = await createShardsInvoice(user.id, pack.amount, pack.price);
+    if (result.success) {
+      showTelegramAlert('Оплата прошла успешно! Осколки начислены.');
+      await handleBalanceUpdate();
+    } else if (result.error === 'Payment cancelled') {
+      showTelegramAlert('Оплата отменена');
+    } else {
+      showTelegramAlert('Ошибка создания инвойса: ' + (result.error || 'Неизвестная ошибка'));
+    }
   };
 
   // Функция для обновления баланса после покупки
@@ -639,21 +651,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
         />
       )}
       {selectedShardPack && (
-        <ShardPurchaseModal
-          isOpen={isShardModalOpen}
-          onClose={() => {
-            setIsShardModalOpen(false);
-            setSelectedShardPack(null);
-          }}
-          pack={selectedShardPack}
-          userId={user?.id}
-          onSuccess={async () => {
-            setIsShardModalOpen(false);
-            setSelectedShardPack(null);
-            // Обновляем баланс после успешной покупки
-            await handleBalanceUpdate();
-          }}
-        />
+        null // Отключаем ShardPurchaseModal, чтобы не открывалось окно
       )}
       
       {/* Coming Soon Modal для Zen */}

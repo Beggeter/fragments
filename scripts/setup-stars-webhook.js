@@ -10,7 +10,7 @@ const http = require('http');
 
 // Получаем параметры из командной строки
 const webhookUrl = process.argv[2];
-const botToken = process.env.STARS_BOT_TOKEN;
+const botToken = "7938308992:AAHTQJF97dObku5XLKGmV7yd-8w6I5LU5zs";
 
 if (!webhookUrl) {
   console.error('❌ Ошибка: Не указан URL webhook');
