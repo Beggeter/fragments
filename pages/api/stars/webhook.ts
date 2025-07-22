@@ -83,57 +83,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
 
-    // Обрабатываем успешный платеж
+    // Обрабатываем успешный платеж (Stars mini-app)
     if (update.successful_payment) {
       const payment = update.successful_payment;
-      console.log('💰 Processing successful payment:', payment);
+      console.log('💰 Processing successful payment (Stars):', payment);
+      await handleSuccessfulPayment(payment, res);
+      return;
+    }
 
-      try {
-        const paymentData = parseCompactPayload(payment.invoice_payload);
-        
-        // Получаем пользователя
-        const user = await UserService.getUserById(paymentData.userId);
-        if (!user) {
-          console.error('❌ User not found for payment:', paymentData.userId);
-          return res.status(200).json({ ok: true }); // Отвечаем успехом, чтобы не было повторных попыток
-        }
-
-        // Обрабатываем платеж в зависимости от типа товара
-        switch (paymentData.itemType) {
-          case 'shards':
-            await CurrencyService.addCurrency(
-              user.id, // Используем внутренний ID пользователя
-              paymentData.amount,
-              'STARS_PURCHASE' as any,
-              `Stars purchase: ${paymentData.amount} shards`
-            );
-            console.log('✅ Shards payment processed:', {
-              userId: user.id,
-              telegramId: user.telegramId,
-              amount: paymentData.amount
-            });
-            break;
-          
-          case 'booster':
-            await BoosterService.addUserBooster(user.id, parseInt(paymentData.itemId), paymentData.quantity || 1);
-            console.log('✅ Booster payment processed:', {
-              userId: user.id,
-              telegramId: user.telegramId,
-              boosterId: paymentData.itemId,
-              quantity: paymentData.quantity
-            });
-            break;
-          
-          default:
-            console.warn('⚠️ Unsupported payment type:', paymentData.itemType);
-        }
-
-        return res.status(200).json({ ok: true });
-
-      } catch (error) {
-        console.error('❌ Payment processing error:', error);
-        return res.status(200).json({ ok: true }); // Отвечаем успехом, чтобы не было повторных попыток
-      }
+    // Обрабатываем успешный платеж (обычный бот)
+    if (update.message?.successful_payment) {
+      const payment = update.message.successful_payment;
+      console.log('💰 Processing successful payment (message):', payment);
+      await handleSuccessfulPayment(payment, res);
+      return;
     }
 
     // Отвечаем успехом для других типов обновлений
@@ -142,5 +105,49 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } catch (error: any) {
     console.error('❌ Webhook processing error:', error);
     return res.status(500).json({ error: 'Internal server error' });
+  }
+} 
+
+// Вынесенная функция для обработки успешного платежа
+async function handleSuccessfulPayment(payment: any, res: NextApiResponse) {
+  try {
+    const paymentData = parseCompactPayload(payment.invoice_payload);
+    // Получаем пользователя
+    const user = await UserService.getUserById(paymentData.userId);
+    if (!user) {
+      console.error('❌ User not found for payment:', paymentData.userId);
+      return res.status(200).json({ ok: true });
+    }
+    // Обрабатываем платеж в зависимости от типа товара
+    switch (paymentData.itemType) {
+      case 'shards':
+        await CurrencyService.addCurrency(
+          user.id,
+          paymentData.amount,
+          'STARS_PURCHASE' as any,
+          `Stars purchase: ${paymentData.amount} shards`
+        );
+        console.log('✅ Shards payment processed:', {
+          userId: user.id,
+          telegramId: user.telegramId,
+          amount: paymentData.amount
+        });
+        break;
+      case 'booster':
+        await BoosterService.addUserBooster(user.id, parseInt(paymentData.itemId), paymentData.quantity || 1);
+        console.log('✅ Booster payment processed:', {
+          userId: user.id,
+          telegramId: user.telegramId,
+          boosterId: paymentData.itemId,
+          quantity: paymentData.quantity
+        });
+        break;
+      default:
+        console.warn('⚠️ Unsupported payment type:', paymentData.itemType);
+    }
+    return res.status(200).json({ ok: true });
+  } catch (error) {
+    console.error('❌ Payment processing error:', error);
+    return res.status(200).json({ ok: true });
   }
 } 
