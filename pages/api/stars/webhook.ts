@@ -9,11 +9,36 @@ if (!botToken) {
 
 const bot = new TelegramBot(botToken, { polling: false });
 
+const adminId = process.env.ADMIN_ID;
+const webAppUrl = process.env.WEBAPP_URL;
+const termsUrl = process.env.TERMS_URL;
+
+function getMainMenu() {
+  const inline_keyboard = [
+    webAppUrl
+      ? [{ text: "▶️ Играть", web_app: { url: webAppUrl } }]
+      : [],
+    [{ text: "🛠 Поддержка (RU)", callback_data: "support_ru" }],
+    [{ text: "🛠 Support (EN)", callback_data: "support_en" }],
+    [{ text: "📄 Условия", callback_data: "terms" }],
+  ].filter(row => row.length > 0); // удаляем пустые строки
+
+  return {
+    text: `🎮 Добро пожаловать в FRAGMENTS — динамичную головоломку по мотивам Block Blast!\n\n` +
+      `Собирай фигуры, зарабатывай очки, используй бустеры и достигай Zen.\n\n` +
+      `Ты можешь приобрести осколки, бустеры и подписку ZEN через Telegram Stars прямо в игре.\n\n` +
+      `👇 Выберите действие:`,
+    reply_markup: {
+      inline_keyboard
+    }
+  };
+}
+
 // Простая функция для парсинга compact payload
 function parseCompactPayload(payload: string): Record<string, any> {
   try {
     const compactData = JSON.parse(payload);
-    
+
     // Обратный маппинг коротких ключей на длинные
     const reverseKeyMapping: Record<string, string> = {
       u: 'userId',
@@ -58,12 +83,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       try {
         const paymentData = parseCompactPayload(query.invoice_payload);
-        
+
         // Проверяем существование пользователя
         const user = await UserService.getUserById(paymentData.userId);
         if (!user) {
           console.error('❌ User not found for pre-checkout:', paymentData.userId);
-          
+
           // Отвечаем через answerPreCheckoutQuery
           await bot.answerPreCheckoutQuery(query.id, false, { error_message: 'User not found' });
           return res.status(200).json({ ok: true });
@@ -76,7 +101,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       } catch (error) {
         console.error('❌ Pre-checkout query error:', error);
-        
+
         // Отвечаем через answerPreCheckoutQuery с ошибкой
         await bot.answerPreCheckoutQuery(query.id, false, { error_message: 'Invalid payload' });
         return res.status(200).json({ ok: true });
@@ -99,6 +124,85 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return;
     }
 
+    // --- ДОБАВЛЕНО: обработка команд, callback_query и обычных сообщений ---
+    // 1. Callback Query
+    if (update.callback_query) {
+      const ctx = update.callback_query;
+      const action = ctx.data;
+      const chatId = ctx.message?.chat?.id;
+      const messageId = ctx.message?.message_id;
+      try {
+        if (messageId && chatId) {
+          // Удаляем предыдущее сообщение (если возможно)
+          try {
+            await bot.deleteMessage(chatId, messageId);
+          } catch (error) {
+            // ignore
+          }
+        }
+        switch (action) {
+          case "support_ru":
+            await bot.sendMessage(chatId, `ℹ️ Поддержка по покупкам\n\nЕсли у тебя возникли проблемы с покупкой, пожалуйста, отправь в поддержку:\n\n1. Свой @username\n2. Название товара (например, ZEN-подписка, бустер и т.д.)\n3. Примерное время покупки\n4. Что произошло\n\n📬 Поддержка: @fragments_support_bot`, {
+              reply_markup: {
+                inline_keyboard: [[{ text: "🔙 Назад", callback_data: "back_to_main" }]]
+              }
+            });
+            break;
+          case "support_en":
+            await bot.sendMessage(chatId, `ℹ️ Purchase Support\n\nIf you experienced an issue with a purchase, please send us:\n\n1. Your @username\n2. Product name (e.g. ZEN subscription, booster, etc.)\n3. Approximate time of purchase\n4. Short description of the issue\n\n📬 Contact: @fragments_support_bot`, {
+              reply_markup: {
+                inline_keyboard: [[{ text: "🔙 Back", callback_data: "back_to_main" }]]
+              }
+            });
+            break;
+          case "terms":
+            await bot.sendMessage(chatId, `📄 Условия использования:\n\n– Все товары являются цифровыми и используются только внутри Mini App FRAGMENTS\n– Покупки обрабатываются через Telegram Stars\n– Возвраты не предусмотрены, за исключением технических ошибок\n– В случае проблем — @fragments_support_bot\n\n📄 Terms of Service:\n\n– All products are digital and used within the FRAGMENTS Mini App\n– Purchases are processed via Telegram Stars\n– No refunds unless a technical error occurred\n– Contact @fragments_support_bot for any issues\n\n${termsUrl ? `🔗 ${termsUrl}` : ""}`, {
+              reply_markup: {
+                inline_keyboard: [[{ text: "🔙 Назад", callback_data: "back_to_main" }]]
+              }
+            });
+            break;
+          case "back_to_main":
+            const menu = getMainMenu();
+            await bot.sendMessage(chatId, menu.text, { reply_markup: menu.reply_markup });
+            break;
+          default:
+            // неизвестное действие
+            break;
+        }
+        await bot.answerCallbackQuery(ctx.id);
+      } catch (e) {
+        // ignore
+      }
+      return res.status(200).json({ ok: true });
+    }
+
+    // 2. Команды и обычные сообщения
+    if (update.message) {
+      const msg = update.message;
+      const chatId = msg.chat.id;
+      const text = msg.text || "";
+      // Команды
+      if (text.startsWith("/start") || text.startsWith("/menu")) {
+        const menu = getMainMenu();
+        await bot.sendMessage(chatId, menu.text, { reply_markup: menu.reply_markup });
+        return res.status(200).json({ ok: true });
+      }
+      if (text.startsWith("/help")) {
+        await bot.sendMessage(chatId, `🤖 Команды бота FRAGMENTS:\n\n/start - Начать игру\n/menu - Главное меню\n/help - Эта справка\n\n🎮 Играйте в захватывающую головоломку FRAGMENTS!`);
+        return res.status(200).json({ ok: true });
+      }
+      // Обычные сообщения (не команда)
+      if (!text.startsWith("/")) {
+        const user = msg.from.username ? `@${msg.from.username}` : msg.from.first_name;
+        await bot.sendMessage(chatId, `✅ Спасибо! Ваше сообщение передано команде.\n✅ Thank you! Your message has been forwarded to our team.`);
+        if (adminId) {
+          await bot.sendMessage(adminId, `📩 Новое обращение от ${user}:\n\n${text}`);
+        }
+        return res.status(200).json({ ok: true });
+      }
+    }
+
     // Отвечаем успехом для других типов обновлений
     return res.status(200).json({ ok: true });
 
@@ -106,7 +210,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     console.error('❌ Webhook processing error:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
-} 
+}
 
 // Вынесенная функция для обработки успешного платежа
 async function handleSuccessfulPayment(payment: any, res: NextApiResponse) {

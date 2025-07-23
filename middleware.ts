@@ -21,6 +21,7 @@ export function middleware(request: NextRequest) {
     '/api/auth/', // все endpoints авторизации
     '/api/admin/', // админские endpoints
     '/api/telegram', // telegram webhook
+    '/api/stars/webhook', // telegram webhook
     '/api/debug', // отладочные endpoints
     '/api/test-', // тестовые endpoints
   ];
