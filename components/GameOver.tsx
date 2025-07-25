@@ -10,9 +10,10 @@ import { useTranslation } from "react-i18next";
 
 interface GameOverProps {
   onPlayAgain: () => void;
+  onBackToMenu: () => void;
 }
 
-export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain }) => {
+export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu }) => {
   const { score } = useGameStore();
   const { user } = useUser();
   const { isAdmin } = useAdminAuth();
@@ -94,6 +95,13 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain }) => {
           className="rounded-3xl px-8 py-4  font-bold  w-[60%]"
           textClasses="font-black italic text-3xl"
           onClick={onPlayAgain}
+        />
+        <MenuButton
+          text={'Back to menu'}
+          gradientClass="yellow-gradient"
+          className="rounded-3xl px-8 py-4 font-bold w-[60%] mt-2"
+          textClasses="font-black italic text-3xl"
+          onClick={onBackToMenu}
         />
       </div>
     </div>

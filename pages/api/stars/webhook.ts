@@ -167,7 +167,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             await bot.sendMessage(chatId, menu.text, { reply_markup: menu.reply_markup });
             break;
           default:
-            // неизвестное действие
+            // Неизвестное действие — показываем главное меню с сообщением
+            await bot.sendMessage(chatId, "❓ Неизвестная команда. Возвращаемся в главное меню.", {
+              reply_markup: {
+                inline_keyboard: [[{ text: "🔙 В главное меню", callback_data: "back_to_main" }]]
+              }
+            });
             break;
         }
         await bot.answerCallbackQuery(ctx.id);

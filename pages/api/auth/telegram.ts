@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { generateJWT, checkRateLimit } from '@/lib/utils/auth';
+import { boosterTypes, userBoosters } from '@/lib/db/schema'; // Исправлен импорт
 
 interface TelegramAuthData {
   id: number;
@@ -142,11 +143,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         role: 'user' as const,
         createdAt: new Date(),
         updatedAt: new Date(),
-        currency: 1000, // Начальная валюта
+        // currency: 1000, // Убрано начисление валюты
       };
 
       const [createdUser] = await db.insert(users).values(newUser).returning();
       user = [createdUser];
+      // Убрана выдача бустеров новым пользователям
       
       console.log('✅ TELEGRAM AUTH: New user created', {
         telegramId: authData.id,

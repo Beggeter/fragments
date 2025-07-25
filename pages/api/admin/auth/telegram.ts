@@ -142,7 +142,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         role: 'user' as const,
         createdAt: new Date(),
         updatedAt: new Date(),
-        currency: 1000, // Начальная валюта
+        // currency: 1000, // Убрано начисление валюты
       };
 
       const [createdUser] = await db.insert(users).values(newUser).returning();

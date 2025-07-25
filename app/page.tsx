@@ -635,6 +635,7 @@ const HomePage: React.FC = () => {
             setCurrentScreen("classic mode");
             useGameStore.getState().resetGame();
           }}
+          onBackToMenu={() => setCurrentScreen("main menu")}
         />
       )}
 
