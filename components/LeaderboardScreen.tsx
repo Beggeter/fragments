@@ -58,7 +58,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
       // Обрабатываем новую структуру данных
       if (data.leaderboard) {
         setLeaderboard(data.leaderboard);
-        setUserPosition(data.userPosition);
+        setUserPosition(data.userPosition || null);
       } else {
         // Fallback для старой структуры
         setLeaderboard(data);
@@ -67,7 +67,6 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
     } catch (err) {
       console.error("Error fetching leaderboard:", err);
       setError(t("leaderboard.error"));
-    } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
@@ -118,7 +117,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
       username: user.username || user.firstName || t('leaderboard.you'),
       record: user.record || 0,
       avatarUrl:
-        user.photoUrl || user.avatarUrl || "https://api.dicebear.com/7.x/avataaars/svg?seed=User",
+        user.avatarUrl || user.photoUrl || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + user.id,
       position: userPosition,
     };
   };
@@ -263,8 +262,10 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
                               alt={entry.username}
                               className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 object-cover border-2 border-white/20"
                               onError={(e) => {
-                                (e.target as HTMLImageElement).src =
-                                  "/record.png";
+                                const target = e.target as HTMLImageElement;
+                                if (target.src !== "/record.png") {
+                                  target.src = "/record.png";
+                                }
                               }}
                             />
                           </div>
@@ -319,8 +320,10 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
                             alt={getUserCard()?.username}
                             className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 object-cover border-2 border-white/20"
                             onError={(e) => {
-                              (e.target as HTMLImageElement).src =
-                                "/record.png";
+                              const target = e.target as HTMLImageElement;
+                              if (target.src !== "/record.png") {
+                                target.src = "/record.png";
+                              }
                             }}
                           />
                         </div>
