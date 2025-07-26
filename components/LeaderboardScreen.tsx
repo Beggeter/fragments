@@ -233,7 +233,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
             </div>
           ) : (
             <div className="bg-white/10 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-xl border border-white/20 overflow-hidden">
-              <div className="leaderboard-scroll max-h-[70dvh] pb-6 overflow-y-auto">
+              <div className="leaderboard-scroll max-h-[60dvh] pb-6 overflow-y-auto">
                 {/* Топ-20 */}
                 {leaderboard.map((entry, index) => {
                   const position = index + 1;

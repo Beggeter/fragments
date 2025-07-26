@@ -625,7 +625,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
                 (a, b) => a.price - b.price
               );
               return (
-                <div className="w-full max-h-[80dvh] overflow-y-auto store-scroll max-w-2xl py-4 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-y-5 gap-x-6 auto-rows-[minmax(140px,auto)]">
+                <div className="w-full max-h-[70dvh] overflow-y-auto store-scroll max-w-2xl py-4 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-y-5 gap-x-6 auto-rows-[minmax(140px,auto)]">
                   {/* <ShardPackCardHorizontal key={0} {...sortedPacks[0]} /> */}
                   {sortedPacks.map((pack, i) => (
                     <ShardPackCard
