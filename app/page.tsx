@@ -563,7 +563,7 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen menu-bg" style={{
+    <div className={`${currentScreen === 'classic mode' ? 'bg-[var(--game-background)]' : 'menu-bg'} min-h-screen `} style={{
       paddingTop: "var(--tg-content-safe-area-inset-top)",
       overflow: "hidden"
     }}>
