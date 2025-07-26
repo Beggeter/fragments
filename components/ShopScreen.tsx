@@ -3,6 +3,7 @@ import { useUser } from "@/hooks/useUser";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import BoosterPurchaseModal from "./store/BoosterPurchaseModal";
 import ZenPurchaseModal from "./store/ZenPurchaseModal";
+import InsufficientShardsModal from "./store/InsufficientShardsModal";
 import { LoadingNumberAnimation } from "./LoadingNumberAnimation";
 import { BOOSTERS, SHARD_PACKS, ZEN_SUBS } from "./store/storeItems";
 import ShardPurchaseModal from "./store/ShardPurchaseModal";
@@ -11,33 +12,34 @@ import ClickEffect from "./ClickEffect";
 import { useTranslation } from "react-i18next";
 import ComingSoonModal from "./UI/ComingSoonModal";
 
-const TABS_KEYS = ['shards', 'boosters', 'zen'] as const;
+const TABS_KEYS = ["shards", "boosters", "zen"] as const;
 
 interface ShopScreenProps {
   onBack: () => void;
-  initialTab?: typeof TABS_KEYS[number];
+  initialTab?: (typeof TABS_KEYS)[number];
 }
-
 
 function ShardPackCard({ amount, price, label, labelType, icon, onBuy }: any) {
   const { t } = useTranslation();
   return (
     <ClickEffect
-      className="relative bg-white/10 backdrop-blur-md rounded-3xl shadow-xl flex flex-col
+      className="relative bg-white/10 backdrop-blur-md rounded-3xl shadow-xl flex flex-col scale-active
      items-center justify-between p-3 min-w-[100%] max-w-[140px] w-full min-h-[80px]  mx-auto border border-white/20 hover:scale-[1.04] transition-transform hover:bg-white/15 hover:border-white/30"
       onClick={onBuy}
+      
     >
       {/* Лейбл выгоды */}
       {label && (
         <div
-          className={`absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 px-2 py-0.5 rounded-full text-xs font-bold shadow-md font-figtree-mulish
+          className={`absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 z-2 px-2 py-1   w-fit text-nowrap rounded-full text-xs font-bold shadow-md font-figtree-mulish
             ${
-              labelType === "bonus"
+              // labelType === "bonus"
+              1
                 ? "bg-gradient-to-r from-orange-400 to-orange-500 text-white"
                 : "bg-gradient-to-r from-emerald-400 to-emerald-500 text-white"
             }`}
         >
-          {t(label)}
+          {t(`shop.for_free`, {bonus: label})}
         </div>
       )}
       {/* Объединенный контейнер для иконки и количества */}
@@ -57,12 +59,14 @@ function ShardPackCard({ amount, price, label, labelType, icon, onBuy }: any) {
   );
 }
 
-function BoosterCard({ icon, name, id, price, onBuy }: any) {
+function BoosterCard({ icon, name, id, price, price_stars, onBuy }: any) {
   const { t } = useTranslation();
   return (
     <ClickEffect
       onClick={onBuy}
-      className="relative bg-white/10 backdrop-blur-md rounded-3xl shadow-xl flex flex-row items-center justify-between px-0 py-0 min-h-[72px] w-full border border-white/20 hover:scale-[1.01] transition-transform hover:bg-white/15 hover:border-white/30 cursor-pointer mb-2"
+      className="relative bg-white/10 backdrop-blur-md rounded-3xl shadow-xl flex flex-row items-center justify-between
+       px-0 py-0 min-h-[72px] w-full border border-white/20 hover:scale-[1.01] transition-transform
+        hover:bg-white/15 hover:border-white/30 cursor-pointer mb-2 scale-active"
     >
       {/* Левая и центральная части: контейнер с backdrop-blur-sm bg-white/5 */}
       <div className="flex flex-row flex-1 h-full py-3 px-4 rounded-l-3xl rounded-r-3xl backdrop-blur-sm bg-white/5">
@@ -85,7 +89,14 @@ function BoosterCard({ icon, name, id, price, onBuy }: any) {
         </div>
       </div>
       {/* Правая часть: цена */}
-      <div className="flex flex-col justify-center items-center min-w-[80px] h-full px-4">
+      <div className="flex flex-col  gap-4 justify-center items-center min-w-[80px] h-full px-4">
+        <div className="flex gap-1 items-center">
+          <img src="/tgstar.svg" alt="shard" className="w-6 h-6" />
+          <span className="text-xl font-bold text-white font-figtree">
+            {price_stars}
+          </span>
+        </div>
+        <span className="w-full h-[2px] bg-white/20"></span>
         <div className="flex gap-1 items-center">
           <img src="/crystal.svg" alt="shard" className="w-6 h-6" />
           <span className="text-xl font-bold text-white font-figtree">
@@ -110,15 +121,17 @@ function ZenDescriptionCard({
     >
       <img src="/stars.svg" alt="ZEN" className=" w-40 h-30  " />
       <div className="mb-3 text-3xl font-extrabold text-white font-figtree-mulish menu-shadow tracking-wide text-center">
-        {t('shop.zen_subscription')}
+        {t("shop.zen_subscription")}
       </div>
       <div className="flex flex-col gap-4 w-full mt-2">
         <div className="flex items-center gap-4 bg-white/10 rounded-2xl px-4 py-3">
           <span className="text-2xl">❌</span>
           <div className="flex flex-col">
-            <span className="font-bold text-lg text-white">{t('shop.no_ads')}</span>
+            <span className="font-bold text-lg text-white">
+              {t("shop.no_ads")}
+            </span>
             <span className="text-white/80 text-sm">
-              {t('shop.no_ads_desc')}
+              {t("shop.no_ads_desc")}
             </span>
           </div>
         </div>
@@ -126,19 +139,21 @@ function ZenDescriptionCard({
           <span className="text-2xl">💸</span>
           <div className="flex flex-col">
             <span className="font-bold text-lg text-white">
-              {t('shop.booster_discount')}
+              {t("shop.booster_discount")}
             </span>
             <span className="text-white/80 text-sm">
-              {t('shop.booster_discount_desc')}
+              {t("shop.booster_discount_desc")}
             </span>
           </div>
         </div>
         <div className="flex items-center gap-4 bg-white/10 rounded-2xl px-4 py-3">
           <span className="text-2xl">🧘</span>
           <div className="flex flex-col">
-            <span className="font-bold text-lg text-white">{t('shop.zen_mode')}</span>
+            <span className="font-bold text-lg text-white">
+              {t("shop.zen_mode")}
+            </span>
             <span className="text-white/80 text-sm">
-              {t('shop.zen_mode_desc')}
+              {t("shop.zen_mode_desc")}
             </span>
           </div>
         </div>
@@ -146,10 +161,10 @@ function ZenDescriptionCard({
           <span className="text-2xl">🏆</span>
           <div className="flex flex-col">
             <span className="font-bold text-lg text-white">
-              {t('shop.prize_draws')}
+              {t("shop.prize_draws")}
             </span>
             <span className="text-white/80 text-sm">
-              {t('shop.prize_draws_desc')}
+              {t("shop.prize_draws_desc")}
             </span>
           </div>
         </div>
@@ -261,7 +276,9 @@ function handleShardPurchase({
 
 const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
   const { t } = useTranslation();
-  const [tab, setTab] = useState<typeof TABS_KEYS[number]>(initialTab || 'shards');
+  const [tab, setTab] = useState<(typeof TABS_KEYS)[number]>(
+    initialTab || "shards"
+  );
   const [adminBalance, setAdminBalance] = useState<number | null>(null);
   const [isBalanceLoading, setIsBalanceLoading] = useState(true);
   const [selectedBooster, setSelectedBooster] = useState<any>(null);
@@ -269,6 +286,17 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
   const [selectedSub, setSelectedSub] = useState<any>(null);
   const [isZenModalOpen, setIsZenModalOpen] = useState(false);
   const { isAdmin } = useAdminAuth();
+
+  // --- InsufficientShardsModal state ---
+  const [isInsufficientShardsModalOpen, setIsInsufficientShardsModalOpen] =
+    useState(false);
+  const [insufficientModalData, setInsufficientModalData] = useState<{
+    currentBalance: number;
+    requiredBalance: number;
+    totalCostStars: number;
+    booster: any;
+    quantity: number;
+  } | null>(null);
 
   // Ref для контейнера с подписками
   const subscriptionsContainerRef = useRef<HTMLDivElement>(null);
@@ -295,7 +323,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
   const handleBalanceUpdate = useCallback(async () => {
     try {
       setIsBalanceLoading(true);
-      
+
       if (isAdmin) {
         // Для админа получаем баланс отдельно
         const res = await fetch("/api/users/610936383/currency");
@@ -305,10 +333,10 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
         // Для обычного пользователя получаем актуальный баланс с сервера
         await refreshBalance();
       }
-      
+
       setIsBalanceLoading(false);
     } catch (error) {
-      console.error('Error updating balance:', error);
+      console.error("Error updating balance:", error);
       setIsBalanceLoading(false);
     }
   }, [refreshBalance, isAdmin]);
@@ -350,22 +378,22 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        console.log('🔄 App became visible, refreshing balance...');
+        console.log("🔄 App became visible, refreshing balance...");
         handleBalanceUpdate();
       }
     };
 
     const handleFocus = () => {
-      console.log('🔄 App got focus, refreshing balance...');
+      console.log("🔄 App got focus, refreshing balance...");
       handleBalanceUpdate();
     };
 
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('focus', handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
 
     return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
     };
   }, [handleBalanceUpdate]);
 
@@ -376,61 +404,64 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
 
   const handlePurchaseConfirm = async (quantity: number) => {
     if (!selectedBooster || !user?.telegramId) {
-      console.error('No selected booster or user');
+      console.error("No selected booster or user");
       return;
     }
 
     try {
-      console.log('🛒 Purchasing booster:', {
+      console.log("🛒 Purchasing booster:", {
         boosterTypeId: selectedBooster.id,
         quantity,
-        userId: user.telegramId
+        userId: user.telegramId,
       });
 
-      const sessionToken = typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : null;
-      const headers: HeadersInit = { 'Content-Type': 'application/json' };
+      const sessionToken =
+        typeof window !== "undefined"
+          ? localStorage.getItem("sessionToken")
+          : null;
+      const headers: HeadersInit = { "Content-Type": "application/json" };
       if (sessionToken) {
-        headers['Authorization'] = `Bearer ${sessionToken}`;
+        headers["Authorization"] = `Bearer ${sessionToken}`;
       }
       const response = await fetch(`/api/users/${user.telegramId}/boosters`, {
-        method: 'POST',
+        method: "POST",
         headers,
         body: JSON.stringify({
-          action: 'purchase',
+          action: "purchase",
           boosterTypeId: selectedBooster.id,
-          quantity: quantity
-        })
+          quantity: quantity,
+        }),
       });
 
       const result = await response.json();
 
       if (response.ok) {
-        console.log('✅ Booster purchased successfully:', result);
-        
+        console.log("✅ Booster purchased successfully:", result);
+
         // Закрываем модалку
         setIsModalOpen(false);
         setSelectedBooster(null);
-        
+
         // Обновляем баланс после покупки бустера
         await handleBalanceUpdate();
-        
+
         // Показываем уведомление об успехе
-        if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+        if (typeof window !== "undefined" && window.Telegram?.WebApp) {
           const webApp = window.Telegram.WebApp as any;
           if (webApp.showAlert) {
             webApp.showAlert(`✅ ${result.message}`);
           }
         }
       } else {
-        console.error('❌ Failed to purchase booster:', result.error);
-        
-                 // Проверяем, если недостаточно средств
-         if (result.error === 'Insufficient currency') {
-           // Предлагаем перейти к покупке кристаллов
-           handleInsufficientFunds();
+        console.error("❌ Failed to purchase booster:", result.error);
+
+        // Проверяем, если недостаточно средств
+        if (result.error === "Insufficient currency") {
+          // Предлагаем перейти к покупке кристаллов
+          handleInsufficientFunds();
         } else {
           // Показываем общую ошибку
-          if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+          if (typeof window !== "undefined" && window.Telegram?.WebApp) {
             const webApp = window.Telegram.WebApp as any;
             if (webApp.showAlert) {
               webApp.showAlert(`❌ Ошибка покупки: ${result.error}`);
@@ -439,12 +470,12 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
         }
       }
     } catch (error) {
-      console.error('❌ Error purchasing booster:', error);
-      
-      if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+      console.error("❌ Error purchasing booster:", error);
+
+      if (typeof window !== "undefined" && window.Telegram?.WebApp) {
         const webApp = window.Telegram.WebApp as any;
         if (webApp.showAlert) {
-          webApp.showAlert('❌ Ошибка покупки бустера');
+          webApp.showAlert("❌ Ошибка покупки бустера");
         }
       }
     }
@@ -489,16 +520,31 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
     setSelectedSub(null);
   };
 
-  const handleInsufficientFunds = () => {
-    setIsModalOpen(false);
-    setSelectedBooster(null);
-    setTab("shards");
+  // Открыть модалку "Недостаточно осколков"
+  const handleInsufficientFunds = (quantityOverride?: number) => {
+    if (!selectedBooster) return;
+    const qty = quantityOverride || 1;
+    const playerBal = isAdmin ? adminBalance ?? 333 : balance;
+    setInsufficientModalData({
+      currentBalance: playerBal,
+      requiredBalance: qty * selectedBooster.price,
+      totalCostStars: qty * selectedBooster.price_stars,
+      booster: selectedBooster,
+      quantity: qty,
+    });
+    setIsInsufficientShardsModalOpen(true);
+    // Не закрываем BoosterPurchaseModal, чтобы она оставалась под InsufficientShardsModal
   };
 
   return (
     <div className="flex relative flex-col min-h-screen text-white menu-bg fade-in-animation-fast">
       {/* Верхняя панель */}
-      <div className="flex justify-between items-center px-4 py-4" style={{ paddingTop: 'calc(var(--tg-content-safe-area-inset-top, 0px) + 16px)' }}>
+      <div
+        className="flex justify-between items-center px-4 py-4"
+        style={{
+          paddingTop: "calc(var(--tg-content-safe-area-inset-top, 0px) + 16px)",
+        }}
+      >
         <ClickEffect>
           <img
             src="/back.svg"
@@ -527,8 +573,20 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
               disabled={isBalanceLoading}
               title="Обновить баланс"
             >
-              <svg className={`w-4 h-4 text-white ${isBalanceLoading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              <svg
+                className={`w-4 h-4 text-white ${
+                  isBalanceLoading ? "animate-spin" : ""
+                }`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
               </svg>
             </button>
           </ClickEffect>
@@ -540,7 +598,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
           <ClickEffect key={key}>
             <button
               onClick={() => {
-                if (key === 'zen') {
+                if (key === "zen") {
                   setIsComingSoonModalOpen(true);
                 } else {
                   setTab(key);
@@ -550,7 +608,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
                 tab === key
                   ? "bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg"
                   : "bg-white/10 backdrop-blur-md text-white  "
-              } ${key === 'zen' ? 'opacity-75 cursor-not-allowed' : ''}`}
+              } ${key === "zen" ? "opacity-75 cursor-not-allowed" : ""}`}
             >
               {t(`shop.${key}`)}
             </button>
@@ -567,10 +625,14 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
                 (a, b) => a.price - b.price
               );
               return (
-                <div className="w-full max-w-2xl py-4 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-y-5 gap-x-6 auto-rows-[minmax(140px,auto)]">
+                <div className="w-full max-h-[80dvh] overflow-y-auto store-scroll max-w-2xl py-4 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-y-5 gap-x-6 auto-rows-[minmax(140px,auto)]">
                   {/* <ShardPackCardHorizontal key={0} {...sortedPacks[0]} /> */}
                   {sortedPacks.map((pack, i) => (
-                    <ShardPackCard key={i + 1} {...pack} onBuy={() => handleShardPackClick(pack)} />
+                    <ShardPackCard
+                      key={i + 1}
+                      {...pack}
+                      onBuy={() => handleShardPackClick(pack)}
+                    />
                   ))}
                 </div>
               );
@@ -655,7 +717,42 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
           }}
         />
       )}
-      
+      {/* InsufficientShardsModal */}
+      {isInsufficientShardsModalOpen && insufficientModalData && (
+        <InsufficientShardsModal
+          isOpen={isInsufficientShardsModalOpen}
+          currentBalance={insufficientModalData.currentBalance}
+          requiredBalance={insufficientModalData.requiredBalance}
+          totalCostStars={insufficientModalData.totalCostStars}
+          onClose={() => {
+            setIsInsufficientShardsModalOpen(false);
+            setInsufficientModalData(null);
+            // BoosterPurchaseModal остаётся открытой
+          }}
+          onTopUp={() => {
+            setIsInsufficientShardsModalOpen(false);
+            setInsufficientModalData(null);
+            setIsModalOpen(false); // Закрыть обе модалки и перейти к пополнению
+            setTab("shards");
+          }}
+          onBuyWithStars={() => {
+            setIsInsufficientShardsModalOpen(false);
+            setInsufficientModalData(null);
+            setIsModalOpen(true);
+            setTimeout(() => {
+              if (typeof window !== "undefined") {
+                const evt = new CustomEvent("autoBuyWithStars");
+                window.dispatchEvent(evt);
+              }
+            }, 100);
+          }}
+          onChangeAmount={() => {
+            setIsInsufficientShardsModalOpen(false);
+            setInsufficientModalData(null);
+          }}
+        />
+      )}
+
       {/* Coming Soon Modal для Zen */}
       <ComingSoonModal
         isOpen={isComingSoonModalOpen}

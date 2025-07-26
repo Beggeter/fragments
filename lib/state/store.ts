@@ -192,6 +192,8 @@ export const useGameStore = create<
     hoverCell: { x: number; y: number } | null;
     setHoverCell: (cell: { x: number; y: number } | null) => void;
     initializeGame: () => void;
+    justGeneratedPieces: boolean;
+    setJustGeneratedPieces: (value: boolean) => void;
   }
 >((set, get) => {
   // Вспомогательная функция для обработки завершения игры
@@ -263,7 +265,9 @@ export const useGameStore = create<
         previewBlock: blockGenerator.getPreviewBlock(),
         round: 1,
         piecesPlaced: 0,
+        justGeneratedPieces: true,
       });
+      setTimeout(() => set({ justGeneratedPieces: false }), 500);
     },
 
     placePiece: (x: number, y: number) => {
@@ -357,8 +361,9 @@ export const useGameStore = create<
           set({
             currentPieces: newBlocks,
             previewBlock: blockGenerator.getPreviewBlock(),
+            justGeneratedPieces: true,
           });
-          handleGameOver();
+          setTimeout(() => set({ justGeneratedPieces: false }), 500);
           return;
         }
 
@@ -366,7 +371,9 @@ export const useGameStore = create<
         set({
           currentPieces: newBlocks,
           previewBlock: blockGenerator.getPreviewBlock(),
+          justGeneratedPieces: true,
         });
+        setTimeout(() => set({ justGeneratedPieces: false }), 500);
       }
     },
 
@@ -443,5 +450,7 @@ export const useGameStore = create<
         isRecordBreakerMode: levelInfo.isRecordBreaker,
       });
     },
+    justGeneratedPieces: false,
+    setJustGeneratedPieces: (value) => set({ justGeneratedPieces: value }),
   };
 });

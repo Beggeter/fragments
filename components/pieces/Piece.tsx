@@ -25,7 +25,7 @@ const colorGradients: Record<BlockColor, string> = {
 export const Piece: React.FC<PieceProps> = ({ color, size = 32, isClearing, isPreview = false }) => {
   const [imageError, setImageError] = useState(false);
 
-  const opacity = isPreview ? 0.5 : 1;
+  const opacity = isPreview ? 0.4 : 1;
 
   // Если изображение не загрузилось, используем CSS градиент
   if (imageError) {

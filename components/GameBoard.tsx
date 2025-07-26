@@ -50,6 +50,7 @@ import ExplosionFlash from "./board/ExplosionFlash";
 import { v4 as uuidv4 } from "uuid";
 import ClickEffect from "./ClickEffect";
 import LoadingSpinner from "./LoadingSpinner";
+import WhirlwindSpinnerCanvas from "./WhirlwindSpinnerCanvas";
 import { useTranslation } from "react-i18next";
 
 const DEFAULT_CELL_SIZE = 43.75;
@@ -379,7 +380,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     endDrag,
     setHoverCell,
     hoverCell,
-    validPositions,
     initializeGame,
     score,
     lastScoreResult,
@@ -388,7 +388,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     setPreviewBlock,
     resetGame,
     gameOver,
-    setOnGameOver,
     piecesPlaced,
   } = useGameStore();
 
@@ -445,6 +444,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const [laserMode, setLaserMode] = useState(false);
   const [bombMode, setBombMode] = useState(false);
+  const [undoActive, setUndoActive] = useState(false);
   const [bombCenter, setBombCenter] = useState<{ x: number; y: number } | null>(
     null
   );
@@ -552,6 +552,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         console.log("🔄 Phase 2: Piece return animation completed");
         restorePiecesState();
         setUndoData(null); // Очищаем данные undo
+        setUndoActive(false);
       }, 800); // Время анимации возвращения фигуры
     } else {
       // Если нет фигуры для возвращения, завершаем undo сразу
@@ -560,6 +561,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       );
       restorePiecesState();
       setUndoData(null); // Очищаем данные undo
+      setUndoActive(false);
     }
   }, [undoData]);
 
@@ -601,26 +603,33 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   }, [onRestartComplete]);
 
   // Обработчики для LoadingSpinner
-  const handleLineBreakpoint = useCallback((lineIdx: number, rowIdx: number) => {
-    setClearedLines(prev => new Set([...prev, rowIdx]));
-    
-    // Добавляем небольшую задержку чтобы избежать конфликтов при быстрых обновлениях
-    setTimeout(() => {
-      // Очищаем конкретную линию когда анимация проходит через неё
-      // Используем функциональный апдейт для избежания конфликтов состояния
-      useGameStore.setState((state) => ({
-        board: state.board.map((row, y) =>
-          y === rowIdx ? row.map(() => ({ value: 0 })) : row
-        )
-      }));
-    }, lineIdx * 50); // Задержка в зависимости от номера линии
-    
-    setTimeout(() => setClearedLines(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(rowIdx);
-      return newSet;
-    }), 100);
-  }, []);
+  const handleLineBreakpoint = useCallback(
+    (lineIdx: number, rowIdx: number) => {
+      setClearedLines((prev) => new Set([...prev, rowIdx]));
+
+      // Добавляем небольшую задержку чтобы избежать конфликтов при быстрых обновлениях
+      setTimeout(() => {
+        // Очищаем конкретную линию когда анимация проходит через неё
+        // Используем функциональный апдейт для избежания конфликтов состояния
+        useGameStore.setState((state) => ({
+          board: state.board.map((row, y) =>
+            y === rowIdx ? row.map(() => ({ value: 0 })) : row
+          ),
+        }));
+      }, lineIdx * 50); // Задержка в зависимости от номера линии
+
+      setTimeout(
+        () =>
+          setClearedLines((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(rowIdx);
+            return newSet;
+          }),
+        100
+      );
+    },
+    []
+  );
 
   const handleShowSpinnerAnimation = useCallback(() => {
     setShowSpinnerAnimation(true);
@@ -629,7 +638,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const handleSpinnerFinish = useCallback(() => {
     setShowSpinnerAnimation(false);
-    
+
     setTimeout(() => {
       setClearedLines(new Set());
     }, 500);
@@ -667,10 +676,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       return;
     }
     console.log("Fetching boosters for telegram ID:", tgid);
-    const sessionToken = typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : null;
+    const sessionToken =
+      typeof window !== "undefined"
+        ? localStorage.getItem("sessionToken")
+        : null;
     const headers: HeadersInit = {};
     if (sessionToken) {
-      headers['Authorization'] = `Bearer ${sessionToken}`;
+      headers["Authorization"] = `Bearer ${sessionToken}`;
     }
     const res = await fetch(`/api/users/${tgid}/boosters`, { headers });
     const data = await res.json();
@@ -994,8 +1006,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           ]);
 
           // Сохраняем игру после размещения фигуры
-          saveAfterAction().catch(error => {
-            console.error('Error saving game after action:', error);
+          saveAfterAction().catch((error) => {
+            console.error("Error saving game after action:", error);
           });
         },
       });
@@ -1157,14 +1169,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     ]);
 
     // Сохраняем игру после использования лазера
-    saveAfterAction().catch(error => {
-      console.error('Error saving game after laser:', error);
+    saveAfterAction().catch((error) => {
+      console.error("Error saving game after laser:", error);
     });
   };
 
   // Новый обработчик undo с двухфазной анимацией
   const handleUndo = useCallback(() => {
     if (history.length < 2) return;
+    setUndoActive(true);
 
     // Получаем текущее состояние (которое будет отменено)
     const currentState = history[history.length - 1];
@@ -1358,6 +1371,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         setTimeout(() => {
           console.log("🔄 Phase 2: Piece return animation completed");
           undoDataForAnimation.restorePiecesState();
+          setUndoActive(false);
         }, 800); // Время анимации возвращения фигуры
       } else {
         // Если нет фигуры для возвращения, завершаем undo сразу
@@ -1365,6 +1379,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           "🔄 Phase 2: No piece to return, completing undo immediately"
         );
         undoDataForAnimation.restorePiecesState();
+        setUndoActive(false);
       }
     }
   }, [history, startPieceReturnAnimation]);
@@ -1376,7 +1391,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       console.log("Booster not found:", boosterName);
       return false;
     }
-    
+
     let tgid: number | undefined = user?.telegramId;
     // Только для админа в режиме разработки используем тестовый ID
     if (
@@ -1390,12 +1405,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       console.log("No telegram ID available for using booster");
       return false;
     }
-    
+
     console.log("Using booster:", boosterName, "for telegram ID:", tgid);
-    const sessionToken = typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : null;
+    const sessionToken =
+      typeof window !== "undefined"
+        ? localStorage.getItem("sessionToken")
+        : null;
     const headers: HeadersInit = { "Content-Type": "application/json" };
     if (sessionToken) {
-      headers['Authorization'] = `Bearer ${sessionToken}`;
+      headers["Authorization"] = `Bearer ${sessionToken}`;
     }
     const res = await fetch(`/api/users/${tgid}/boosters`, {
       method: "POST",
@@ -1466,8 +1484,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         }
       }
     }
+
     setExplodingCells({ cells, cellSize });
-    
+
     // Запускаем волну взрыва
     setExplosionWave({
       centerX: cx,
@@ -1476,8 +1495,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       key: Date.now(), // <--- добавьте это
     });
 
-    console.log('ExplosionWave set:', { cx, cy });
-    
+    console.log("ExplosionWave set:", { cx, cy });
+
     // Запускаем частицы взрыва
     setExplosionParticles({
       centerX: cx,
@@ -1485,20 +1504,24 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       isActive: true,
       key: Date.now(),
     });
-    
+
     // Запускаем вспышку
     setExplosionFlash({
       isActive: true,
-      centerX: cx * (dynamicCellSize || DEFAULT_CELL_SIZE) + (dynamicCellSize || DEFAULT_CELL_SIZE) / 2,
-      centerY: cy * (dynamicCellSize || DEFAULT_CELL_SIZE) + (dynamicCellSize || DEFAULT_CELL_SIZE) / 2,
+      centerX:
+        cx * (dynamicCellSize || DEFAULT_CELL_SIZE) +
+        (dynamicCellSize || DEFAULT_CELL_SIZE) / 2,
+      centerY:
+        cy * (dynamicCellSize || DEFAULT_CELL_SIZE) +
+        (dynamicCellSize || DEFAULT_CELL_SIZE) / 2,
     });
-    
+
     // Добавляем тряску экрана
     document.body.classList.add("screen-shake");
     setTimeout(() => {
       document.body.classList.remove("screen-shake");
     }, 500);
-    
+
     // Очищаем клетки сразу!
     const newBoard = board.map((row, rowIdx) =>
       row.map((cell, colIdx) => {
@@ -1528,7 +1551,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       try {
         await saveAfterAction();
       } catch (error) {
-        console.error('Error saving game after bomb:', error);
+        console.error("Error saving game after bomb:", error);
       }
     }, 300);
     setBombMode(false);
@@ -1545,7 +1568,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     // Генерируем gather-частицы
     const gridW = board[0].length;
     const gridH = board.length;
-    const { cx, cy } = getBombHighlightCenter(cell, gridW, gridH) || { cx: -1, cy: -1 };
+    const { cx, cy } = getBombHighlightCenter(cell, gridW, gridH) || {
+      cx: -1,
+      cy: -1,
+    };
     if (cx !== -1 && cy !== -1) {
       // Периметр 5x5 вокруг центра, исключая внутренние 3x3
       const gatherRadius = 2; // 5x5
@@ -1553,10 +1579,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       for (let dy = -gatherRadius; dy <= gatherRadius; dy++) {
         for (let dx = -gatherRadius; dx <= gatherRadius; dx++) {
           // Только клетки по периметру 5x5, не входящие в 3x3
-          if (
-            Math.abs(dx) === gatherRadius ||
-            Math.abs(dy) === gatherRadius
-          ) {
+          if (Math.abs(dx) === gatherRadius || Math.abs(dy) === gatherRadius) {
             const x = cx + dx;
             const y = cy + dy;
             if (x >= 0 && x < gridW && y >= 0 && y < gridH) {
@@ -1567,7 +1590,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       }
       if (cx !== -1 && cy !== -1) {
         const timer = setTimeout(() => {
-          setBombHoldActive(false);
           // Имплозия перед взрывом
           setBombGatherParticles({
             centerX: cx,
@@ -1580,6 +1602,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             setBombGatherParticles(null);
             handleBombExplode(cell);
             setBombMode(false);
+            setBombHoldActive(false);
             setBombCenter(null);
           }, 260); // После имплозии — взрыв
         }, 500);
@@ -1611,17 +1634,17 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     // Генерируем gather-частицы
     const gridW = board[0].length;
     const gridH = board.length;
-    const { cx, cy } = getBombHighlightCenter(cell, gridW, gridH) || { cx: -1, cy: -1 };
+    const { cx, cy } = getBombHighlightCenter(cell, gridW, gridH) || {
+      cx: -1,
+      cy: -1,
+    };
     if (cx !== -1 && cy !== -1) {
       // Периметр 5x5 вокруг центра, исключая внутренние 3x3
-      const gatherRadius = 3; 
+      const gatherRadius = 3;
       const targets: { x: number; y: number }[] = [];
       for (let dy = -gatherRadius; dy <= gatherRadius; dy++) {
         for (let dx = -gatherRadius; dx <= gatherRadius; dx++) {
-          if (
-            Math.abs(dx) === gatherRadius ||
-            Math.abs(dy) === gatherRadius
-          ) {
+          if (Math.abs(dx) === gatherRadius || Math.abs(dy) === gatherRadius) {
             const x = cx + dx;
             const y = cy + dy;
             if (x >= 0 && x < gridW && y >= 0 && y < gridH) {
@@ -1632,7 +1655,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       }
       if (cx !== -1 && cy !== -1) {
         const timer = setTimeout(() => {
-          setBombHoldActive(false);
           setBombGatherParticles({
             centerX: cx,
             centerY: cy,
@@ -1644,6 +1666,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             setBombGatherParticles(null);
             handleBombExplode(cell);
             setBombMode(false);
+            setBombHoldActive(false);
+
             setBombCenter(null);
           }, 260);
         }, 500);
@@ -1736,12 +1760,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   useEffect(() => {
     if (clearedLine === null || clearedLine === undefined) return;
-    
+
     // Всегда очищаем указанную линию, даже если она уже пустая
     const newBoard = board.map((row, y) =>
       y === clearedLine ? row.map(() => ({ value: 0 })) : row
     );
-    
+
     // Убираем асинхронность для более быстрого обновления
     useGameStore.setState({ board: newBoard });
     setHistory((prev) => [
@@ -1983,9 +2007,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       return;
     }
     if (boosterId === "undo") {
+      if (history.length < 2) return;
+
       handleUndo(); // Сначала мгновенно применяем undo
       // Списываем бустер и обновляем панель в фоне
-      useBooster(boosterId).then(ok => {
+      useBooster(boosterId).then((ok) => {
         if (!ok) {
           alert("Ошибка списания бустера");
         } else {
@@ -2025,27 +2051,30 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       const viewportWidth = window.innerWidth || 375; // fallback для мобильных устройств
       const minWidth = 320; // минимальная ширина
       const maxWidth = 500; // максимальная ширина для игрового поля
-      
+
       // Ограничиваем размеры разумными пределами
-      const clampedWidth = Math.max(minWidth, Math.min(viewportWidth, maxWidth));
-      
+      const clampedWidth = Math.max(
+        minWidth,
+        Math.min(viewportWidth, maxWidth)
+      );
+
       document.documentElement.style.setProperty(
         "--app-vw",
         `${clampedWidth}px`
       );
-      
+
       // Добавляем дополнительную переменную для отладки
-      if (process.env.NODE_ENV === 'development') {
-        console.log('GameBoard: установлена --app-vw:', clampedWidth, 'px');
+      if (process.env.NODE_ENV === "development") {
+        console.log("GameBoard: установлена --app-vw:", clampedWidth, "px");
       }
     };
-    
+
     // Устанавливаем сразу
     setVw();
-    
+
     // Добавляем задержку для production сборки
     const timeoutId = setTimeout(setVw, 50);
-    
+
     window.addEventListener("resize", setVw);
     return () => {
       window.removeEventListener("resize", setVw);
@@ -2095,8 +2124,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       <div
         className={`flex flex-col items-center gap-5 min-h-screen bg-[var(--game-background)] p-4 no-select will-change-auto`}
       >
-        <div className="flex justify-between w-full -mb-2 items-center sm:max-w-xs sm:max-h-xs" 
-        style={{ paddingTop: 'var(--tg-content-safe-area-inset-top, 0px)' }}
+        <div
+          className="flex justify-between w-full -mb-2 items-center sm:max-w-xs sm:max-h-xs"
+          style={{ paddingTop: "var(--tg-content-safe-area-inset-top, 0px)" }}
         >
           <div className="flex flex-row items-center jusyify-center gap-2">
             <img
@@ -2116,7 +2146,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             ) : (
               <ScoreDisplay
                 newScore={(() => {
-                  const currentRecord = isAdmin ? adminRecord ?? 0 : user?.record ?? 0;
+                  const currentRecord = isAdmin
+                    ? adminRecord ?? 0
+                    : user?.record ?? 0;
                   return score > currentRecord ? score : currentRecord;
                 })()}
                 variant="record"
@@ -2159,7 +2191,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           onBoosterClick={handleBoosterClick}
           className="-mb-6 -z-10"
           comboLevel={lastScoreResult?.comboLevel}
-          activeBooster={bombMode ? "bomb" : undefined}
+          activeBooster={
+            bombMode
+              ? "bomb"
+              : showSpinnerAnimation
+              ? "whirlwind"
+              : undoActive
+              ? "undo"
+              : undefined
+          }
           gameOver={gameOver}
           onOpenShop={onOpenShop}
         />
@@ -2325,28 +2365,27 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 onTouchCancel={bombMode ? handleBombTouchCancel : undefined}
                 onContextMenu={bombMode ? (e) => e.preventDefault() : undefined}
               >
-                <div 
-                  className="absolute w-full h-full" 
+                <div
+                  className="absolute w-full h-full"
                   id="game-board-grid-bg"
                   style={{ zIndex: 1 }}
                 >
                   {/* Волна взрыва */}
-                  {explosionWave && (
-                    console.log('Rendering ExplosionWave', explosionWave),
-                    <ExplosionWave
-                      key={explosionWave.key} // <--- добавьте key
-                      centerX={explosionWave.centerX}
-                      centerY={explosionWave.centerY}
-                      boardWidth={width}
-                      boardHeight={height}
-                      cellSize={dynamicCellSize || DEFAULT_CELL_SIZE}
-                      gap={GAP_SIZE_PX}
-                      isActive={explosionWave.isActive}
-                      onComplete={() => setExplosionWave(null)}
-                    />
-                  )}
-
-
+                  {explosionWave &&
+                    (console.log("Rendering ExplosionWave", explosionWave),
+                    (
+                      <ExplosionWave
+                        key={explosionWave.key} // <--- добавьте key
+                        centerX={explosionWave.centerX}
+                        centerY={explosionWave.centerY}
+                        boardWidth={width}
+                        boardHeight={height}
+                        cellSize={dynamicCellSize || DEFAULT_CELL_SIZE}
+                        gap={GAP_SIZE_PX}
+                        isActive={explosionWave.isActive}
+                        onComplete={() => setExplosionWave(null)}
+                      />
+                    ))}
                 </div>
                 {board.map((row, y) => (
                   <React.Fragment key={y}>
@@ -2517,8 +2556,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                   }}
                 >
                   <LoadingSpinner
-                    width={dynamicCellSize ? width * (dynamicCellSize + GAP_SIZE_PX) : 400}
-                    height={dynamicCellSize ? height * (dynamicCellSize + GAP_SIZE_PX) : 400}
+                    width={
+                      dynamicCellSize
+                        ? width * (dynamicCellSize + GAP_SIZE_PX)
+                        : 400
+                    }
+                    height={
+                      dynamicCellSize
+                        ? height * (dynamicCellSize + GAP_SIZE_PX)
+                        : 400
+                    }
                     onFinish={handleSpinnerFinish}
                     onLineBreakpoint={handleLineBreakpoint}
                   />

@@ -47,6 +47,13 @@
     "prize_draws": "Розыгрыши призов",
     "prize_draws_desc": "Чем больше очков, тем выше шансы!",
     "insufficient_funds": "Недостаточно средств",
+    "insufficient_title": "Недостаточно осколков",
+    "insufficient_description": "У вас не хватает осколков для покупки {{count}} бустеров. Вы можете пополнить баланс или купить бустеры за звёзды.",
+    "needed": "Нужно",
+    "alternative_price": "Или за звёзды",
+    "top_up": "Пополнить баланс",
+    "buy_with_stars": "Купить за звёзды",
+    "change_quantity": "Изменить количество",
     "confirm": "Подтвердить",
     "cancel": "Отмена",
     "period": "Период",
@@ -62,7 +69,8 @@
     "zen_period_3m": "3 месяца",
     "zen_period_6m": "6 месяцев",
     "zen_period_12m": "12 месяцев",
-    "quantity": "Количество"
+    "quantity": "Количество",
+    "for_free": "{{bonus}} в подарок!"
   },
   "leaderboard": {
     "title": "Таблица лидеров",

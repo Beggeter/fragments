@@ -3,7 +3,7 @@ import React, { FC, ReactNode } from "react";
 import Image, { StaticImageData } from "next/image";
 import { vibrate } from "@/utils/helpers";
 import { useSettingsStore } from "@/lib/state/settings";
-
+import { handlePointerUp } from "@/utils/events";
 
 interface MenuButtonProps {
   text?: string | ReactNode; // Текст или любой React узел для содержимого кнопки
@@ -15,6 +15,9 @@ interface MenuButtonProps {
   onClick?: () => void; // Обработчик клика
   textClasses?: string;
   imageClasses?: string;
+  disabled?: boolean;
+  innerShadows?: boolean;
+  gap?: string;
 }
 
 const MenuButton: FC<MenuButtonProps> = ({
@@ -27,6 +30,9 @@ const MenuButton: FC<MenuButtonProps> = ({
   onClick,
   textClasses = "",
   imageClasses,
+  disabled = false,
+  innerShadows = true,
+  gap = "gap-2",
 }) => {
   // Функция для определения, является ли иконка SVG
   const isSvg = (icon: StaticImageData | string) => {
@@ -35,12 +41,16 @@ const MenuButton: FC<MenuButtonProps> = ({
     }
     return icon.src.includes(".svg");
   };
-  
+
   const vibration = useSettingsStore((state) => state.vibrationValue);
-  const handleClick = () => {
-    vibrate(vibration)
-    onClick?.()
-  }
+  const handleClick = (
+  ) => {
+    if (disabled) {
+      return;
+    }
+    vibrate(vibration);
+    onClick?.();
+  };
 
   // Компонент для отображения изображения с поддержкой iOS
   const ImageComponent = ({
@@ -59,7 +69,11 @@ const MenuButton: FC<MenuButtonProps> = ({
         <img
           src={src}
           alt={alt}
-          className={className || "w-auto h-full object-contain max-h-[6vh]"}
+          className={
+            imageClasses ||
+            className ||
+            "w-auto h-full object-contain max-h-[6vh]"
+          }
           style={{
             WebkitTransform: "translateZ(0)",
             transform: "translateZ(0)",
@@ -77,7 +91,11 @@ const MenuButton: FC<MenuButtonProps> = ({
         alt={alt}
         width={48}
         height={48}
-        className={className || "w-auto h-full object-contain max-h-[6vh]"}
+        className={
+          imageClasses ||
+          className ||
+          "w-auto h-full object-contain max-h-[6vh]"
+        }
         unoptimized={true}
         priority={true}
       />
@@ -86,13 +104,28 @@ const MenuButton: FC<MenuButtonProps> = ({
 
   return (
     <button
-      className={`menu-button ${gradientClass} ${className}`}
+      className={`menu-button ${gradientClass} ${className} ${
+        disabled ? "opacity-50 cursor-not-allowed" : ""
+      }`}
       onClick={handleClick}
+      // onPointerUp={(e) => handlePointerUp(e, handleClick)}
+      disabled={disabled}
+      tabIndex={disabled ? -1 : 0}
+      aria-disabled={disabled}
+      type="button"
     >
-      <span className="flex flex-row items-center gap-2 w-full justify-center">
+      <span
+        className={`${
+          gap ? gap : "gap-2"
+        } flex flex-row items-center w-full justify-center`}
+      >
         {/* Левая иконка */}
         {leftIcon && (
-          <span className="menu-shadow flex items-center justify-center h-[3rem] min-w-[3rem]">
+          <span
+            className={`${
+              innerShadows ? "menu-shadow" : ""
+            } flex items-center justify-center h-[3rem] min-w-[3rem]`}
+          >
             <ImageComponent icon={leftIcon} alt="left icon" />
           </span>
         )}
@@ -100,7 +133,9 @@ const MenuButton: FC<MenuButtonProps> = ({
         {/* Текст или содержимое */}
         {text && (
           <span
-            className={`${textClasses} flex flex-col items-start  justify-center text-white font-figtree-mulish   menu-shadow min-h-[44px]`}
+            className={`${textClasses} flex flex-col items-start  justify-center text-white font-figtree-mulish   ${
+              innerShadows ? "menu-shadow" : ""
+            } min-h-[44px]`}
           >
             {text}
           </span>
