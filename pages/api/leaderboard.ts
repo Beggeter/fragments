@@ -16,13 +16,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     // Формируем простой список с именами, рекордами и аватарками
     const leaderboard = users.map(user => {
-      const username = user.username || user.firstName || `User${user.id}`;
+      const username = user.firstName || `User${user.id}`;
       
       return {
         id: user.id,
         username,
         record: user.record,
-        avatarUrl: user.avatarUrl
+        avatarUrl: user.avatarUrl || "/blue.svg"
       };
     });
 

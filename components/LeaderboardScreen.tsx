@@ -64,6 +64,10 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
         setLeaderboard(data);
         setUserPosition(null);
       }
+      
+      // Сбрасываем состояния загрузки
+      setIsLoading(false);
+      setIsRefreshing(false);
     } catch (err) {
       console.error("Error fetching leaderboard:", err);
       setError(t("leaderboard.error"));
@@ -106,7 +110,10 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
     user && leaderboard.some((entry) => entry.id === user.id);
 
   // Показываем разделитель и карточку пользователя если он НЕ в топ-20
-  const shouldShowUserCard = user && userPosition && !isUserInVisibleTop20;
+  const shouldShowUserCard = user && userPosition && !isUserInVisibleTop20 && user.record > 0;
+
+  // Проверяем, нужно ли показать сообщение для пользователя без рекорда
+  const shouldShowNoRecordMessage = user && user.record === 0;
 
   // Создаем карточку пользователя для отображения под разделителем
   const getUserCard = () => {
@@ -117,7 +124,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
       username: user.username || user.firstName || t('leaderboard.you'),
       record: user.record || 0,
       avatarUrl:
-        user.avatarUrl || user.photoUrl || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + user.id,
+        user.avatarUrl || "/blue.svg",
       position: userPosition,
     };
   };
@@ -258,13 +265,13 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
                         <div className="flex items-center bg-transparent backdrop-blur-md rounded-2xl px-3 py-2  border-black/20">
                           <div className="flex-shrink-0 mr-3">
                             <img
-                              src={entry.avatarUrl || "/record.png"}
+                              src={entry.avatarUrl || "/blue.svg"}
                               alt={entry.username}
                               className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 object-cover border-2 border-white/20"
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
-                                if (target.src !== "/record.png") {
-                                  target.src = "/record.png";
+                                if (target.src !== "/blue.svg") {
+                                  target.src = "/blue.svg";
                                 }
                               }}
                             />
@@ -316,13 +323,13 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
                       <div className="flex items-center bg-black/10 backdrop-blur-md rounded-2xl px-3 py-2  border-black/20">
                         <div className="flex-shrink-0 mr-3">
                           <img
-                            src={getUserCard()?.avatarUrl || "/record.png"}
+                            src={getUserCard()?.avatarUrl || "/blue.svg"}
                             alt={getUserCard()?.username}
                             className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 object-cover border-2 border-white/20"
                             onError={(e) => {
                               const target = e.target as HTMLImageElement;
-                              if (target.src !== "/record.png") {
-                                target.src = "/record.png";
+                              if (target.src !== "/blue.svg") {
+                                target.src = "/blue.svg";
                               }
                             }}
                           />
@@ -344,6 +351,21 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
                     <div className="text-right flex-shrink-0 ml-3">
                       <div className="text-lg sm:text-xl font-bold text-yellow-400 font-figtree-mulish">
                         {getUserCard()?.record.toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Сообщение для пользователей без рекорда */}
+                {shouldShowNoRecordMessage && (
+                  <div className="flex items-center justify-center p-6 border-t border-white/10">
+                    <div className="text-center">
+                      <div className="text-2xl mb-2">🎮</div>
+                      <div className="text-white font-figtree-mulish text-lg font-bold mb-2">
+                        {t('leaderboard.no_record_title') || 'Начните играть!'}
+                      </div>
+                      <div className="text-gray-300 font-figtree-mulish text-sm">
+                        {t('leaderboard.no_record_message') || 'Сыграйте свою первую игру, чтобы попасть в рейтинг'}
                       </div>
                     </div>
                   </div>

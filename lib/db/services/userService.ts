@@ -79,8 +79,18 @@ export class UserService {
 
   // Получение позиции пользователя в рейтинге (быстрый способ)
   static async getUserPosition(userId: number): Promise<number | null> {
+    console.log('UserService.getUserPosition called with userId:', userId);
     const user = await this.getUserById(userId);
-    if (!user) return null;
+    if (!user) {
+      console.log('UserService.getUserPosition: user not found');
+      return null;
+    }
+    
+    // Если у пользователя рекорд = 0, не показываем позицию
+    if (user.record === 0) {
+      console.log('UserService.getUserPosition: user has no record (0)');
+      return null;
+    }
     
     // Считаем сколько пользователей имеют рекорд больше чем у текущего
     const [result] = await db
@@ -91,7 +101,9 @@ export class UserService {
         ne(users.record, 0)
       ));
     
-    return (result.count || 0) + 1;
+    const position = (result.count || 0) + 1;
+    console.log('UserService.getUserPosition calculated position:', position);
+    return position;
   }
 
   // Удаление пользователя (только для админов)
