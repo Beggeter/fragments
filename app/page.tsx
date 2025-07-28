@@ -503,7 +503,7 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen menu-bg" style={{
+    <div className={`${currentScreen === 'classic mode' ? 'bg-[var(--game-background)]' : 'menu-bg'} min-h-screen `} style={{
       paddingTop: "var(--tg-content-safe-area-inset-top)",
       overflow: "hidden"
     }}>
@@ -658,12 +658,7 @@ const HomePage: React.FC = () => {
       {!currentScreen && <LoadingScreen />}
 
       {/* Тестовый компонент для Stars API (только в dev режиме) */}
-      <TestStarsPayment />
-      
-      {/* Тестовый компонент для новой Invoice системы (только в dev режиме) */}
-      <TestInvoiceSystem />
-      
-      {/* Информация о поддержке Invoice API (только в dev режиме) */}
+      {/* <TestStarsPayment /> */}
     </div>
   );
 };

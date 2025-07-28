@@ -182,7 +182,7 @@ const PieceReturnAnimation: React.FC<PieceReturnAnimationProps> = ({
         animate={{
           x: targetX - pieceWidth / 2,
           y: targetY - pieceHeight / 2,
-          scale: 0.6,
+          scale: 0.5,
           opacity: 1,
         }}
         transition={{

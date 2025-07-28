@@ -2,6 +2,7 @@ import React, { FC, ReactNode } from "react";
 import Image, { StaticImageData } from "next/image";
 import { vibrate } from "@/utils/helpers";
 import { useSettingsStore } from "@/lib/state/settings";
+import { handlePointerUp } from "@/utils/events";
 
 interface SettingsButtonProps {
   text?: string | ReactNode;
@@ -78,10 +79,13 @@ const SettingsButton: FC<SettingsButtonProps> = ({
     );
   };
 
+  
   return (
     <button
       className={`menu-button ${gradientClass} ${className} `}
       onClick={handleClick}
+      // onPointerUp={(e) => { e.stopPropagation(); handlePointerUp(e, handleClick)}}
+      
     >
       <span className="flex flex-row items-center gap-2 w-full justify-start">
         {/* Левая иконка */}

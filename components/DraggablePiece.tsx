@@ -11,6 +11,7 @@ interface DraggablePieceProps {
   onStart?: (piece: Block, x: number, y: number) => void;
   style?: React.CSSProperties;
   onTransitionEnd?: () => void;
+  animateAppear?: boolean;
 }
 
 export const DraggablePiece: React.FC<DraggablePieceProps> = ({
@@ -20,6 +21,7 @@ export const DraggablePiece: React.FC<DraggablePieceProps> = ({
   originalSize = 32,
   ghostSize = 44,
   onTransitionEnd,
+  animateAppear = false,
 }) => {
   if (!piece || !piece.matrix) {
     console.warn('DraggablePiece: missing piece or matrix', { piece });
@@ -43,7 +45,7 @@ export const DraggablePiece: React.FC<DraggablePieceProps> = ({
   }`;
   const containerClasses = isGhost
     ? "fixed z-[1000] opacity-100 transition-transform duration-200"
-    : `rounded-lg transition-all opacity-in-animation cursor-pointer touch-manipulation`;
+    : `rounded-lg transition-all  cursor-pointer touch-manipulation  ${animateAppear ? "animate-appear" : ""}`;
 
   return (
     <div

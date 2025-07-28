@@ -34,7 +34,7 @@ const MainMenu: FC<MainMenuProps> = ({ onStartClassic, onOpenShop, onOpenLeaderb
       <div
         className={`min-h-screen menu-bg text-white fade-in-animation-fast
            flex flex-col py-10 relative z-1 overflow-y-hidden
-            fade-in-menu${fadeIn ? "fade-in-menu--visible" : ""}`}
+            fade-in-menu ${fadeIn ? "fade-in-menu--visible" : ""}`}
       >
         <BackgroundAnimation className="overflow-x-hidden absolute inset-0 px-4 -top-15" />
         
@@ -109,7 +109,7 @@ const BottomButtons: FC<BottomButtonsProps> = ({ onStartClassic, onShowComingSoo
         gradientClass="green-gradient"
         className="rounded-3xl px-6 py-10 max-w-md w-[55vw] sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3"
         textClasses="font-black italic text-[2.3rem] text-lg"
-        imageClasses="h-[2rem] min-w-[3rem] menu-shadow"
+        imageClasses="h-[2rem] min-w-[3rem] drop-shadow-md"
         onClick={onStartClassic}
       />
       <MenuButton

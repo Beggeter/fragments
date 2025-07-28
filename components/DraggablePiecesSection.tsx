@@ -3,6 +3,7 @@ import { Block } from "../lib/data/types";
 import { DraggablePiece } from "./DraggablePiece";
 import { Position } from "../lib/data/types";
 import { getEventCoordinates } from "@/utils/events";
+import { useGameStore } from "@/lib/state/store";
 
 interface DraggablePiecesProps {
   currentPieces: Block[];
@@ -30,6 +31,9 @@ export const DraggablePiecesSection: React.FC<DraggablePiecesProps> = ({
     );
     return piece;
   });
+
+  const { justGeneratedPieces } = useGameStore();
+
 
   const handleStart = (
     e: React.MouseEvent | React.TouchEvent,
@@ -90,6 +94,7 @@ export const DraggablePiecesSection: React.FC<DraggablePiecesProps> = ({
                 isGhost={draggedPiece?.uniqueId === activePiece.uniqueId}
                 ghostSize={dynamicCellSize}
                 originalSize={dynamicCellSize * 0.5}
+                animateAppear={justGeneratedPieces}
               />
             )}
           </div>

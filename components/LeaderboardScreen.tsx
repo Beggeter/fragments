@@ -177,7 +177,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
       </div>
 
       {/* Табы */}
-      <div className="flex gap-2 justify-center mb-5 px-4">
+      <div className="flex gap-2 justify-center mb-3 px-4">
         <ClickEffect>
           <button
             onClick={() => setActiveTab("classic")}
@@ -202,22 +202,22 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
       </div>
 
       {/* Заголовок */}
-      <div className="text-center justify-center mb-0">
+      <div className="text-center justify-center pb-2 pt-4">
         <div className="relative inline-block">
           {/* Тень под текстом */}
-          <h1 className="absolute text-[2.5rem] sm:text-6xl font-black tracking-wider text-blue-600/30 font-figtree-mulish px-8 py-4 transform translate-x-1 translate-y-1">
+          <h1 className="absolute text-[2.5rem] sm:text-6xl font-black tracking-wider text-blue-600/30 font-figtree-mulish px-8  transform translate-x-1 translate-y-1">
             LEADERBOARD
           </h1>
 
           {/* Основной заголовок */}
-          <h1 className="relative text-[2.5rem] sm:text-6xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-purple-300 to-indigo-300 font-figtree-mulish px-8 py-4">
+          <h1 className="relative text-[2.5rem] sm:text-6xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-purple-300 to-indigo-300 font-figtree-mulish px-8 ">
             LEADERBOARD
           </h1>
         </div>
       </div>
 
       {/* Контент */}
-      <div className="flex flex-col flex-1 justify-start items-center px-2 sm:px-4 py-2">
+      <div className="flex flex-col flex-1 justify-start items-center px-2 sm:px-4">
         <div className="w-full max-w-2xl">
           {error ? (
             <div className="text-center py-12">
@@ -239,7 +239,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
             </div>
           ) : (
             <div className="bg-white/10 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-xl border border-white/20 overflow-hidden">
-              <div className="leaderboard-scroll max-h-[70dvh] pb-6 overflow-y-auto">
+              <div className="leaderboard-scroll max-h-[60dvh] pb-6 overflow-y-auto">
                 {/* Топ-20 */}
                 {leaderboard.map((entry, index) => {
                   const position = index + 1;

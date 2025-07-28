@@ -55,18 +55,33 @@ export const BoostersPanel: React.FC<BoostersPanelProps> = ({
             bubbleColor = "#481C8D";
             bubbleBorder = "#6E2DAE";
           }
+
+          const ringColors = {
+            default: "ring-blue-500",
+            bomb: "ring-red-500",
+            whirlwind: "ring-purple-500",
+          } as any;
+
           return (
             <ClickEffect key={booster.id}>
               <button
                 className={`w-11 h-11 rounded-full aspect-square shadow-md
-               flex items-center justify-center hover:scale-110 transition-transform relative
-               ${activeBooster === booster.name ? "ring-3 ring-red-500 " : ""}`}
+               flex items-center justify-center hover:scale-110 transition-all relative 
+               ${
+                 activeBooster === booster.name
+                   ? `ring-3  ${ringColors[booster.id] || ringColors.default}`
+                   : "ring-0.5 ring-transparent "
+               }`}
                 type="button"
                 style={{ padding: 0 }}
                 onClick={() =>
                   isAvailable ? onBoosterClick(booster.id) : onOpenShop?.()
                 }
-                disabled={isDisabled || gameOver}
+                disabled={
+                  isDisabled ||
+                  gameOver ||
+                  (activeBooster === booster.name && activeBooster !== "bomb")
+                }
               >
                 <span
                   className={`absolute right-0 top-0 flex items-center justify-center

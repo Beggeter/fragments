@@ -19,7 +19,7 @@ interface BoardRestoreAnimationsOverlayProps {
 }
 
 const ANIMATION_DURATION = 0.8; // seconds - немного дольше для плавности
-const SHOW_RESULT_DURATION = 0.35; // seconds - время показа результата после анимации
+const SHOW_RESULT_DURATION = 0.1; // seconds - время показа результата после анимации
 const RESTORE_DISTANCE = 0.5; // Дистанция откуда появляются клетки
 
 // Направления появления клеток (они прилетают из случайных направлений)

@@ -50,7 +50,7 @@ const ExplosionWave: React.FC<ExplosionWaveProps> = ({
     Math.sqrt(boardWidthPx * boardWidthPx + boardHeightPx * boardHeightPx),
     Math.max(boardWidthPx, boardHeightPx) * 0.8
   );
-
+  
   return (
     <div
       style={{
@@ -71,9 +71,9 @@ const ExplosionWave: React.FC<ExplosionWaveProps> = ({
           opacity: [1, 0.8, 0.4, 0]
         }}
         transition={{ 
-          duration: 0.4, 
+          duration: 0.6, 
           ease: "easeOut",
-          opacity: { duration: 0.4, times: [0, 0.1, 0.5, 1] }
+          opacity: { duration: 0.6, times: [0, 0.3, 0.7, 1] }
         }}
         style={{
           position: "absolute",
@@ -97,10 +97,10 @@ const ExplosionWave: React.FC<ExplosionWaveProps> = ({
           opacity: [1, 0.6, 0.2, 0]
         }}
         transition={{ 
-          duration: 0.4, 
+          duration: 0.6, 
           delay: 0.02,
           ease: "easeOut",
-          opacity: { duration: 0.4, times: [0, 0.2, 0.6, 1] }
+          opacity: { duration: 0.6, times: [0, 0.2, 0.6, 1] }
         }}
         style={{
           position: "absolute",
@@ -124,10 +124,10 @@ const ExplosionWave: React.FC<ExplosionWaveProps> = ({
           opacity: [1, 0.4, 0.1, 0]
         }}
         transition={{ 
-          duration: 0.4, 
+          duration: 0.6, 
           delay: 0.05,
           ease: "easeOut",
-          opacity: { duration: 0.4, times: [0, 0.3, 0.7, 1] }
+          opacity: { duration: 0.6, times: [0, 0.3, 0.7, 1] }
         }}
         style={{
           position: "absolute",
