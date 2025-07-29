@@ -548,11 +548,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       }
 
       // Завершить undo после анимации возвращения фигуры
-      setTimeout(() => {
+      setTimeout(async () => {
         console.log("🔄 Phase 2: Piece return animation completed");
         restorePiecesState();
         setUndoData(null); // Очищаем данные undo
         setUndoActive(false);
+        await saveAfterAction().catch(console.error);
+
       }, 800); // Время анимации возвращения фигуры
     } else {
       // Если нет фигуры для возвращения, завершаем undo сразу
@@ -562,6 +564,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       restorePiecesState();
       setUndoData(null); // Очищаем данные undo
       setUndoActive(false);
+
     }
   }, [undoData]);
 
@@ -726,8 +729,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [adminRecord, setAdminRecord] = useState<number | null>(null);
   const [isRecordLoading, setIsRecordLoading] = useState(true); // Состояние загрузки рекорда
 
-  // Получить текущую тему на основе последнего результата
-  const currentTheme = getThemeByScore(lastScoreResult?.comboLevel);
 
   const [explodingCells, setExplodingCells] = useState<null | {
     cells: {
@@ -1368,10 +1369,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         }
 
         // Завершить undo после анимации возвращения фигуры
-        setTimeout(() => {
+        setTimeout(async () => {
           console.log("🔄 Phase 2: Piece return animation completed");
           undoDataForAnimation.restorePiecesState();
           setUndoActive(false);
+
+          await saveAfterAction().catch(console.error);
+
         }, 800); // Время анимации возвращения фигуры
       } else {
         // Если нет фигуры для возвращения, завершаем undo сразу
@@ -2032,11 +2036,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           },
         ]);
         handleShowSpinnerAnimation();
-        setTimeout(() => {
+        setTimeout(async () => {
           const newScore = score + 300;
           useGameStore.setState({
             score: newScore,
           });
+          await saveAfterAction().catch(console.error);
         }, 2000);
       }
     }
