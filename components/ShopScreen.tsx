@@ -12,6 +12,7 @@ import ClickEffect from "./ClickEffect";
 import { useTranslation } from "react-i18next";
 import ComingSoonModal from "./UI/ComingSoonModal";
 import { createShardsInvoice, showTelegramAlert } from "@/lib/utils/telegramStars";
+import TgStarIcon from "./UI/TgStarIcon";
 
 const TABS_KEYS = ["shards", "boosters", "zen"] as const;
 
@@ -25,7 +26,7 @@ function ShardPackCard({ amount, price, label, labelType, icon, onBuy }: any) {
   return (
     <ClickEffect
       className="relative bg-white/10 backdrop-blur-md rounded-3xl shadow-xl flex flex-col scale-active
-     items-center justify-between p-3 min-w-[100%] max-w-[140px] w-full min-h-[80px]  mx-auto border border-white/20 hover:scale-[1.04] transition-transform hover:bg-white/15 hover:border-white/30"
+     items-center p-3 min-w-[100%] max-w-[180px] w-full min-h-[80px] mx-auto border border-white/20 hover:scale-[1.04] transition-transform hover:bg-white/15 hover:border-white/30"
       onClick={onBuy}
       
     >
@@ -34,7 +35,6 @@ function ShardPackCard({ amount, price, label, labelType, icon, onBuy }: any) {
         <div
           className={`absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/3 z-2 px-2 py-1   w-fit text-nowrap rounded-full text-xs font-bold shadow-md font-figtree-mulish
             ${
-              // labelType === "bonus"
               1
                 ? "bg-gradient-to-r from-orange-400 to-orange-500 text-white"
                 : "bg-gradient-to-r from-emerald-400 to-emerald-500 text-white"
@@ -44,14 +44,14 @@ function ShardPackCard({ amount, price, label, labelType, icon, onBuy }: any) {
         </div>
       )}
       {/* Объединенный контейнер для иконки и количества */}
-      <div className="flex flex-col justify-center items-center p-2 mb-4 w-full rounded-2xl backdrop-blur-sm bg-white/5">
+      <div className="flex flex-col justify-center items-center p-2 mb-2 w-full rounded-2xl backdrop-blur-sm bg-white/5 flex-1">
         <img src={icon} alt="shard" className="mb-1 w-12 h-12 drop-shadow-lg" />
         <div className="text-lg font-extrabold text-white font-figtree">
           {amount}
         </div>
       </div>
-      <div className="flex gap-1 justify-center items-center">
-        <img src="/tgstar.svg" alt="star" className="w-5 h-5" />
+      <div className="flex gap-1 justify-center items-center mt-auto">
+        <TgStarIcon className="w-5 h-5" />
         <span className="text-base font-bold text-white font-figtree">
           {price}
         </span>
@@ -92,7 +92,7 @@ function BoosterCard({ icon, name, id, price, price_stars, onBuy }: any) {
       {/* Правая часть: цена */}
       <div className="flex flex-col  gap-4 justify-center items-center min-w-[80px] h-full px-4">
         <div className="flex gap-1 items-center">
-          <img src="/tgstar.svg" alt="shard" className="w-6 h-6" />
+          <TgStarIcon className="w-6 h-6" />
           <span className="text-xl font-bold text-white font-figtree">
             {price_stars}
           </span>
@@ -241,7 +241,7 @@ function ZenSubCard({
         </span>
         <span className=" h-[2px] bg-white/20 backdrop-blur-md w-full "></span>
         <span className="flex items-center gap-2 text-2xl font-bold text-white">
-          <img src="/tgstar.svg" alt="star" className="w-8 h-8" />
+          <TgStarIcon className="w-8 h-8" />
           {priceStars}
         </span>
       </div>

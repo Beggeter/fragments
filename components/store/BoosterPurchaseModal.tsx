@@ -8,6 +8,7 @@ import {
 import ClickEffect from "../ClickEffect";
 import { vibrate } from "@/utils/helpers";
 import MenuButton from "../UI/MenuButton";
+import TgStarIcon from "../UI/TgStarIcon";
 
 interface BoosterPurchaseModalProps {
   isOpen: boolean;
@@ -194,7 +195,7 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
 
         {/* Цена в Stars */}
         {/* <div className="flex items-center justify-center mb-4 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20">
-          <img src="/tgstar.svg" alt="star" className="w-6 h-6 mr-2" />
+          <TgStarIcon className="w-6 h-6 mr-2" />
           <span className="text-xl font-bold text-yellow-400">
             {quantity > 1 ? `${booster.price} × ${quantity} = ${totalCost}` : booster.price}
           </span>

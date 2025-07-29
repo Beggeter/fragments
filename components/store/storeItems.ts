@@ -4,19 +4,22 @@ export const SHARD_PACKS: ShardPack[] = [
   {
     amount: 5500,
     price: 890,
+    label: "+1500",
     labelType: "discount",
     icon: "/9crystals.svg",
   },
   {
     amount: 2600,
     price: 440,
-    label: "+200",
+    label: "+600",
     labelType: "discount",
     icon: "/4crystals.svg",
   },
   {
     amount: 1200,
     price: 220,
+    label: "+200",
+    labelType: "discount",
     icon: "/3crystals.svg",
   },
   {
@@ -26,7 +29,13 @@ export const SHARD_PACKS: ShardPack[] = [
     label: "+50",
     labelType: "discount",
   },
-  { amount: 220, price: 45, icon: "/crystal.svg" },
+  { 
+    amount: 220, 
+    price: 45, 
+    icon: "/crystal.svg",
+    label: "+20",
+    labelType: "discount",
+  },
   { amount: 100, price: 22, icon: "/crystal.svg" },
   { amount: 40, price: 10, icon: "/crystal.svg" },
 ];
@@ -57,15 +66,6 @@ export const BOOSTERS = [
     // Описание брать через t('shop.booster_whirlwind_desc')
   },
 ];
-// Тестовый бустер с очень высокой ценой для проверки InsufficientShardsModal
-BOOSTERS.push({
-  id: "test_expensive",
-  name: "Test Expensive",
-  icon: "/boosters/bomb.svg",
-  price: 999999,
-  price_stars: 999999,
-  // Описание брать через t('shop.booster_test_expensive_desc')
-});
 
 export const ZEN_SUBS = [
   {

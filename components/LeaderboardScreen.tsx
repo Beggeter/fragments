@@ -177,7 +177,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
       </div>
 
       {/* Табы */}
-      <div className="flex gap-2 justify-center mb-3 px-4">
+      <div className="flex gap-2 justify-center px-4">
         <ClickEffect>
           <button
             onClick={() => setActiveTab("classic")}
@@ -187,7 +187,8 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
                 : "bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20 hover:border-white/30"
             }`}
           >
-            {t("leaderboard.classic")}
+            {/* {t("leaderboard.classic")} */}
+            Classic
           </button>
         </ClickEffect>
 
@@ -196,7 +197,8 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
             onClick={handleZenClick}
             className="px-6 py-3 rounded-full text-lg font-extrabold transition-all duration-300 border font-figtree-mulish bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20 hover:border-white/30"
           >
-            {t("leaderboard.zen")}
+            {/* {t("leaderboard.zen")} */}
+            Zen
           </button>
         </ClickEffect>
       </div>
