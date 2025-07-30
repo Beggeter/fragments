@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { init } from '@telegram-apps/sdk';
+import { init } from "@telegram-apps/sdk";
 import GameBoard from "../components/GameBoard";
 import MainMenu from "@/components/MainMenu";
 import AdminLogin from "@/components/AdminLogin";
@@ -114,12 +114,15 @@ const HomePage: React.FC = () => {
     []
   );
 
-  const handleLineBreakpoint = useCallback((lineIdx: number, rowIdx: number) => {
-    setClearedLine(rowIdx);
-    setClearedLines(prev => new Set([...prev, rowIdx]));
-    // Сбросить после короткой задержки, чтобы не очищать повторно
-    setTimeout(() => setClearedLine(null), 100);
-  }, []);
+  const handleLineBreakpoint = useCallback(
+    (lineIdx: number, rowIdx: number) => {
+      setClearedLine(rowIdx);
+      setClearedLines((prev) => new Set([...prev, rowIdx]));
+      // Сбросить после короткой задержки, чтобы не очищать повторно
+      setTimeout(() => setClearedLine(null), 100);
+    },
+    []
+  );
 
   // функция для запуска спиннера
   const handleShowSpinnerAnimation = useCallback(() => {
@@ -130,21 +133,22 @@ const HomePage: React.FC = () => {
   // функция для завершения анимации спиннера
   const handleSpinnerFinish = useCallback(() => {
     setShowSpinnerAnimation(false);
-    
+
     // Гарантированно очищаем все линии, которые могли быть пропущены из-за лагов
     if (clearedLines.size < 8) {
       // Если не все линии были очищены, очищаем оставшиеся
-      const remainingLines = Array.from({ length: 8 }, (_, i) => i)
-        .filter(i => !clearedLines.has(i));
-      
-      remainingLines.forEach(lineIdx => {
+      const remainingLines = Array.from({ length: 8 }, (_, i) => i).filter(
+        (i) => !clearedLines.has(i)
+      );
+
+      remainingLines.forEach((lineIdx) => {
         setTimeout(() => {
           setClearedLine(lineIdx);
           setTimeout(() => setClearedLine(null), 50);
         }, lineIdx * 50); // Небольшая задержка между линиями
       });
     }
-    
+
     // Очищаем отслеживание линий
     setTimeout(() => {
       setClearedLines(new Set());
@@ -204,18 +208,22 @@ const HomePage: React.FC = () => {
         if (tg) {
           // Убеждаемся что приложение в полноэкранном режиме
           tg.expand();
-          
+
           // Пытаемся активировать immersive fullscreen
           // Проверяем настройку пользователя
-          const fullscreenEnabled = localStorage.getItem('fullscreenEnabled');
-          const shouldEnableFullscreen = fullscreenEnabled !== 'false'; // По умолчанию включен
-          
-          if (tg.requestFullscreen && !tg.isFullscreen && shouldEnableFullscreen) {
+          const fullscreenEnabled = localStorage.getItem("fullscreenEnabled");
+          const shouldEnableFullscreen = fullscreenEnabled !== "false"; // По умолчанию включен
+
+          if (
+            tg.requestFullscreen &&
+            !tg.isFullscreen &&
+            shouldEnableFullscreen
+          ) {
             tg.requestFullscreen();
           } else if (!shouldEnableFullscreen) {
             // Удаляю все console.log, console.error, console.warn и любые отладочные комментарии/выводы
           }
-          
+
           const user = tg.initDataUnsafe?.user;
           if (user) {
             try {
@@ -375,23 +383,26 @@ const HomePage: React.FC = () => {
   const handleGameOver = async () => {
     try {
       const { score } = useGameStore.getState();
-      const telegramId = user?.telegramId || (isAdmin && process.env.NODE_ENV === 'development' ? '610936383' : null);
-      
+      const telegramId =
+        user?.telegramId ||
+        (isAdmin && process.env.NODE_ENV === "development"
+          ? "610936383"
+          : null);
+
       if (telegramId && score > 0) {
-        
         // Подготавливаем заголовки с авторизацией для production
         const headers: Record<string, string> = {
-          'Content-Type': 'application/json'
+          "Content-Type": "application/json",
         };
-        
+
         // Добавляем токен авторизации если он есть (нужно для production)
         if (sessionToken) {
-          headers['Authorization'] = `Bearer ${sessionToken}`;
+          headers["Authorization"] = `Bearer ${sessionToken}`;
         }
-        
+
         // Отправляем результат игры на сервер
         const response = await fetch(`/api/users/${telegramId}/game`, {
-          method: 'DELETE',
+          method: "DELETE",
           headers,
           body: JSON.stringify({
             gameId: 1, // временный ID
@@ -400,16 +411,16 @@ const HomePage: React.FC = () => {
             gameData: {
               gameDuration: Date.now(), // можно добавить реальную продолжительность
               piecesPlaced: useGameStore.getState().piecesPlaced || 0,
-            }
-          })
+            },
+          }),
         });
 
         if (response.ok) {
           const result = JSON.parse(await response.text());
-          
+
           // Получаем актуальный баланс с сервера
           await refreshBalance();
-          
+
           // Обновляем рекорд если он изменился
           if (result.newRecord !== undefined && user) {
             updateUser({ record: result.newRecord });
@@ -423,7 +434,7 @@ const HomePage: React.FC = () => {
     } catch (error) {
       // Удаляю все console.log, console.error, console.warn и любые отладочные комментарии/выводы
     }
-    
+
     setCurrentScreen("gameover");
   };
 
@@ -460,15 +471,18 @@ const HomePage: React.FC = () => {
   }, []);
 
   // Колбэк для запуска анимации возвращения фигуры
-  const handlePieceReturnAnimation = useCallback((animationData: {
-    piece: any;
-    fromPosition: { x: number; y: number };
-    targetRect: DOMRect | null;
-    cellSize: number;
-    gap: number;
-  }) => {
-    setPieceReturnAnimation(animationData);
-  }, []);
+  const handlePieceReturnAnimation = useCallback(
+    (animationData: {
+      piece: any;
+      fromPosition: { x: number; y: number };
+      targetRect: DOMRect | null;
+      cellSize: number;
+      gap: number;
+    }) => {
+      setPieceReturnAnimation(animationData);
+    },
+    []
+  );
 
   // Показываем загрузку ресурсов если они еще не загружены
   if (!resourcesLoaded) {
@@ -503,10 +517,17 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <div className={`${currentScreen === 'classic mode' ? 'bg-[var(--game-background)]' : 'menu-bg'} min-h-screen `} style={{
-      paddingTop: "var(--tg-content-safe-area-inset-top)",
-      overflow: "hidden"
-    }}>
+    <div
+      className={`${
+        currentScreen === "classic mode"
+          ? "bg-[var(--game-background)]"
+          : "menu-bg"
+      } min-h-screen `}
+      style={{
+        paddingTop: "var(--tg-content-safe-area-inset-top)",
+        overflow: "hidden",
+      }}
+    >
       {/* Overlay spinner */}
       {showSpinnerAnimation && boardRect && (
         <div
@@ -531,8 +552,6 @@ const HomePage: React.FC = () => {
           />
         </div>
       )}
-
-      
 
       {/* Piece Return Animation */}
       {pieceReturnAnimation && boardRect && (
@@ -635,7 +654,11 @@ const HomePage: React.FC = () => {
             setCurrentScreen("classic mode");
             useGameStore.getState().resetGame();
           }}
-          onBackToMenu={() => setCurrentScreen("main menu")}
+          onBackToMenu={() => {
+            setIsIntentionalRestart(true); // Устанавливаем флаг перед сбросом
+            useGameStore.getState().resetGame();
+            setCurrentScreen("main menu");
+          }}
         />
       )}
 
@@ -647,12 +670,8 @@ const HomePage: React.FC = () => {
       )}
 
       {currentScreen === "leaderboard" && (
-        <LeaderboardScreen
-          onBack={handleLeaderboardBack}
-        />
+        <LeaderboardScreen onBack={handleLeaderboardBack} />
       )}
-
-
 
       {/* Fallback для отладки */}
       {!currentScreen && <LoadingScreen />}

@@ -13,6 +13,7 @@ interface DraggablePiecesProps {
   calculateDynamicOffset: (x: number, y: number) => Position;
   onPieceStart: (piece: Block, x: number, y: number) => void;
   panelRefs?: React.RefObject<HTMLDivElement>[];
+  disabled?: boolean;
 }
 
 export const DraggablePiecesSection: React.FC<DraggablePiecesProps> = ({
@@ -23,6 +24,7 @@ export const DraggablePiecesSection: React.FC<DraggablePiecesProps> = ({
   calculateDynamicOffset,
   onPieceStart,
   panelRefs,
+  disabled = false,
 }) => {
   // Создаем массив с фиксированными позициями
   const piecesWithPositions = [0, 1, 2].map((index) => {
@@ -52,7 +54,7 @@ export const DraggablePiecesSection: React.FC<DraggablePiecesProps> = ({
   };
 
   return (
-    <div className="draggable-pieces-section flex flex-row gap-2 w-[100%] sm:max-w-xs justify-between h-[30%] max-h-[30%] min-h-[30%] relative">
+    <div className={`${disabled ? 'pointer-events-none' : ''} draggable-pieces-section flex flex-row gap-2 w-[100%] sm:max-w-xs justify-between h-[30%] max-h-[30%] min-h-[30%] relative`}>
       {[0, 1, 2].map((containerIndex) => {
         const activePiece = piecesWithPositions[containerIndex];
         return (

@@ -35,8 +35,8 @@ export const debounce = (func: Function, delay: number) => {
   };
 };
 
-export const vibrate = (time: number | number[]) => {
+export const vibrate = (pattern: number | number[]) => {
   if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-    navigator.vibrate(time);
+    navigator.vibrate(pattern);
   }
 };

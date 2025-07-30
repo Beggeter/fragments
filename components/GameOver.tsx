@@ -88,6 +88,7 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu })
             )}
           </div>
         </div>
+        <span className="flex flex-col gap-5 w-full items-center">
         <MenuButton
           // text={t('game_over.play_again')}
           text={'Play Again'}
@@ -98,11 +99,12 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu })
         />
         <MenuButton
           text={'Back to menu'}
-          gradientClass="yellow-gradient"
+          gradientClass="orange-gradient"
           className="rounded-3xl px-8 py-4 font-bold w-[60%] mt-2"
           textClasses="font-black italic text-3xl"
           onClick={onBackToMenu}
         />
+        </span>
       </div>
     </div>
   );

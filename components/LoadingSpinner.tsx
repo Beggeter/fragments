@@ -38,8 +38,8 @@ type SpinnerCell = {
 };
 
 // Вынесем параметры скорости и длительности наверх, чтобы использовать их в обоих компонентах
-const FLY_SPEED = 400; // px/sec (можно подстроить)
-const BOUNCE_DURATION = 0.35; // сек, длительность взрыва
+const FLY_SPEED = 300; // px/sec (можно подстроить)
+const BOUNCE_DURATION = 0.4; // сек, длительность взрыва
 const EXPLOSION_OFFSET = 80; // px, насколько выше поля будет взрыв - увеличили
 
 type LineProps = {
@@ -54,6 +54,7 @@ type LineProps = {
   boardWidth: number;
   flyDuration: number; // индивидуальная длительность полёта
   totalDuration: number; // индивидуальная общая длительность
+  cellSize?: number;
 };
 
 const Line = ({
@@ -69,10 +70,12 @@ const Line = ({
   flyDuration,
   totalDuration,
   onLineBreakpoint,
+  cellSize,
 }: LineProps & {
   onLineBreakpoint?: (lineIdx: number, rowIdx: number) => void;
 }) => {
   const [clearedLines, setClearedLines] = useState();
+  const finalCellSize = cellSize || CELL_SIZE;
   // Временные точки анимации
   const frac = flyDuration / totalDuration;
   const times = [0, frac, frac + 0.25 * (1 - frac), frac + 0.6 * (1 - frac), 1];
@@ -88,8 +91,8 @@ const Line = ({
   const y = useMotionValue(startY);
   // Получаем те же y3, y5, y7, что и в родителе
   const EXTRA = 400; // Увеличили дистанцию перемещения линий выше
-const getRowY = (rowIdx: number) =>
-  EXTRA + rowIdx * CELL_SIZE + rowIdx * GAP_PX;
+  const getRowY = (rowIdx: number) =>
+    EXTRA + rowIdx * finalCellSize + rowIdx * GAP_PX;
   const y3 = getRowY(2);
   const y5 = getRowY(4);
   const y7 = getRowY(6);
@@ -118,7 +121,7 @@ const getRowY = (rowIdx: number) =>
   // --- добавляю вызов onLineBreakpoint для всех 8 строк ---
   const triggeredRowsRef = useRef(Array(8).fill(false));
   const rowYs = Array.from({ length: 8 }).map(
-    (_, rowIdx) => EXTRA + rowIdx * CELL_SIZE + rowIdx * GAP_PX
+    (_, rowIdx) => EXTRA + rowIdx * finalCellSize + rowIdx * GAP_PX
   );
 
   useEffect(() => {
@@ -148,7 +151,7 @@ const getRowY = (rowIdx: number) =>
       style={{
         position: "absolute",
         left: 0,
-        width: boardWidth,
+        width: boardWidth + 100,
         display: "flex",
         justifyContent: "center",
         top: 0,
@@ -169,8 +172,8 @@ const getRowY = (rowIdx: number) =>
           key={i}
           src={`/${cell.color}.svg`}
           alt={cell.color}
-          width={CELL_SIZE}
-          height={CELL_SIZE}
+          width={cellSize}
+          height={cellSize}
           initial={{
             y: 0,
             x: 0,
@@ -191,8 +194,8 @@ const getRowY = (rowIdx: number) =>
             delay: 0, // все линии стартуют одновременно
           }}
           style={{
-            width: CELL_SIZE,
-            height: CELL_SIZE,
+            width: cellSize,
+            height: cellSize,
             display: "block",
             opacity: 0.85,
           }}
@@ -208,6 +211,7 @@ type LoadingSpinnerProps = {
   startYOffset?: number;
   onFinish?: () => void;
   onLineBreakpoint?: (lineIdx: number, rowIdx: number) => void;
+  cellSize?: number;
 };
 
 // Для отладки: показывать ли горизонтальные линии на брейкпоинтах
@@ -219,6 +223,7 @@ export const LoadingSpinner = ({
   startYOffset = 0,
   onFinish,
   onLineBreakpoint,
+  cellSize = 43,
 }: LoadingSpinnerProps) => {
   const [finishedCount, setFinishedCount] = useState(0);
   const boardHeight = height ?? 0;
@@ -236,13 +241,13 @@ export const LoadingSpinner = ({
     })
   );
 
-  const START_Y = boardHeight - CELL_SIZE + startYOffset;
-  const END_Y = -CELL_SIZE + GAP_PX;
+  const START_Y = boardHeight - cellSize + startYOffset;
+  const END_Y = -cellSize + GAP_PX;
 
   // Все линии летят до одной и той же верхней границы (EXTRA)
   const COMMON_TOP = EXTRA;
   const lineTimings = Array.from({ length: 8 }).map((_, lineIdx) => {
-    const startY = START_Y + lineIdx * CELL_SIZE + EXTRA;
+    const startY = START_Y + lineIdx * cellSize + EXTRA;
     const topBounce = COMMON_TOP;
     const flyDistance = Math.abs(startY - topBounce);
     const flyDuration = flyDistance / FLY_SPEED;
@@ -252,7 +257,7 @@ export const LoadingSpinner = ({
 
   // --- DEBUG LINES ---
   const getRowY = (rowIdx: number) =>
-    EXTRA + rowIdx * CELL_SIZE + rowIdx * GAP_PX;
+    EXTRA + rowIdx * cellSize + rowIdx * GAP_PX;
   const y3 = getRowY(2);
   const y5 = getRowY(4);
   const y7 = getRowY(6);
@@ -269,7 +274,7 @@ export const LoadingSpinner = ({
             }, i * 10); // Небольшая задержка между вызовами
           }
         }
-        
+
         // Используем setTimeout чтобы избежать вызова setState во время рендеринга
         setTimeout(() => {
           onFinish();
@@ -281,15 +286,17 @@ export const LoadingSpinner = ({
 
   return (
     <div
-      className="relative mx-auto"
+      className="relative mx-auto store-scroll border-2 border-amber-900"
       style={{
-        width: boardWidth,
+        width: boardWidth + 100,
         height: boardHeight + EXTRA,
         position: "absolute",
-        left: 0,
+        left: -50,
         top: -EXTRA,
         overflowY: "hidden",
+        overflowX: "visible",
         pointerEvents: "none",
+        zIndex: 9998,
       }}
     >
       {/* DEBUG: горизонтальные линии на брейкпоинтах */}
@@ -352,6 +359,7 @@ export const LoadingSpinner = ({
             flyDuration={flyDuration}
             totalDuration={totalDuration}
             onLineBreakpoint={onLineBreakpoint}
+            cellSize={cellSize}
           />
         );
       })}

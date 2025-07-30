@@ -52,6 +52,7 @@ import ClickEffect from "./ClickEffect";
 import LoadingSpinner from "./LoadingSpinner";
 import WhirlwindSpinnerCanvas from "./WhirlwindSpinnerCanvas";
 import { useTranslation } from "react-i18next";
+import { vibrate } from "@/utils/helpers";
 
 const DEFAULT_CELL_SIZE = 43.75;
 const GAP_SIZE_PX = 2; // Исходя из gap-0.5 в TailwindCSS (0.125rem * 16px)
@@ -554,7 +555,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         setUndoData(null); // Очищаем данные undo
         setUndoActive(false);
         await saveAfterAction().catch(console.error);
-
       }, 800); // Время анимации возвращения фигуры
     } else {
       // Если нет фигуры для возвращения, завершаем undo сразу
@@ -564,7 +564,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       restorePiecesState();
       setUndoData(null); // Очищаем данные undo
       setUndoActive(false);
-
     }
   }, [undoData]);
 
@@ -653,7 +652,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       document.body.classList.add("screen-shake");
       const shakeTimeout = setTimeout(() => {
         document.body.classList.remove("screen-shake");
-      }, 300);
+      }, 500);
       return () => {
         clearTimeout(shakeTimeout);
         document.body.classList.remove("screen-shake");
@@ -729,7 +728,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const [adminRecord, setAdminRecord] = useState<number | null>(null);
   const [isRecordLoading, setIsRecordLoading] = useState(true); // Состояние загрузки рекорда
 
-
   const [explodingCells, setExplodingCells] = useState<null | {
     cells: {
       x: number;
@@ -759,22 +757,26 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     function updateCoords() {
       if (scoreDisplayRef.current && boardRef.current) {
         const scoreRect = scoreDisplayRef.current.getBoundingClientRect();
-        const boardRectDom = boardRef.current.getBoundingClientRect();
+        const boardRect = boardRef.current.getBoundingClientRect();
+
         const scoreDisplayCoords = {
-          x: scoreRect.left - boardRectDom.left,
-          y: scoreRect.top + scoreRect.height / 2 - boardRectDom.top,
+          x: scoreRect.left - boardRect.left,
+          y: scoreRect.top + scoreRect.height / 2 - boardRect.top,
         };
+
         useGameStore.setState({ scoreDisplayCoords });
       }
     }
-    updateCoords();
 
-    if (typeof window !== "undefined") {
-      window.addEventListener("resize", updateCoords);
-      return () => window.removeEventListener("resize", updateCoords);
-    }
+    // Подождать один кадр, чтобы Telegram успел отрисовать всё
+    const frame = requestAnimationFrame(updateCoords);
 
-    return undefined;
+    window.addEventListener("resize", updateCoords);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", updateCoords);
+    };
   }, []);
 
   useEffect(() => {
@@ -1375,7 +1377,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           setUndoActive(false);
 
           await saveAfterAction().catch(console.error);
-
         }, 800); // Время анимации возвращения фигуры
       } else {
         // Если нет фигуры для возвращения, завершаем undo сразу
@@ -1501,6 +1502,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     console.log("ExplosionWave set:", { cx, cy });
 
+    vibrate(400);
     // Запускаем частицы взрыва
     setExplosionParticles({
       centerX: cx,
@@ -2023,8 +2025,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         }
       });
     } else {
-      const ok = await useBooster(boosterId);
-      if (!ok) return;
+      // const ok = await useBooster(boosterId);
+      // if (!ok) return;
       if (boosterId === "whirlwind") {
         setHistory((prev) => [
           ...prev,
@@ -2036,6 +2038,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           },
         ]);
         handleShowSpinnerAnimation();
+        useBooster(boosterId).then((ok) => {
+          if (!ok) {
+            alert("Ошибка списания бустера");
+          } else {
+            fetchBoosters();
+          }
+        });
         setTimeout(async () => {
           const newScore = score + 300;
           useGameStore.setState({
@@ -2112,6 +2121,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
     return area;
   }, [bombMode, bombCenter, board.length, board[0].length]);
+
+  const activeBooster = bombMode
+    ? "bomb"
+    : showSpinnerAnimation
+    ? "whirlwind"
+    : undoActive
+    ? "undo"
+    : undefined;
 
   return (
     <div className="relative">
@@ -2196,15 +2213,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           onBoosterClick={handleBoosterClick}
           className="-mb-6 -z-10"
           comboLevel={lastScoreResult?.comboLevel}
-          activeBooster={
-            bombMode
-              ? "bomb"
-              : showSpinnerAnimation
-              ? "whirlwind"
-              : undoActive
-              ? "undo"
-              : undefined
-          }
+          activeBooster={activeBooster}
           gameOver={gameOver}
           onOpenShop={onOpenShop}
         />
@@ -2557,7 +2566,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     height: "100%",
                     zIndex: 9999,
                     pointerEvents: "none",
-                    overflow: "hidden",
+                    overflow: "visible",
                   }}
                 >
                   <LoadingSpinner
@@ -2573,6 +2582,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                     }
                     onFinish={handleSpinnerFinish}
                     onLineBreakpoint={handleLineBreakpoint}
+                    cellSize={dynamicCellSize}
                   />
                 </div>
               )}
@@ -2613,6 +2623,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
             dynamicCellSize={dynamicCellSize}
             calculateDynamicOffset={calculateDynamicOffset}
             onPieceStart={handlePieceStart}
+            disabled={activeBooster !== undefined}
           />
         )}
 
