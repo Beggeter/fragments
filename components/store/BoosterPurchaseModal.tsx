@@ -107,7 +107,7 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
         booster.id,
         booster.name,
         quantity,
-        booster.price
+        booster.price_stars
       );
 
       if (result.success) {
