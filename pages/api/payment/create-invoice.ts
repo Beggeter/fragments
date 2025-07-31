@@ -91,7 +91,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
         }
 
         const quantity = item.quantity || 1;
-        const totalPrice = booster.price * quantity;
+        const totalPrice = booster.price_stars * quantity;
 
         // Создаем compact payload
         paymentPayload = {
