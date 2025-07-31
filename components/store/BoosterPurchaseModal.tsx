@@ -24,7 +24,7 @@ interface BoosterPurchaseModalProps {
     description: string;
   };
   playerBalance: number;
-  onInsufficientFunds?: () => void;
+  onInsufficientFunds?: (quantity: number) => void;
   userId?: number; // Добавляем userId для интеграции с платежами
 }
 
@@ -273,7 +273,7 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
           {/* Покупка за осколки (для пользователей с достаточным балансом) */}
           {1 ? (
             <MenuButton
-              onClick={!isInsufficientShards ? () => onConfirm(quantity) : () => onInsufficientFunds?.()}
+              onClick={!isInsufficientShards ? () => onConfirm(quantity) : () => onInsufficientFunds?.(quantity)}
               // disabled={totalCostShards > playerBalance || quantity < 1}
               leftIcon="/crystal.svg"
               imageClasses="w-8 h-8"

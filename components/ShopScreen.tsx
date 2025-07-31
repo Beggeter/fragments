@@ -465,7 +465,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
                  // Проверяем, если недостаточно средств
          if (result.error === 'Insufficient currency') {
            // Предлагаем перейти к покупке кристаллов
-           handleInsufficientFunds();
+           handleInsufficientFunds(quantity);
         } else {
           // Показываем общую ошибку
           if (typeof window !== "undefined" && window.Telegram?.WebApp) {
@@ -528,16 +528,16 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
   };
 
   // Открыть модалку "Недостаточно осколков"
-  const handleInsufficientFunds = (quantityOverride?: number) => {
+  const handleInsufficientFunds = (quantity: number) => {
     if (!selectedBooster) return;
-    const qty = quantityOverride || 1;
+    
     const playerBal = isAdmin ? adminBalance ?? 333 : balance;
     setInsufficientModalData({
       currentBalance: playerBal,
-      requiredBalance: qty * selectedBooster.price,
-      totalCostStars: qty * selectedBooster.price_stars,
+      requiredBalance: quantity * selectedBooster.price,
+      totalCostStars: quantity * selectedBooster.price_stars,
       booster: selectedBooster,
-      quantity: qty,
+      quantity: quantity,
     });
     setIsInsufficientShardsModalOpen(true);
     // Не закрываем BoosterPurchaseModal, чтобы она оставалась под InsufficientShardsModal

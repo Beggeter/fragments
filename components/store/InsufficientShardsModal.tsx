@@ -41,7 +41,7 @@ const InsufficientShardsModal: React.FC<InsufficientShardsModalProps> = ({
       >
         {/* Заголовок и кнопка закрытия */}
         <div className="flex justify-between items-center mb-6">
-          <div className="text-2xl font-bold text-white font-mulish">
+          <div className="text-2xl font-bold text-white font-figtree-mulish">
             {t("shop.insufficient_title", "Недостаточно осколков")}
           </div>
           <ClickEffect>
@@ -58,7 +58,7 @@ const InsufficientShardsModal: React.FC<InsufficientShardsModalProps> = ({
 
 
         {/* Баланс и потребности */}
-        <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-white text-lg space-y-2 mb-6 font-figtree">
+        <div className="bg-white/5 border border-white/10 rounded-xl p-4 text-white text-lg space-y-2 mb-6 font-figtree-mulish">
           <div className="flex justify-between">
             <span>{t("shop.your_balance", "Ваш баланс")}:</span>
             <span className="font-bold flex items-center gap-1 text-xl">
