@@ -69,7 +69,7 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
   // }, [isOpen, maxQuantity]);
 
   const handleQuantityChange = (newQuantity: number) => {
-    if (newQuantity >= 1 && newQuantity <= maxQuantity) {
+    if (newQuantity >= 1) {
       setQuantity(newQuantity);
     }
   };
@@ -97,8 +97,8 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
         boosterId: booster.id,
         boosterName: booster.name,
         quantity,
-        unitPrice: booster.price,
-        totalPrice: booster.price * quantity,
+        unitPrice: booster.price_stars,
+        totalPrice: booster.price_stars * quantity,
       });
 
       // Создаем инвойс через Telegram Stars API
@@ -271,10 +271,10 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
           />
 
           {/* Покупка за осколки (для пользователей с достаточным балансом) */}
-          {!isInsufficientShards ? (
+          {1 ? (
             <MenuButton
-              onClick={() => onConfirm(quantity)}
-              disabled={totalCostShards > playerBalance || quantity < 1}
+              onClick={!isInsufficientShards ? () => onConfirm(quantity) : () => onInsufficientFunds?.()}
+              // disabled={totalCostShards > playerBalance || quantity < 1}
               leftIcon="/crystal.svg"
               imageClasses="w-8 h-8"
               text={<span className="text-2xl font-bold font-figtree">{totalCostShards}</span>}
@@ -286,21 +286,22 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
               className="w-full px-6 py-4 text-lg font-bold rounded-2xl transition-all text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-mulish flex items-center justify-center gap-3"
             />
           ) : (
-            <MenuButton
-              onClick={() => {
-                if (onInsufficientFunds) onInsufficientFunds();
-                // Не закрываем BoosterPurchaseModal, чтобы InsufficientShardsModal открывалась поверх
-              }}
+            <div></div>
+            // <MenuButton
+            //   onClick={() => {
+            //     if (onInsufficientFunds) onInsufficientFunds();
+            //     // Не закрываем BoosterPurchaseModal, чтобы InsufficientShardsModal открывалась поверх
+            //   }}
               
-              leftIcon="/crystal.svg"
-              imageClasses="w-8 h-8 opacity-50"
-              text={<span className="text-2xl font-bold opacity-50">{totalCostShards}</span>}
-              textClasses=""
-              innerShadows={false}
+            //   leftIcon="/crystal.svg"
+            //   imageClasses="w-8 h-8 opacity-50"
+            //   text={<span className="text-2xl font-bold opacity-50">{totalCostShards}</span>}
+            //   textClasses=""
+            //   innerShadows={false}
 
-              gradientClass="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700"
-              className="w-full px-6 py-4 text-lg font-bold rounded-2xl transition-all text-white shadow-lg flex items-center justify-center gap-3"
-            />
+            //   gradientClass="bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700"
+            //   className="w-full px-6 py-4 text-lg font-bold rounded-2xl transition-all text-white shadow-lg flex items-center justify-center gap-3"
+            // />
           )}
         </div>
         {/* 
