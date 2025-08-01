@@ -656,7 +656,7 @@ body {
 
   /* Ensure SVG images are visible on iOS */
   img[src*=".svg"] {
-    opacity: 1 !important;
+    /* opacity: 1 !important; */
     visibility: visible !important;
   }
 

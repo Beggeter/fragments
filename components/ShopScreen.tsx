@@ -26,7 +26,7 @@ function ShardPackCard({ amount, price, label, labelType, icon, onBuy }: any) {
   return (
     <ClickEffect
       className="relative bg-white/10 backdrop-blur-md rounded-3xl shadow-xl flex flex-col scale-active
-     items-center p-3 min-w-[100%] max-w-[180px] w-full min-h-[80px] mx-auto border border-white/20 hover:scale-[1.04] transition-transform hover:bg-white/15 hover:border-white/30"
+     items-center p-3 min-w-[100%] w-full min-h-[120px] mx-auto border border-white/20 hover:scale-[1.04] transition-transform hover:bg-white/15 hover:border-white/30"
       onClick={onBuy}
       
     >
