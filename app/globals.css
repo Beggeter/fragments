@@ -368,6 +368,16 @@ body {
   box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2);
 }
 
+.black-gradient {
+  background: linear-gradient(120deg, #2c2c2c 0%, #1a1a1a 100%);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05);
+
+}
+
+.indigo-gradient {
+  background: linear-gradient(120deg, #4a4083 0%, #362d7e 50%, #1a104d 100%);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.1);
+}
 @theme {
   --font-sans: var(--font-figtree);
 }
@@ -685,6 +695,7 @@ body {
 input[type="range"].custom-range {
   width: 100%;
   height: 4px;
+
   background: #22c55e;
   border-radius: 2px;
   outline: none;
@@ -1024,6 +1035,29 @@ input[type="range"].custom-range {
   opacity: 1;
 }
 
+/* .scroll-container {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+} */
+
+/* .scroll-container {
+  scroll-snap-type: y mandatory;
+}
+
+.scroll-container  {
+  scroll-snap-align: start;
+}
+
+.scroll-container > div > :first-child {
+  margin-top: 100px;
+}
+
+.carousel.example-3 > .slides > .slide:last-child {
+  scroll-snap-align: end;
+  margin-bottom: 100px;
+} */
+
 .store-scroll {
   scrollbar-width: none;
 }
@@ -1316,4 +1350,78 @@ input[type="range"].custom-range {
     filter: brightness(1.5) drop-shadow(0 0 12px currentColor)
       drop-shadow(0 0 24px currentColor);
   }
+}
+
+
+.shimmer-effect {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0  10px rgba(250, 246, 206, 0.2) inset !important;
+
+
+}
+
+.shimmer-effect::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -100%;
+  width: 150%;
+  height: 150%;
+  background: linear-gradient(
+   45deg,
+    transparent 40%,
+    rgba(250, 246, 206, 0.2) 50%,
+    transparent 60%
+    /* rgba(250, 246, 206, 0.2) 70%,
+    transparent 80% */
+  );
+  animation: shimmer-move 2s infinite cubic-bezier(0.742, 0.305, 0.25, 0.758)
+
+  ;
+  pointer-events: none; /* важно: не мешает кликам */
+  z-index: 0;
+}
+
+@keyframes shimmer-move {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0.2;
+    /* box-shadow: 0 0  3px #ffffff ; */
+
+  }
+  50% {
+    /* box-shadow: 0 0  3px #ffffff ; */
+    opacity: 1;
+
+  }
+  100% {
+    transform: translate(100%, -100%);
+    /* box-shadow: 0 0  3px #ffffff ; */
+    opacity: 0.2;
+
+
+  }
+}
+
+.shimmer-circle {
+  position: relative;
+  overflow: visible;
+  border-radius: 9999px; /* важно для круга */
+  isolation: isolate; /* предотвращает утечку ::before за пределы */
+}
+
+.shimmer-circle::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    45deg,
+    transparent 40%,
+    rgba(250, 246, 206, 0.3) 50%,
+    transparent 60%
+  );
+  animation: shimmer-move 2s infinite cubic-bezier(0.742, 0.305, 0.25, 0.758);
+  border-radius: inherit;
+  z-index: -1;
 }
