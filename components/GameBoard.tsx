@@ -53,6 +53,7 @@ import LoadingSpinner from "./LoadingSpinner";
 import WhirlwindSpinnerCanvas from "./WhirlwindSpinnerCanvas";
 import { useTranslation } from "react-i18next";
 import { vibrate } from "@/utils/helpers";
+import PseudoAdBanner from "./PseudoAdBanner";
 
 const DEFAULT_CELL_SIZE = 43.75;
 const GAP_SIZE_PX = 2; // Исходя из gap-0.5 в TailwindCSS (0.125rem * 16px)
@@ -390,6 +391,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     resetGame,
     gameOver,
     piecesPlaced,
+    updateEngineForUser,
   } = useGameStore();
 
   const {
@@ -576,6 +578,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const { user } = useUser();
   const { isAdmin } = useAdminAuth();
   const { loadGame, forceSave, saveAfterAction, clearSaves } = useGameSave();
+
+  // Эффект для обновления движка при изменении роли пользователя
+  useEffect(() => {
+    if (user?.role) {
+      updateEngineForUser(user.role);
+    }
+  }, [user?.role, updateEngineForUser]);
 
   const defaultBoosters = [
     { id: "undo", name: "undo", icon: "/boosters/back.png", quantity: 0 },
@@ -2634,6 +2643,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           centerY={explosionFlash.centerY}
           onComplete={() => setExplosionFlash({ isActive: false })}
         />
+
+        {/* Баннер для тестеров */}
+        {(user?.role === 'tester' || isAdmin) && <PseudoAdBanner />}
       </div>
     </div>
   );

@@ -15,7 +15,7 @@ import {
 } from "../core/engine";
 import { calculateValidPositions } from "../core/positions";
 import { ScoreCalculator } from "../core/score";
-import { BlockGenerator } from "../core/blockGenerator";
+import { EngineSelector } from "../core/engineSelector";
 import { DifficultyEvaluator } from "../core/difficulty";
 import { DifficultyManager } from "../core/difficultyManager";
 
@@ -56,10 +56,13 @@ export interface ExtendedGameState extends GameState {
     nextThreshold: number;
     isRecordBreaker: boolean;
   };
+  // Функция для обновления движка при изменении роли пользователя
+  updateEngineForUser: (userRole?: string) => void;
 }
 
 const scoreCalculator = new ScoreCalculator();
-const blockGenerator = new BlockGenerator();
+// Создаем движок через селектор (пока без роли пользователя)
+const blockGenerator = EngineSelector.createBlockGenerator();
 const difficultyEvaluator = new DifficultyEvaluator();
 const difficultyManager = new DifficultyManager();
 
@@ -308,7 +311,7 @@ export const useGameStore = create<
       const newScore = get().score + scoreResult.totalPoints;
       
       // Обновляем сложность на основе новых очков
-      const levelChanged = blockGenerator.updateDifficulty(newScore);
+      const levelChanged = blockGenerator.updateDifficulty ? blockGenerator.updateDifficulty(newScore) : false;
       const levelInfo = difficultyManager.getLevelInfo(newScore);
       
       set({
@@ -379,7 +382,9 @@ export const useGameStore = create<
 
     resetGame: () => {
       // Сбрасываем сложность
-      blockGenerator.updateDifficulty(0);
+      if (blockGenerator.updateDifficulty) {
+        blockGenerator.updateDifficulty(0);
+      }
       const levelInfo = difficultyManager.getLevelInfo(0);
       
       set({
@@ -428,7 +433,9 @@ export const useGameStore = create<
       }));
       
       // Обновляем сложность на основе восстановленных очков
-      blockGenerator.updateDifficulty(state.score);
+      if (blockGenerator.updateDifficulty) {
+        blockGenerator.updateDifficulty(state.score);
+      }
       const levelInfo = difficultyManager.getLevelInfo(state.score);
       
       set({
@@ -452,5 +459,18 @@ export const useGameStore = create<
     },
     justGeneratedPieces: false,
     setJustGeneratedPieces: (value) => set({ justGeneratedPieces: value }),
+    
+    // Функция для обновления движка при изменении роли пользователя
+    updateEngineForUser: (userRole?: string) => {
+      const { score, playerRecord } = get();
+      // Создаем новый движок с учетом роли пользователя
+      const newBlockGenerator = EngineSelector.createBlockGenerator(userRole, score, playerRecord);
+      
+      // Обновляем глобальную переменную blockGenerator
+      // Это немного хак, но позволяет обновить движок во время выполнения
+      Object.assign(blockGenerator, newBlockGenerator);
+      
+      console.log(`🎮 Движок обновлен для роли: ${userRole || 'обычный пользователь'}`);
+    },
   };
 });

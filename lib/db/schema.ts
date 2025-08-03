@@ -19,7 +19,7 @@ export const users = pgTable("users", {
   firstName: varchar("first_name", { length: 100 }),
   lastName: varchar("last_name", { length: 100 }),
   avatarUrl: text("avatar_url"),
-  role: varchar("role", { length: 20 }).notNull().default('user'), // 'admin', 'user', 'premium'
+  role: varchar("role", { length: 20 }).notNull().default('user'), // 'admin', 'user', 'premium', 'tester'
   record: integer("record").notNull().default(0),
   currency: integer("currency").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),

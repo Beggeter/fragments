@@ -83,7 +83,8 @@ export interface GameData {
 export enum UserRole {
   ADMIN = 'admin',
   USER = 'user',
-  PREMIUM = 'premium'
+  PREMIUM = 'premium',
+  TESTER = 'tester'
 }
 
 // Enum для типов транзакций валюты

@@ -233,6 +233,11 @@ export class DifficultyManager {
     this.playerRecord = newRecord;
   }
 
+  // Получаем рекорд игрока
+  getPlayerRecord(): number {
+    return this.playerRecord;
+  }
+
   // Получаем информацию о текущем уровне для UI
   getLevelInfo(currentScore: number = 0): {
     level: number;
