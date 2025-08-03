@@ -3,6 +3,7 @@ import Image, { StaticImageData } from "next/image";
 import { vibrate } from "@/utils/helpers";
 import { useSettingsStore } from "@/lib/state/settings";
 import { handlePointerUp } from "@/utils/events";
+import { playClick } from "@/lib/utils/sound";
 
 interface SettingsButtonProps {
   text?: string | ReactNode;
@@ -34,6 +35,7 @@ const SettingsButton: FC<SettingsButtonProps> = ({
   const vibration = useSettingsStore((state) => state.vibrationValue);
   const handleClick = () => {
     vibrate(vibration)
+    playClick()
     onClick?.()
   }
 

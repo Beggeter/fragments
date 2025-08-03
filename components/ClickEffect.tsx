@@ -1,5 +1,5 @@
 import React from "react";
-import { playSound } from "@/lib/utils/sound";
+import { playClick, playSound } from "@/lib/utils/sound";
 import { vibrate } from "@/utils/helpers";
 import { useSettingsStore } from "@/lib/state/settings";
 
@@ -15,7 +15,7 @@ interface ClickEffectProps {
 const ClickEffect: React.FC<ClickEffectProps> = ({
   children,
   onClick,
-  sound,
+  sound = '/audio/click.wav',
   vibrateValue,
   className = "",
   ...rest
@@ -23,7 +23,7 @@ const ClickEffect: React.FC<ClickEffectProps> = ({
   const vibration = useSettingsStore((s) => s.vibrationValue);
   const handleClick = (e: any) => {
     vibrate(typeof vibrateValue !== "undefined" ? vibrateValue : vibration);
-    if (sound) playSound(sound);
+    playClick()
     onClick?.(e);
   };
   return (
