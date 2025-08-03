@@ -581,8 +581,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   // Эффект для обновления движка при изменении роли пользователя
   useEffect(() => {
+    console.log('🔍 useEffect для обновления движка');
+    console.log('  - user:', user);
+    console.log('  - user?.role:', user?.role);
+    
     if (user?.role) {
+      console.log('✅ Вызываем updateEngineForUser с ролью:', user.role);
       updateEngineForUser(user.role);
+    } else {
+      console.log('❌ Роль пользователя не найдена, используем дефолтный движок');
     }
   }, [user?.role, updateEngineForUser]);
 

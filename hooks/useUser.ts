@@ -81,6 +81,7 @@ export const useUser = () => {
         const res = await fetch('/api/users/610936383');
         const user = await res.json();
         console.log("Admin user loaded:", user);
+        
         setUserState({
           user,
           sessionToken: null,
