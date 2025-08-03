@@ -39,12 +39,17 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
       setError(null);
 
       const userIdParam = user ? `&userId=${user.id}` : "";
-      const sessionToken = typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : null;
+      const sessionToken =
+        typeof window !== "undefined"
+          ? localStorage.getItem("sessionToken")
+          : null;
       const headers: HeadersInit = {};
       if (sessionToken) {
-        headers['Authorization'] = `Bearer ${sessionToken}`;
+        headers["Authorization"] = `Bearer ${sessionToken}`;
       }
-      const response = await fetch(`/api/leaderboard?limit=20${userIdParam}`, { headers });
+      const response = await fetch(`/api/leaderboard?limit=20${userIdParam}`, {
+        headers,
+      });
 
       if (!response.ok) {
         throw new Error("Failed to fetch leaderboard");
@@ -64,7 +69,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
         setLeaderboard(data);
         setUserPosition(null);
       }
-      
+
       // Сбрасываем состояния загрузки
       setIsLoading(false);
       setIsRefreshing(false);
@@ -91,11 +96,11 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
   const getMedalForPosition = (position: number) => {
     switch (position) {
       case 1:
-        return "🥇";
+        return "/record.png";
       case 2:
-        return "🥈";
+        return "/cup_silver.svg";
       case 3:
-        return "🥉";
+        return "/cup_bronze.svg";
       default:
         return null;
     }
@@ -110,7 +115,8 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
     user && leaderboard.some((entry) => entry.id === user.id);
 
   // Показываем разделитель и карточку пользователя если он НЕ в топ-20
-  const shouldShowUserCard = user && userPosition && !isUserInVisibleTop20 && user.record > 0;
+  const shouldShowUserCard =
+    user && userPosition && !isUserInVisibleTop20 && user.record > 0;
 
   // Проверяем, нужно ли показать сообщение для пользователя без рекорда
   const shouldShowNoRecordMessage = user && user.record === 0;
@@ -121,10 +127,9 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
 
     return {
       id: user.id,
-      username: user.username || user.firstName || t('leaderboard.you'),
+      username: user.username || user.firstName || t("leaderboard.you"),
       record: user.record || 0,
-      avatarUrl:
-        user.avatarUrl || "/blue.svg",
+      avatarUrl: user.avatarUrl || "/blue.svg",
       position: userPosition,
     };
   };
@@ -136,7 +141,12 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
   return (
     <div className="flex relative flex-col min-h-screen text-white menu-bg fade-in-animation-fast">
       {/* Верхняя панель */}
-      <div className="flex justify-between items-center px-4 py-4 mb-4" style={{ paddingTop: 'calc(var(--tg-content-safe-area-inset-top, 0px) + 16px)' }}>
+      <div
+        className="flex justify-between items-center px-4 py-4 mb-4"
+        style={{
+          paddingTop: "calc(var(--tg-content-safe-area-inset-top, 0px) + 16px)",
+        }}
+      >
         <ClickEffect>
           <img
             src="/back.svg"
@@ -259,12 +269,17 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
                     >
                       {/* Позиция/медаль */}
                       <div className="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 text-white font-bold mr-3 sm:mr-4 font-figtree-mulish text-[1.4rem] sm:text-2xl">
-                        {medal || position}
+                        {medal ? (
+                          <img src={medal} className="h-8 w-8" />
+                        ) : (
+                          position
+                        )}
                       </div>
 
                       {/* Аватар и имя пользователя в контейнере */}
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center bg-transparent backdrop-blur-md rounded-2xl px-3 py-2  border-black/20">
+                        <div className={`flex items-center bg-transparent backdrop-blur-md rounded-2xl px-3 py-2 border-black/20 
+                          ${position === 1 ? 'outline-2 outline-amber-400' : position === 2 ? 'outline-2 outline-[#84ADCE]' : position === 3 ? 'outline-2 outline-[#C6874D]' : ''}`}>
                           <div className="flex-shrink-0 mr-3">
                             <img
                               src={entry.avatarUrl || "/blue.svg"}
@@ -283,7 +298,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
                               {entry.username}
                               {isCurrentUserEntry && !entry.username && (
                                 <span className="ml-2 text-orange-400 font-bold flex-shrink-0">
-                                  ({t('leaderboard.you')})
+                                  ({t("leaderboard.you")})
                                 </span>
                               )}
                             </div>
@@ -341,7 +356,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
                             {getUserCard()?.username}
                             {!getUserCard()?.username && (
                               <span className="ml-2 text-orange-400 font-bold flex-shrink-0">
-                                ({t('leaderboard.you')})
+                                ({t("leaderboard.you")})
                               </span>
                             )}
                           </div>
@@ -364,10 +379,11 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
                     <div className="text-center">
                       <div className="text-2xl mb-2">🎮</div>
                       <div className="text-white font-figtree-mulish text-lg font-bold mb-2">
-                        {t('leaderboard.no_record_title') || 'Начните играть!'}
+                        {t("leaderboard.no_record_title") || "Начните играть!"}
                       </div>
                       <div className="text-gray-300 font-figtree-mulish text-sm">
-                        {t('leaderboard.no_record_message') || 'Сыграйте свою первую игру, чтобы попасть в рейтинг'}
+                        {t("leaderboard.no_record_message") ||
+                          "Сыграйте свою первую игру, чтобы попасть в рейтинг"}
                       </div>
                     </div>
                   </div>
