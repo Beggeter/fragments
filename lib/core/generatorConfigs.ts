@@ -2,11 +2,11 @@ import { GeneratorConfig } from './baseBlockGenerator';
 
 export const CLASSIC_CONFIG: GeneratorConfig = {
   mode: 'classic',
-  difficultySteps: 2000,           // Каждые 2000 очков
-  baseEasyChance: 0.9,            // Базовый шанс простых фигур
-  minEasyChance: 0.1,             // Минимальный шанс простых
-  rescueThreshold: 0.85,          // Порог спасения (85%)
-  rescueBonus: 0.4,               // Бонус к простым фигурам при спасении
+  difficultySteps: 1000,           // Очень быстрое усложнение
+  baseEasyChance: 0.4,            // Очень мало простых фигур
+  minEasyChance: 0.02,            // Минимальный шанс простых
+  rescueThreshold: 0.95,          // Спасение только в крайних случаях
+  rescueBonus: 0.1,               // Минимальный бонус
   enableRescueForRecordBreakers: false, // Отключить спасение для рекордсменов
 };
 
