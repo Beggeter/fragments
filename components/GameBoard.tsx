@@ -638,13 +638,21 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     setClearedLines(new Set());
   }, []);
 
-  const handleSpinnerFinish = useCallback(() => {
+  const handleSpinnerFinish = useCallback(async () => {
     setShowSpinnerAnimation(false);
+    // const currentScore = useGameStore.getState().score;
+  // const newScore = score + 300;
+  
+  // useGameStore.setState({
+  //   score: newScore,
+  // });
+
+  await saveAfterAction().catch(console.error);
 
     setTimeout(() => {
       setClearedLines(new Set());
     }, 500);
-  }, []);
+  }, [saveAfterAction]);
 
   // Эффект для тряски экрана
   useEffect(() => {
@@ -2050,8 +2058,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           useGameStore.setState({
             score: newScore,
           });
-          await saveAfterAction().catch(console.error);
-        }, 2000);
+          // await saveAfterAction().catch(console.error);
+        }, 300);
+
       }
     }
     // Сохраняем игру после использования бустера
@@ -2132,6 +2141,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   return (
     <div className="relative">
+      <div
+        className={`glow-side glow-left${
+          showSpinnerAnimation ? " glow-visible" : ""
+        }`}
+      />
+      <div
+        className={`glow-side glow-right${
+          showSpinnerAnimation ? " glow-visible" : ""
+        }`}
+      />
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
