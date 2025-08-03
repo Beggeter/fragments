@@ -14,11 +14,36 @@ export class OldBlockGeneratorAdapter {
       row.map(cell => cell.value)
     );
     
-    return this.oldGenerator.generateNextBlocks(oldBoard);
+    const oldBlocks = this.oldGenerator.generateNextBlocks(oldBoard);
+    
+    // Конвертируем блоки старого формата в новый
+    return oldBlocks.map(block => ({
+      id: block.type,
+      uniqueId: block.uniqueId,
+      name: `Block ${block.type}`,
+      matrix: block.shape.map(row => 
+        row.map(value => ({ value, color: block.color }))
+      ),
+      difficulty: 'medium' as const,
+      color: block.color,
+    }));
   }
 
   getPreviewBlock(): any {
-    return this.oldGenerator.getPreviewBlock();
+    const oldPreviewBlock = this.oldGenerator.getPreviewBlock();
+    if (!oldPreviewBlock) return null;
+    
+    // Конвертируем preview блок старого формата в новый
+    return {
+      id: oldPreviewBlock.type,
+      uniqueId: oldPreviewBlock.uniqueId,
+      name: `Block ${oldPreviewBlock.type}`,
+      matrix: oldPreviewBlock.shape.map(row => 
+        row.map(value => ({ value, color: oldPreviewBlock.color }))
+      ),
+      difficulty: 'medium' as const,
+      color: oldPreviewBlock.color,
+    };
   }
 
   // Старый движок не имеет этих методов
