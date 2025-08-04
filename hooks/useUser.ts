@@ -14,7 +14,8 @@ interface User {
   currency: number;
   createdAt: string;
   lastLoginAt: string;
-  record: number;
+  record: number; // Classic mode record
+  zenRecord: number; // Zen mode record
 }
 
 interface UserState {
@@ -39,19 +40,22 @@ export const useUser = () => {
   // Обработчик события обновления рекорда из автосохранения
   useEffect(() => {
     const handleRecordUpdated = (event: CustomEvent) => {
-      const { newRecord } = event.detail;
-      console.log('🎯 Received recordUpdated event:', newRecord);
+      const { newRecord, gameMode = 'classic' } = event.detail;
+      console.log('🎯 Received recordUpdated event:', newRecord, 'for gameMode:', gameMode);
       
       setUserState(prev => {
-        if (prev.user && newRecord > prev.user.record) {
-          console.log('📈 Updating local user record from', prev.user.record, 'to', newRecord);
-          return {
-            ...prev,
-            user: {
-              ...prev.user,
-              record: newRecord
-            }
-          };
+        if (prev.user) {
+          const currentRecord = gameMode === 'zen' ? prev.user.zenRecord : prev.user.record;
+          if (newRecord > currentRecord) {
+            console.log(`📈 Updating local user ${gameMode} record from`, currentRecord, 'to', newRecord);
+            return {
+              ...prev,
+              user: {
+                ...prev.user,
+                ...(gameMode === 'zen' ? { zenRecord: newRecord } : { record: newRecord })
+              }
+            };
+          }
         }
         return prev;
       });

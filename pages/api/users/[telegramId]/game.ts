@@ -1,128 +1,115 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { UserService, GameService, CurrencyService } from '@/lib/db/services';
-import { CurrencyTransactionType } from '@/lib/db/types';
+import { db } from '@/lib/db';
+import { users, userGames } from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
+import { verifyToken } from '@/lib/utils/auth';
+import { UserService } from '@/lib/db/services/userService';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   const { telegramId } = req.query;
 
   if (!telegramId || typeof telegramId !== 'string') {
-    return res.status(400).json({ error: 'Telegram ID is required' });
+    return res.status(400).json({ error: 'Invalid telegramId' });
+  }
+
+  // Проверяем авторизацию
+  const authResult = await verifyToken(req);
+  if (!authResult.success) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
   try {
-    const user = await UserService.getUserByTelegramId(telegramId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
+    if (req.method === 'GET') {
+      // Получаем текущую Classic игру пользователя
+      const currentGame = await db
+        .select()
+        .from(userGames)
+        .where(
+          and(
+            eq(userGames.userId, parseInt(telegramId)),
+            eq(userGames.gameMode, 'classic'),
+            eq(userGames.isActive, true)
+          )
+        )
+        .limit(1);
 
-    switch (req.method) {
-      case 'GET':
-        // Получение текущей игры пользователя
-        const currentGame = await GameService.getCurrentGame(user.id);
-        const gameStats = await GameService.getUserGameStats(user.id);
-        const bestRecord = await GameService.getBestRecord(user.id);
-        
-        return res.status(200).json({
-          currentGame,
-          gameStats,
-          bestRecord,
-        });
+      if (currentGame.length === 0) {
+        return res.status(404).json({ error: 'No active Classic game found' });
+      }
 
-      case 'POST':
-        // Создание новой игры
-        const { boardState, currentPieces } = req.body;
-        
-        if (!boardState || !currentPieces) {
-          return res.status(400).json({ error: 'Board state and current pieces are required' });
+      return res.status(200).json({
+        currentGame: currentGame[0]
+      });
+    } else if (req.method === 'DELETE') {
+      // Завершаем Classic игру
+      const { finalScore, level, gameData } = req.body;
+
+      // Получаем пользователя
+      const user = await db
+        .select()
+        .from(users)
+        .where(eq(users.telegramId, parseInt(telegramId)))
+        .limit(1);
+
+      if (user.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Получаем текущую активную игру
+      const currentGame = await db
+        .select()
+        .from(userGames)
+        .where(
+          and(
+            eq(userGames.userId, parseInt(telegramId)),
+            eq(userGames.gameMode, 'classic'),
+            eq(userGames.isActive, true)
+          )
+        )
+        .limit(1);
+
+      let newRecord = user[0].record;
+      let recordUpdated = false;
+
+      // Проверяем, является ли это новым рекордом для Classic режима
+      if (finalScore > user[0].record) {
+        newRecord = finalScore;
+        recordUpdated = true;
+
+        // Обновляем Classic рекорд пользователя
+        const updatedUser = await UserService.updateRecord(user[0].id, newRecord, 'classic');
+        if (!updatedUser) {
+          console.error('Failed to update Classic record for user:', user[0].id);
         }
+      }
 
-        const newGame = await GameService.createGame(user.id, boardState, currentPieces);
-        return res.status(201).json(newGame);
+      // Деактивируем текущую игру
+      if (currentGame.length > 0) {
+        await db
+          .update(userGames)
+          .set({ 
+            isActive: false,
+            finalScore: finalScore,
+            level: level,
+            gameData: gameData,
+            endedAt: new Date()
+          })
+          .where(eq(userGames.id, currentGame[0].id));
+      }
 
-      case 'PUT':
-        // Обновление состояния игры
-        const { gameId, updates } = req.body;
-        
-        if (!gameId || !updates) {
-          return res.status(400).json({ error: 'Game ID and updates are required' });
-        }
-
-        const updatedGame = await GameService.updateGame(gameId, updates);
-        if (!updatedGame) {
-          return res.status(404).json({ error: 'Game not found' });
-        }
-
-        return res.status(200).json(updatedGame);
-
-      case 'DELETE':
-        // Завершение игры и сохранение рекорда
-        const { gameId: gameToEnd, finalScore, level, gameData } = req.body;
-        
-        console.log('🎮 DELETE /api/users/[telegramId]/game - Request data:', {
-          telegramId,
-          gameToEnd,
-          finalScore,
-          level,
-          gameData,
-          userId: user.id,
-          currentUserRecord: user.record
-        });
-        
-        if (!gameToEnd || finalScore === undefined) {
-          return res.status(400).json({ error: 'Game ID and final score are required' });
-        }
-
-        // Сохраняем рекорд
-        console.log('💾 Saving record to record_history...');
-        const record = await GameService.saveRecord(user.id, finalScore, level || 1, gameData || {});
-        console.log('✅ Record saved:', record);
-
-        // Обновляем рекорд пользователя, если нужно
-        let updatedUser = user;
-        if (finalScore > user.record) {
-          console.log('🏆 New record! Updating user record from', user.record, 'to', finalScore);
-          const userUpdateResult = await UserService.updateRecord(user.id, finalScore);
-          if (userUpdateResult) {
-            updatedUser = userUpdateResult;
-            console.log('✅ User record updated:', updatedUser);
-          } else {
-            console.error('❌ Failed to update user record');
-          }
-        } else {
-          console.log('📈 Score', finalScore, 'did not beat current record', user.record);
-        }
-
-        // Удаляем игру
-        console.log('🗑️ Deleting game...');
-        await GameService.deleteGame(gameToEnd);
-
-        // Начисляем валюту за игру
-        const currencyReward = Math.floor(finalScore / 10); // 1 валюта за каждые 10 очков
-        if (currencyReward > 0) {
-          console.log('💰 Awarding currency reward:', currencyReward);
-          await CurrencyService.awardGameReward(user.id, currencyReward, { gameId: gameToEnd });
-        }
-
-        const newBalance = await CurrencyService.getUserBalance(user.id);
-        
-        const response = {
-          success: true,
-          record,
-          currencyReward,
-          newBalance,
-          newRecord: finalScore > user.record ? finalScore : user.record,
-        };
-        
-        console.log('📤 Sending response:', response);
-        
-        return res.status(200).json(response);
-
-      default:
-        res.setHeader('Allow', ['GET', 'POST', 'PUT', 'DELETE']);
-        return res.status(405).json({ error: `Method ${req.method} Not Allowed` });
+      return res.status(200).json({
+        success: true,
+        recordUpdated,
+        newRecord
+      });
+    } else {
+      return res.status(405).json({ error: 'Method not allowed' });
     }
   } catch (error) {
-    console.error('Game API Error:', error);
+    console.error('Error handling Classic game:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 } 

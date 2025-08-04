@@ -11,21 +11,22 @@ import { useTranslation } from "react-i18next";
 interface GameOverProps {
   onPlayAgain: () => void;
   onBackToMenu: () => void;
+  gameMode?: 'classic' | 'zen';
 }
 
-export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu }) => {
+export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu, gameMode = 'classic' }) => {
   const { score } = useGameStore();
   const { user } = useUser();
   const { isAdmin } = useAdminAuth();
   const [adminRecord, setAdminRecord] = useState<number | null>(null);
-  const [highScore, setHighScore] = useState<number>(user?.record ?? 0);
+  const [highScore, setHighScore] = useState<number>(gameMode === 'zen' ? (user?.zenRecord ?? 0) : (user?.record ?? 0));
   const [isRecordLoading, setIsRecordLoading] = useState(true);
   const { t } = useTranslation();
 
   useEffect(() => {
-    const userRecord = user?.record ?? 0;
+    const userRecord = gameMode === 'zen' ? (user?.zenRecord ?? 0) : (user?.record ?? 0);
     setHighScore(score > userRecord ? score : userRecord);
-  }, [user, score]);
+  }, [user, score, gameMode]);
 
   useEffect(() => {
     if (isAdmin) {

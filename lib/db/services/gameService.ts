@@ -5,23 +5,31 @@ import type { UserGame, NewUserGame, BoardState, GamePiece, GameData, RecordHist
 
 export class GameService {
   // Создание новой игры для пользователя
-  static async createGame(userId: number, boardState: BoardState, currentPieces: GamePiece[]): Promise<UserGame> {
+  static async createGame(userId: number, boardState: BoardState, currentPieces: GamePiece[], gameMode: 'classic' | 'zen' = 'classic'): Promise<UserGame> {
     const [game] = await db.insert(userGames).values({
       userId,
+      gameMode,
       boardState,
       currentPieces,
       score: 0,
       level: 1,
+      isActive: true,
     }).returning();
     return game;
   }
 
   // Получение текущей игры пользователя
-  static async getCurrentGame(userId: number): Promise<UserGame | null> {
+  static async getCurrentGame(userId: number, gameMode: 'classic' | 'zen' = 'classic'): Promise<UserGame | null> {
     const [game] = await db
       .select()
       .from(userGames)
-      .where(eq(userGames.userId, userId))
+      .where(
+        and(
+          eq(userGames.userId, userId),
+          eq(userGames.gameMode, gameMode),
+          eq(userGames.isActive, true)
+        )
+      )
       .orderBy(desc(userGames.updatedAt))
       .limit(1);
     return game || null;

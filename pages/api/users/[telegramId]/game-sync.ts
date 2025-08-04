@@ -1,104 +1,122 @@
 import { NextApiRequest, NextApiResponse } from 'next';
-import { UserService, GameService } from '@/lib/db/services';
+import { db } from '@/lib/db';
+import { users, userGames } from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
+import { verifyToken } from '@/lib/utils/auth';
+import { UserService } from '@/lib/db/services/userService';
+import { GameService } from '@/lib/db/services/gameService';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   const { telegramId } = req.query;
   if (!telegramId || typeof telegramId !== 'string') {
-    return res.status(400).json({ error: 'Telegram ID is required' });
+    return res.status(400).json({ error: 'Invalid telegramId' });
   }
 
-  let user;
-  try {
-    user = await UserService.getUserByTelegramId(telegramId);
-    if (!user) return res.status(404).json({ error: 'User not found' });
-  } catch (e) {
-    return res.status(500).json({ error: 'User lookup failed' });
-  }
-
-  let gameState;
-  try {
-    gameState = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-  } catch (e) {
-    return res.status(400).json({ error: 'Invalid JSON' });
-  }
-
-  if (!gameState || !gameState.board || !gameState.currentPieces) {
-    return res.status(400).json({ error: 'Missing board or currentPieces' });
+  // Проверяем авторизацию
+  const authResult = await verifyToken(req);
+  if (!authResult.success) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
 
   try {
-    const currentScore = gameState.score || 0;
-    
-    console.log('💾 Game-sync - Saving game state:', {
-      telegramId,
-      userId: user.id,
-      currentScore,
-      userRecord: user.record,
-      willUpdateRecord: currentScore > user.record
-    });
+    const { boardState, currentPieces, score, level, gameData } = req.body;
 
-    // Найти текущую игру
-    let currentGame = await GameService.getCurrentGame(user.id);
-    if (currentGame) {
-      await GameService.updateGame(currentGame.id, {
-        boardState: { grid: gameState.board, width: gameState.board[0]?.length || 8, height: gameState.board.length || 8 },
-        currentPieces: gameState.currentPieces,
-        score: currentScore,
-      });
-    } else {
-      await GameService.createGame(
-        user.id,
-        { grid: gameState.board, width: gameState.board[0]?.length || 8, height: gameState.board.length || 8 },
-        gameState.currentPieces
-      );
+    // Получаем пользователя
+    const user = await db
+      .select()
+      .from(users)
+      .where(eq(users.telegramId, parseInt(telegramId)))
+      .limit(1);
+
+    if (user.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
     }
 
-    // ВАЖНО: Проверяем и обновляем рекорд если нужно
-    let updatedRecord = user.record;
+    const currentScore = score || 0;
     let recordUpdated = false;
-    
-    if (currentScore > user.record) {
-      console.log('🏆 New record detected during auto-save! Updating from', user.record, 'to', currentScore);
-      
-      // Проверяем, нет ли уже такого же рекорда в истории (предотвращаем дубликаты)
-      const lastRecord = await GameService.getBestRecord(user.id);
-      const shouldSaveToHistory = !lastRecord || lastRecord.score !== currentScore;
-      
-      if (shouldSaveToHistory) {
-        // Сохраняем рекорд в историю только если это новый рекорд
-        await GameService.saveRecord(user.id, currentScore, 1, {
-          autoSaved: true,
-          saveType: 'auto-sync',
-          timestamp: Date.now()
-        });
-        console.log('💾 New record saved to history');
-      } else {
-        console.log('📝 Record already exists in history, skipping duplicate');
-      }
-      
-      // Обновляем рекорд пользователя
-      const userUpdateResult = await UserService.updateRecord(user.id, currentScore);
-      if (userUpdateResult) {
-        updatedRecord = currentScore;
-        recordUpdated = true;
-      } else {
-        console.error('❌ Failed to update user record during auto-save');
-      }
-      
-      console.log('✅ Record updated during auto-save');
+    let newRecord = user[0].record;
+
+    // Проверяем, является ли это новым рекордом для Classic режима
+    if (currentScore > user[0].record) {
+      newRecord = currentScore;
+      recordUpdated = true;
     }
-    
-    return res.status(200).json({ 
-      success: true, 
+
+    // Получаем текущую активную игру
+    const currentGame = await db
+      .select()
+      .from(userGames)
+      .where(
+        and(
+          eq(userGames.userId, parseInt(telegramId)),
+          eq(userGames.gameMode, 'classic'),
+          eq(userGames.isActive, true)
+        )
+      )
+      .limit(1);
+
+    let updatedRecord = user[0].record;
+
+    if (currentGame.length > 0) {
+      // Обновляем существующую игру
+      const updatedGame = await GameService.updateGame(
+        currentGame[0].id,
+        {
+          boardState,
+          currentPieces,
+          score: currentScore,
+          level,
+          gameData
+        },
+        'classic'
+      );
+
+      if (recordUpdated) {
+        // Обновляем Classic рекорд пользователя
+        const userUpdateResult = await UserService.updateRecord(user[0].id, newRecord, 'classic');
+        if (userUpdateResult) {
+          updatedRecord = userUpdateResult.record;
+          console.log('✅ Classic record updated during auto-save');
+        }
+      }
+    } else {
+      // Создаем новую игру
+      const newGame = await GameService.createGame(
+        user[0].id,
+        {
+          boardState,
+          currentPieces,
+          score: currentScore,
+          level,
+          gameData
+        },
+        'classic'
+      );
+
+      if (recordUpdated) {
+        // Обновляем Classic рекорд пользователя
+        const userUpdateResult = await UserService.updateRecord(user[0].id, newRecord, 'classic');
+        if (userUpdateResult) {
+          updatedRecord = userUpdateResult.record;
+          console.log('✅ Classic record updated during auto-save');
+        }
+      }
+    }
+
+    return res.status(200).json({
+      success: true,
       recordUpdated,
       newRecord: updatedRecord
     });
-  } catch (e) {
-    console.error('❌ Failed to save game state:', e);
-    return res.status(500).json({ error: 'Failed to save game state' });
+  } catch (error) {
+    console.error('Error syncing Classic game:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 } 

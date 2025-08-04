@@ -20,7 +20,8 @@ export const users = pgTable("users", {
   lastName: varchar("last_name", { length: 100 }),
   avatarUrl: text("avatar_url"),
   role: varchar("role", { length: 20 }).notNull().default('user'), // 'admin', 'user', 'premium', 'tester'
-  record: integer("record").notNull().default(0),
+  record: integer("record").notNull().default(0), // Classic mode record (legacy)
+  zenRecord: integer("zen_record").notNull().default(0), // Zen mode record
   currency: integer("currency").notNull().default(0),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -33,14 +34,21 @@ export const users = pgTable("users", {
 export const userGames = pgTable("user_games", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  gameMode: varchar("game_mode", { length: 20 }).notNull().default('classic'), // 'classic', 'zen'
   boardState: jsonb("board_state").notNull(), // Состояние игрового поля
   currentPieces: jsonb("current_pieces").notNull(), // Текущие доступные фигуры
   score: integer("score").notNull().default(0),
   level: integer("level").notNull().default(1),
+  isActive: boolean("is_active").notNull().default(true),
+  finalScore: integer("final_score"),
+  gameData: jsonb("game_data"), // Дополнительные данные о игре
+  endedAt: timestamp("ended_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   userIdIdx: index("user_id_idx").on(table.userId),
+  gameModeIdx: index("game_mode_idx").on(table.gameMode),
+  isActiveIdx: index("is_active_idx").on(table.isActive),
 }));
 
 // Бустеры (типы улучшений)
@@ -86,12 +94,14 @@ export const currencyTransactions = pgTable("currency_transactions", {
 export const recordHistory = pgTable("record_history", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
   userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  gameMode: varchar("game_mode", { length: 20 }).notNull().default('classic'), // 'classic', 'zen'
   score: integer("score").notNull(),
   level: integer("level").notNull(),
   gameData: jsonb("game_data"), // Дополнительные данные о игре
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   userIdIdx: index("record_user_id_idx").on(table.userId),
+  gameModeIdx: index("record_game_mode_idx").on(table.gameMode),
   scoreIdx: index("record_score_idx").on(table.score),
   createdAtIdx: index("record_created_at_idx").on(table.createdAt),
 }));

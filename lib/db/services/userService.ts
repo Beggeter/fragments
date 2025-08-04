@@ -33,13 +33,25 @@ export class UserService {
   }
 
   // Обновление рекорда пользователя
-  static async updateRecord(userId: number, newRecord: number): Promise<User | null> {
+  static async updateRecord(userId: number, newRecord: number, gameMode: 'classic' | 'zen' = 'classic'): Promise<User | null> {
+    const updateData = gameMode === 'zen' 
+      ? { zenRecord: newRecord, updatedAt: new Date() }
+      : { record: newRecord, updatedAt: new Date() };
+    
     const [user] = await db
       .update(users)
-      .set({ record: newRecord, updatedAt: new Date() })
+      .set(updateData)
       .where(eq(users.id, userId))
       .returning();
     return user || null;
+  }
+
+  // Получение рекорда пользователя по режиму
+  static async getRecord(userId: number, gameMode: 'classic' | 'zen' = 'classic'): Promise<number> {
+    const user = await this.getUserById(userId);
+    if (!user) return 0;
+    
+    return gameMode === 'zen' ? user.zenRecord : user.record;
   }
 
   // Обновление валюты пользователя
@@ -68,26 +80,31 @@ export class UserService {
   }
 
   // Получение топ пользователей по рекорду
-  static async getTopUsers(limit = 10): Promise<User[]> {
+  static async getTopUsers(limit = 10, gameMode: 'classic' | 'zen' = 'classic'): Promise<User[]> {
+    const recordField = gameMode === 'zen' ? users.zenRecord : users.record;
+    
     return await db
       .select()
       .from(users)
-      .where(ne(users.record, 0))
-      .orderBy(desc(users.record))
+      .where(ne(recordField, 0))
+      .orderBy(desc(recordField))
       .limit(limit);
   }
 
   // Получение позиции пользователя в рейтинге (быстрый способ)
-  static async getUserPosition(userId: number): Promise<number | null> {
-    console.log('UserService.getUserPosition called with userId:', userId);
+  static async getUserPosition(userId: number, gameMode: 'classic' | 'zen' = 'classic'): Promise<number | null> {
+    console.log('UserService.getUserPosition called with userId:', userId, 'gameMode:', gameMode);
     const user = await this.getUserById(userId);
     if (!user) {
       console.log('UserService.getUserPosition: user not found');
       return null;
     }
     
+    const userRecord = gameMode === 'zen' ? user.zenRecord : user.record;
+    const recordField = gameMode === 'zen' ? users.zenRecord : users.record;
+    
     // Если у пользователя рекорд = 0, не показываем позицию
-    if (user.record === 0) {
+    if (userRecord === 0) {
       console.log('UserService.getUserPosition: user has no record (0)');
       return null;
     }
@@ -97,8 +114,8 @@ export class UserService {
       .select({ count: count() })
       .from(users)
       .where(and(
-        gt(users.record, user.record),
-        ne(users.record, 0)
+        gt(recordField, userRecord),
+        ne(recordField, 0)
       ));
     
     const position = (result.count || 0) + 1;
