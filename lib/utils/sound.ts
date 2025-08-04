@@ -69,6 +69,5 @@ export const playSound = (src: string) => {
 };
 
 export const playPlacePiece = () => playSound("/audio/place2.wav");
-// export const playLineClear = () => playSound('/sounds/clear.mp3');
 export const playGameOver = () => playSound('/audio/gameover.wav');
-// export const playError = () => playSound('/sounds/error.mp3');
+export const playClick = () => playSound('/audio/click.wav');
