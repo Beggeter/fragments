@@ -2655,8 +2655,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           onComplete={() => setExplosionFlash({ isActive: false })}
         />
 
-        {/* Баннер для тестеров */}
-        {(user?.role === 'tester' || isAdmin) && <PseudoAdBanner />}
+        {/* Баннер для тестеров (только в Classic режиме) */}
+        {(user?.role === 'tester' || isAdmin) && gameMode !== 'zen' && <PseudoAdBanner />}
       </div>
     </div>
   );
