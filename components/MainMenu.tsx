@@ -37,7 +37,7 @@ const MainMenu: FC<MainMenuProps> = ({ onStartClassic, onStartZen, onOpenShop, o
   }, []);
 
   // Проверяем доступ к Zen режиму
-  const canAccessZen = isAdmin || user?.role === 'tester' || user?.role === 'admin';
+  const canAccessZen = isAdmin || user?.role === 'tester' || user?.role === 'admin' || user?.role === 'premium';
 
   return (
     <>

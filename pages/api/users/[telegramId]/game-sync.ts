@@ -32,7 +32,7 @@ export default async function handler(
     const user = await db
       .select()
       .from(users)
-      .where(eq(users.telegramId, parseInt(telegramId)))
+      .where(eq(users.telegramId, telegramId))
       .limit(1);
 
     if (user.length === 0) {
@@ -53,13 +53,13 @@ export default async function handler(
     const currentGame = await db
       .select()
       .from(userGames)
-      .where(
-        and(
-          eq(userGames.userId, parseInt(telegramId)),
-          eq(userGames.gameMode, 'classic'),
-          eq(userGames.isActive, true)
+              .where(
+          and(
+            eq(userGames.userId, user[0].id),
+            eq(userGames.gameMode, 'classic'),
+            eq(userGames.isActive, true)
+          )
         )
-      )
       .limit(1);
 
     let updatedRecord = user[0].record;
@@ -72,10 +72,8 @@ export default async function handler(
           boardState,
           currentPieces,
           score: currentScore,
-          level,
-          gameData
-        },
-        'classic'
+          level
+        }
       );
 
       if (recordUpdated) {
@@ -90,13 +88,8 @@ export default async function handler(
       // Создаем новую игру
       const newGame = await GameService.createGame(
         user[0].id,
-        {
-          boardState,
-          currentPieces,
-          score: currentScore,
-          level,
-          gameData
-        },
+        boardState,
+        currentPieces,
         'classic'
       );
 

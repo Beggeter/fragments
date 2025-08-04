@@ -10,7 +10,7 @@ interface User {
   username?: string;
   photoUrl?: string;
   avatarUrl?: string;
-  role: 'user' | 'admin' | 'tester';
+  role: 'user' | 'admin' | 'tester' | 'premium';
   currency: number;
   createdAt: string;
   lastLoginAt: string;

@@ -12,13 +12,13 @@ export class ZenBlockGenerator extends BaseBlockGenerator {
     // В Zen режиме используем только простые фигуры для более легкой игры
     this.blockBag = [
       // Простые фигуры 1x1, 1x2, 2x1
-      { id: 'zen_single', matrix: [[1]], color: 'red' },
-      { id: 'zen_horizontal', matrix: [[1, 1]], color: 'blue' },
-      { id: 'zen_vertical', matrix: [[1], [1]], color: 'green' },
-      { id: 'zen_square', matrix: [[1, 1], [1, 1]], color: 'yellow' },
-      { id: 'zen_l', matrix: [[1, 0], [1, 1]], color: 'purple' },
-      { id: 'zen_t', matrix: [[1, 1, 1], [0, 1, 0]], color: 'orange' },
-      { id: 'zen_z', matrix: [[1, 1, 0], [0, 1, 1]], color: 'cyan' },
+      { id: 'zen_single', uniqueId: 'zen_single', name: 'Zen Single', matrix: [[{ value: 1, color: 'red' }]], color: 'red', difficulty: 'easy' },
+      { id: 'zen_horizontal', uniqueId: 'zen_horizontal', name: 'Zen Horizontal', matrix: [[{ value: 1, color: 'blue' }, { value: 1, color: 'blue' }]], color: 'blue', difficulty: 'easy' },
+      { id: 'zen_vertical', uniqueId: 'zen_vertical', name: 'Zen Vertical', matrix: [[{ value: 1, color: 'green' }], [{ value: 1, color: 'green' }]], color: 'green', difficulty: 'easy' },
+      { id: 'zen_square', uniqueId: 'zen_square', name: 'Zen Square', matrix: [[{ value: 1, color: 'yellow' }, { value: 1, color: 'yellow' }], [{ value: 1, color: 'yellow' }, { value: 1, color: 'yellow' }]], color: 'yellow', difficulty: 'easy' },
+      { id: 'zen_l', uniqueId: 'zen_l', name: 'Zen L', matrix: [[{ value: 1, color: 'purple' }, { value: 0, color: 'purple' }], [{ value: 1, color: 'purple' }, { value: 1, color: 'purple' }]], color: 'purple', difficulty: 'easy' },
+      { id: 'zen_t', uniqueId: 'zen_t', name: 'Zen T', matrix: [[{ value: 1, color: 'orange' }, { value: 1, color: 'orange' }, { value: 1, color: 'orange' }], [{ value: 0, color: 'orange' }, { value: 1, color: 'orange' }, { value: 0, color: 'orange' }]], color: 'orange', difficulty: 'easy' },
+      { id: 'zen_z', uniqueId: 'zen_z', name: 'Zen Z', matrix: [[{ value: 1, color: 'cyan' }, { value: 1, color: 'cyan' }, { value: 0, color: 'cyan' }], [{ value: 0, color: 'cyan' }, { value: 1, color: 'cyan' }, { value: 1, color: 'cyan' }]], color: 'cyan', difficulty: 'easy' },
     ];
     this.previewBlock = null;
   }
@@ -72,6 +72,6 @@ export class ZenBlockGenerator extends BaseBlockGenerator {
   // В Zen режиме сложность растет очень медленно
   public updateDifficulty(score: number): boolean {
     // Zen режим остается простым на протяжении всей игры
-    return this.difficultyManager.updateDifficulty(score);
+    return this.difficultyManager.updateLevel(score);
   }
 } 
