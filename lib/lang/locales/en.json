@@ -93,5 +93,25 @@
     "description": "is under development. Coming soon!",
     "understood": "Got it",
     "close": "Close"
+  },
+  "bonuses": {
+    "title": "Daily Bonuses",
+    "day": "Day {{number}}",
+    "week": "Week {{week}}",
+    "claim": "Claim",
+    "zen_title": "🌟 ZEN Bonuses",
+    "zen_description": "Get 2x more bonuses with a ZEN subscription!",
+    "zen_subscribe": "🔓 Subscribe to ZEN",
+    "zen_only_title": "Only with a subscription:",
+    "zen_types": {
+      "whirlwind": "Whirlwind",
+      "bomb": "Bomb",
+      "undo": "Undo"
+    },
+    "no_ads": "No ads",
+    "zen_mode": "ZEN mode"
+  },
+  "common": {
+    "close": "Close"
   }
 }

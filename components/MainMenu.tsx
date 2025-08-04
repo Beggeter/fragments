@@ -76,12 +76,12 @@ const MainMenu: FC<MainMenuProps> = ({
       <DailyBonusModal
         isOpen={showBonusModal}
         onClose={() => setShowBonusModal(false)}
-        currentWeek={1}
-        currentDay={3}
+        currentWeek={2}
+        currentDay={1}
         hasZenSubscription={false}
         onClaimReward={() => {}}
         rewards={{
-          classic: rewards.classic[0],
+          classic: rewards.classic[1],
           zen: rewards.zen[0],
         }}
       />
