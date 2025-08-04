@@ -181,7 +181,21 @@ export default function UserProfile({ telegramId }: UserProfileProps) {
             ) : (
               <div className="text-2xl font-bold text-blue-600">{user.record}</div>
             )}
-            <div className="text-sm text-gray-600">Best Record</div>
+            <div className="text-sm text-gray-600">Classic Record</div>
+          </div>
+          <div className="text-center">
+            {loading ? (
+              <div className="text-2xl font-bold text-purple-600">
+                <LoadingNumberAnimation
+                  isLoading={true}
+                  minDigits={4}
+                  speed={50}
+                />
+              </div>
+            ) : (
+              <div className="text-2xl font-bold text-purple-600">{user.zenRecord || 0}</div>
+            )}
+            <div className="text-sm text-gray-600">Zen Record</div>
           </div>
           <div className="text-center">
             {loading ? (
@@ -196,10 +210,6 @@ export default function UserProfile({ telegramId }: UserProfileProps) {
               <div className="text-2xl font-bold text-green-600">{balance}</div>
             )}
             <div className="text-sm text-gray-600">Currency</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">{gameStats?.totalGames || 0}</div>
-            <div className="text-sm text-gray-600">Games Played</div>
           </div>
         </div>
       </div>

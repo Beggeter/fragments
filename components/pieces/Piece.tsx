@@ -25,6 +25,15 @@ const colorGradients: Record<BlockColor, string> = {
 export const Piece: React.FC<PieceProps> = ({ color, size = 32, isClearing, isPreview = false }) => {
   const [imageError, setImageError] = useState(false);
 
+  console.log('🔍 Piece render:', {
+    color,
+    size,
+    isClearing,
+    isPreview,
+    imageError,
+    imageSrc: `/${color}.svg`
+  });
+
   const opacity = isPreview ? 0.4 : 1;
 
   // Если изображение не загрузилось, используем CSS градиент
@@ -59,7 +68,10 @@ export const Piece: React.FC<PieceProps> = ({ color, size = 32, isClearing, isPr
           backfaceVisibility: 'hidden',
           opacity,
         }}
-        onError={() => setImageError(true)}
+        onError={() => {
+          console.log('❌ Image failed to load:', `/${color}.svg`);
+          setImageError(true);
+        }}
       />
     </div>
   );

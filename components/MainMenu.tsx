@@ -11,30 +11,39 @@ import record from "@/public/record.png";
 import MenuButton from "@/components/UI/MenuButton";
 import BackgroundAnimation from "@/components/UI/BackgroundAnimation";
 import ComingSoonModal from "@/components/UI/ComingSoonModal";
+import { useUser } from "@/hooks/useUser";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { DailyBonusModal } from "./DailyBonusModal";
 import rewards from "./store/bonusItems";
 
+
 interface MainMenuProps {
   onStartClassic: () => void;
+  onStartZen?: () => void;
   onOpenShop: () => void;
   onOpenLeaderboard?: () => void;
 }
 interface BottomButtonsProps {
   onStartClassic: () => void;
+  onStartZen?: () => void;
   onShowComingSoon: () => void;
+  canAccessZen: boolean;
 }
-const MainMenu: FC<MainMenuProps> = ({
-  onStartClassic,
-  onOpenShop,
-  onOpenLeaderboard,
-}) => {
+
+const MainMenu: FC<MainMenuProps> = ({ onStartClassic, onStartZen, onOpenShop, onOpenLeaderboard }) => {
   const [fadeIn, setFadeIn] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
+  const { user } = useUser();
+  const { isAdmin } = useAdminAuth();
   const [showBonusModal, setShowBonusModal] = useState(false);
+
 
   useEffect(() => {
     setFadeIn(true);
   }, []);
+
+  // Проверяем доступ к Zen режиму
+  const canAccessZen = isAdmin || user?.role === 'tester' || user?.role === 'admin' || user?.role === 'premium';
 
   return (
     <>
@@ -61,9 +70,12 @@ const MainMenu: FC<MainMenuProps> = ({
               backfaceVisibility: "hidden",
             }}
           />
-          <BottomButtons
-            onStartClassic={onStartClassic}
+
+          <BottomButtons 
+            onStartClassic={onStartClassic} 
+            onStartZen={onStartZen}
             onShowComingSoon={() => setShowComingSoon(true)}
+            canAccessZen={canAccessZen}
           />
         </main>
       </div>
@@ -160,10 +172,9 @@ const TopButtons: FC<{
   );
 };
 
-const BottomButtons: FC<BottomButtonsProps> = ({
-  onStartClassic,
-  onShowComingSoon,
-}) => {
+
+const BottomButtons: FC<BottomButtonsProps> = ({ onStartClassic, onStartZen, onShowComingSoon, canAccessZen }) => {
+
   return (
     <div className="flex flex-col gap-4 items-center w-full z-100">
       <MenuButton
@@ -175,15 +186,27 @@ const BottomButtons: FC<BottomButtonsProps> = ({
         imageClasses="h-[2rem] min-w-[3rem] drop-shadow-md"
         onClick={onStartClassic}
       />
-      <MenuButton
-        text="Zen"
-        rightIcon={stars}
-        gradientClass="gray-gradient-disabled"
-        className="rounded-3xl px-6 py-10 max-w-md w-[55vw] sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3 opacity-70"
-        textClasses="font-black italic text-[2.3rem] text-lg opacity-70"
-        imageClasses="h-[3rem] min-w-[3rem] opacity-70"
-        onClick={onShowComingSoon}
-      />
+      {canAccessZen ? (
+        <MenuButton
+          text="Zen"
+          rightIcon={stars}
+          gradientClass="purple-gradient"
+          className="rounded-3xl px-6 py-10 max-w-md w-[55vw] sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3"
+          textClasses="font-black italic text-[2.3rem] text-lg"
+          imageClasses="h-[3rem] min-w-[3rem] drop-shadow-md"
+          onClick={onStartZen}
+        />
+      ) : (
+        <MenuButton
+          text="Zen"
+          rightIcon={stars}
+          gradientClass="gray-gradient-disabled"
+          className="rounded-3xl px-6 py-10 max-w-md w-[55vw] sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3 opacity-70"
+          textClasses="font-black italic text-[2.3rem] text-lg opacity-70"
+          imageClasses="h-[3rem] min-w-[3rem] opacity-70"
+          onClick={onShowComingSoon}
+        />
+      )}
     </div>
   );
 };

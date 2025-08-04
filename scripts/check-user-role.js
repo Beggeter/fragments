@@ -1,0 +1,13 @@
+const { UserService } = require('../lib/db/services');
+
+async function checkUserRole() {
+  try {
+    const user = await UserService.getUserByTelegramId('610936383');
+    console.log('User data:', user);
+    console.log('User role:', user?.role);
+  } catch (error) {
+    console.error('Error:', error);
+  }
+}
+
+checkUserRole(); 

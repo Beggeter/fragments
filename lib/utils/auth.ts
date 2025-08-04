@@ -71,4 +71,29 @@ export function checkRateLimit(identifier: string, limit: number, windowMs: numb
   
   record.count++;
   return true;
+}
+
+// Функция для проверки токена авторизации
+export async function verifyToken(req: any): Promise<{ success: boolean; userId?: number; telegramId?: number }> {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return { success: false };
+    }
+
+    const token = authHeader.substring(7);
+    const payload = verifyJWT(token);
+    
+    if (!payload) {
+      return { success: false };
+    }
+
+    return {
+      success: true,
+      userId: payload.userId,
+      telegramId: payload.telegramId
+    };
+  } catch (error) {
+    return { success: false };
+  }
 } 

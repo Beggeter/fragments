@@ -39,17 +39,13 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
       setError(null);
 
       const userIdParam = user ? `&userId=${user.id}` : "";
-      const sessionToken =
-        typeof window !== "undefined"
-          ? localStorage.getItem("sessionToken")
-          : null;
+      const gameModeParam = `&gameMode=${activeTab}`;
+      const sessionToken = typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : null;
       const headers: HeadersInit = {};
       if (sessionToken) {
         headers["Authorization"] = `Bearer ${sessionToken}`;
       }
-      const response = await fetch(`/api/leaderboard?limit=20${userIdParam}`, {
-        headers,
-      });
+      const response = await fetch(`/api/leaderboard?limit=20${userIdParam}${gameModeParam}`, { headers });
 
       if (!response.ok) {
         throw new Error("Failed to fetch leaderboard");
@@ -83,24 +79,57 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
 
   useEffect(() => {
     fetchLeaderboard();
-  }, [user, t]);
+  }, [user, t, activeTab]);
 
   const handleRefresh = () => {
     fetchLeaderboard(true);
   };
+  const isUserInVisibleTop20 =
+    user && leaderboard.some((entry) => entry.id === user.id);
+
+  // Показываем разделитель и карточку пользователя если он НЕ в топ-20
+
+  const shouldShowUserCard = user && userPosition && !isUserInVisibleTop20 && (activeTab === 'classic' ? user.record > 0 : user.zenRecord > 0);
+
+
+  // Проверяем, нужно ли показать сообщение для пользователя без рекорда
+  const shouldShowNoRecordMessage = user && (activeTab === 'classic' ? user.record === 0 : user.zenRecord === 0);
+
+  // Создаем карточку пользователя для отображения под разделителем
+  const getUserCard = () => {
+    if (!user || !userPosition) return null;
+
+    const userRecord = activeTab === 'classic' ? user.record : user.zenRecord;
+
+    return {
+      id: user.id,
+      username: user.username || user.firstName || t('leaderboard.you'),
+      record: userRecord || 0,
+      avatarUrl:
+        user.avatarUrl || "/blue.svg",
+      position: userPosition,
+    };
+  };
+
+  // Проверяем, может ли пользователь играть в Zen режим
+  const canAccessZen = isAdmin || user?.role === 'tester' || user?.role === 'premium';
 
   const handleZenClick = () => {
-    setShowComingSoon(true);
+    if (canAccessZen) {
+      setActiveTab("zen");
+    } else {
+      setShowComingSoon(true);
+    }
   };
 
   const getMedalForPosition = (position: number) => {
     switch (position) {
       case 1:
-        return "/record.png";
+        return "🥇";
       case 2:
-        return "/cup_silver.svg";
+        return "🥈";
       case 3:
-        return "/cup_bronze.svg";
+        return "🥉";
       default:
         return null;
     }
@@ -108,30 +137,6 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
 
   const isCurrentUser = (entry: LeaderboardEntry) => {
     return user && entry.id === user.id;
-  };
-
-  // Проверяем, есть ли пользователь в видимой части топ-20
-  const isUserInVisibleTop20 =
-    user && leaderboard.some((entry) => entry.id === user.id);
-
-  // Показываем разделитель и карточку пользователя если он НЕ в топ-20
-  const shouldShowUserCard =
-    user && userPosition && !isUserInVisibleTop20 && user.record > 0;
-
-  // Проверяем, нужно ли показать сообщение для пользователя без рекорда
-  const shouldShowNoRecordMessage = user && user.record === 0;
-
-  // Создаем карточку пользователя для отображения под разделителем
-  const getUserCard = () => {
-    if (!user || !userPosition) return null;
-
-    return {
-      id: user.id,
-      username: user.username || user.firstName || t("leaderboard.you"),
-      record: user.record || 0,
-      avatarUrl: user.avatarUrl || "/blue.svg",
-      position: userPosition,
-    };
   };
 
   if (isLoading) {
@@ -205,7 +210,14 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
         <ClickEffect>
           <button
             onClick={handleZenClick}
-            className="px-6 py-3 rounded-full text-lg font-extrabold transition-all duration-300 border font-figtree-mulish bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20 hover:border-white/30"
+            className={`px-6 py-3 rounded-full text-lg font-extrabold transition-all duration-300 border font-figtree-mulish ${
+              activeTab === "zen"
+                ? "bg-gradient-to-r from-purple-400 to-purple-500 text-white shadow-lg border-purple-400"
+                : canAccessZen
+                ? "bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20 hover:border-white/30"
+                : "bg-gray-600/50 text-gray-400 border-gray-500 cursor-not-allowed"
+            }`}
+            disabled={!canAccessZen}
           >
             {/* {t("leaderboard.zen")} */}
             Zen

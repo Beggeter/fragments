@@ -200,10 +200,10 @@ export class ClassicBlockGenerator extends BaseBlockGenerator {
   private readonly minLinesToClear = 2;
   private readonly comboMaintenanceThreshold = 0.7;
   private readonly blockTypeWeights: Record<string, number> = {
-    line: 1.5,
-    square: 1.3,
-    corner: 1.2,
-    other: 1.0,
+    line: 0.8,    // Уменьшаем вес простых линий
+    square: 1.0,  // Нейтральный вес квадратов
+    corner: 1.5,  // Увеличиваем вес угловых фигур
+    other: 1.8,   // Увеличиваем вес сложных фигур
   };
 
   constructor(initialScore: number = 0, playerRecord: number = 0) {
@@ -270,13 +270,24 @@ export class ClassicBlockGenerator extends BaseBlockGenerator {
   }
 
   private calculateEasyChance(score: number, boardFillRatio: number): number {
-    // Базовое усложнение каждые 2000 очков
+    // Очень агрессивное усложнение каждые 1000 очков
     let easyChance = this.config.baseEasyChance - 
-      (Math.floor(score / this.config.difficultySteps) * 0.1);
+      (Math.floor(score / this.config.difficultySteps) * 0.25); // Увеличили до 0.25
+    
+    // Дополнительное усложнение на средних уровнях
+    if (score > 5000) {
+      easyChance -= 0.15; // Дополнительно уменьшаем на 15%
+    }
+    if (score > 10000) {
+      easyChance -= 0.2; // Еще больше уменьшаем на 20%
+    }
+    if (score > 15000) {
+      easyChance -= 0.25; // Максимальное усложнение
+    }
     
     easyChance = Math.max(easyChance, this.config.minEasyChance);
     
-    // Логика спасения
+    // Логика спасения (только в крайних случаях)
     if (boardFillRatio > this.config.rescueThreshold) {
       // Проверяем, не побил ли игрок рекорд
       if (!this.config.enableRescueForRecordBreakers || 
@@ -462,16 +473,16 @@ export class ClassicBlockGenerator extends BaseBlockGenerator {
     const currentScore = this.difficultyManager.getCurrentLevel().scoreThreshold;
     const playerRecord = this.difficultyManager.getPlayerRecord();
     
-    let complexChance = 0.2; // Базовая частота 20%
+    let complexChance = 0.4; // Базовая частота 40% (было 20%)
     
-    // При заполненности >70% увеличиваем до 30%
+    // При заполненности >70% увеличиваем до 50%
     if (boardFillRatio > 0.7) {
-      complexChance = 0.3;
+      complexChance = 0.5;
     }
     
     // При счете >50% рекорда дополнительно увеличиваем
     if (currentScore > playerRecord * 0.5) {
-      complexChance *= 2; // Удваиваем шанс
+      complexChance *= 2.5; // Увеличиваем в 2.5 раза
     }
     
     // Проверяем, нужно ли создавать логически сложный набор

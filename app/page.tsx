@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { init } from "@telegram-apps/sdk";
 import GameBoard from "../components/GameBoard";
+import { ZenGameBoard } from "../components/ZenGameBoard";
 import MainMenu from "@/components/MainMenu";
 import AdminLogin from "@/components/AdminLogin";
 import TelegramLogin from "@/components/TelegramLogin";
@@ -26,6 +27,7 @@ type Screen =
   | "telegram login"
   | "main menu"
   | "classic mode"
+  | "zen mode"
   | "settings"
   | "gameover"
   | "shop"
@@ -307,6 +309,7 @@ const HomePage: React.FC = () => {
       isInitialized &&
       currentScreen !== "main menu" &&
       currentScreen !== "classic mode" &&
+      currentScreen !== "zen mode" &&
       currentScreen !== "settings" &&
       currentScreen !== "gameover" &&
       currentScreen !== "shop" &&
@@ -376,6 +379,10 @@ const HomePage: React.FC = () => {
     setCurrentScreen("classic mode");
   };
 
+  const handleStartZen = () => {
+    setCurrentScreen("zen mode");
+  };
+
   const handleGoToMenu = () => {
     setCurrentScreen("main menu");
   };
@@ -400,14 +407,21 @@ const HomePage: React.FC = () => {
           headers["Authorization"] = `Bearer ${sessionToken}`;
         }
 
+        // Определяем режим игры для отправки на сервер
+        const gameMode = currentScreen === "zen mode" ? "zen" : "classic";
+        const endpoint = gameMode === "zen" 
+          ? `/api/users/${telegramId}/zen-game`
+          : `/api/users/${telegramId}/game`;
+
         // Отправляем результат игры на сервер
-        const response = await fetch(`/api/users/${telegramId}/game`, {
+        const response = await fetch(endpoint, {
           method: "DELETE",
           headers,
           body: JSON.stringify({
             gameId: 1, // временный ID
             finalScore: score,
             level: 1,
+            gameMode: gameMode,
             gameData: {
               gameDuration: Date.now(), // можно добавить реальную продолжительность
               piecesPlaced: useGameStore.getState().piecesPlaced || 0,
@@ -423,7 +437,11 @@ const HomePage: React.FC = () => {
 
           // Обновляем рекорд если он изменился
           if (result.newRecord !== undefined && user) {
-            updateUser({ record: result.newRecord });
+            if (gameMode === 'zen') {
+              updateUser({ zenRecord: result.newRecord });
+            } else {
+              updateUser({ record: result.newRecord });
+            }
           }
         } else {
           // Удаляю все console.log, console.error, console.warn и любые отладочные комментарии/выводы
@@ -435,6 +453,10 @@ const HomePage: React.FC = () => {
       // Удаляю все console.log, console.error, console.warn и любые отладочные комментарии/выводы
     }
 
+    // Устанавливаем shopReturnTo перед переходом на экран gameover
+    if (currentScreen === "classic mode" || currentScreen === "zen mode") {
+      setShopReturnTo(currentScreen);
+    }
     setCurrentScreen("gameover");
   };
 
@@ -445,8 +467,8 @@ const HomePage: React.FC = () => {
 
   const handleOpenShop = useCallback(() => {
     // Determine where to return after shop
-    if (currentScreen === "classic mode") {
-      setShopReturnTo("classic mode");
+    if (currentScreen === "classic mode" || currentScreen === "zen mode") {
+      setShopReturnTo(currentScreen);
     } else {
       setShopReturnTo("main menu");
     }
@@ -454,8 +476,8 @@ const HomePage: React.FC = () => {
   }, [currentScreen]);
 
   const handleShopBack = useCallback(() => {
-    if (shopReturnTo === "classic mode") {
-      setCurrentScreen("classic mode");
+    if (shopReturnTo === "classic mode" || shopReturnTo === "zen mode") {
+      setCurrentScreen(shopReturnTo);
     } else {
       setCurrentScreen("main menu");
     }
@@ -519,7 +541,7 @@ const HomePage: React.FC = () => {
   return (
     <div
       className={`${
-        currentScreen === "classic mode"
+        currentScreen === "classic mode" || currentScreen === "zen mode"
           ? "bg-[var(--game-background)]"
           : "menu-bg"
       } min-h-screen `}
@@ -619,6 +641,7 @@ const HomePage: React.FC = () => {
       >
         <MainMenu
           onStartClassic={hadleStartClassic}
+          onStartZen={handleStartZen}
           onOpenShop={handleOpenShop}
           onOpenLeaderboard={handleOpenLeaderboard}
         />
@@ -636,6 +659,14 @@ const HomePage: React.FC = () => {
           onRestartComplete={handleRestartComplete}
           onOpenShop={handleOpenShop}
           onPieceReturnAnimation={handlePieceReturnAnimation}
+          gameMode="classic"
+        />
+      )}
+
+      {currentScreen === "zen mode" && (
+        <ZenGameBoard
+          onBackToMenu={handleGoToMenu}
+          onOpenShop={handleOpenShop}
         />
       )}
 
@@ -643,7 +674,9 @@ const HomePage: React.FC = () => {
         <GameOver
           onPlayAgain={() => {
             setIsIntentionalRestart(true); // Устанавливаем флаг перед сбросом
-            setCurrentScreen("classic mode");
+            // Возвращаемся к предыдущему экрану (classic или zen)
+            const previousScreen = shopReturnTo || "classic mode";
+            setCurrentScreen(previousScreen);
             useGameStore.getState().resetGame();
           }}
           onBackToMenu={() => {
@@ -651,13 +684,14 @@ const HomePage: React.FC = () => {
             useGameStore.getState().resetGame();
             setCurrentScreen("main menu");
           }}
+          gameMode={shopReturnTo === "zen mode" ? "zen" : "classic"}
         />
       )}
 
       {currentScreen === "shop" && (
         <ShopScreen
           onBack={handleShopBack}
-          initialTab={shopReturnTo === "classic mode" ? "boosters" : "shards"}
+          initialTab={shopReturnTo === "classic mode" || shopReturnTo === "zen mode" ? "boosters" : "shards"}
         />
       )}
 

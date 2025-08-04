@@ -77,6 +77,7 @@ interface GameBoardProps {
     cellSize: number;
     gap: number;
   }) => void;
+  gameMode?: 'classic' | 'zen';
 }
 
 // Тип для аргументов handlePiecePlacement
@@ -370,6 +371,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   onRestartComplete,
   onOpenShop,
   onPieceReturnAnimation,
+  gameMode = 'classic',
 }) => {
   const {
     board,
@@ -577,12 +579,19 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const { user } = useUser();
   const { isAdmin } = useAdminAuth();
-  const { loadGame, forceSave, saveAfterAction, clearSaves } = useGameSave();
+  const { loadGame, forceSave, saveAfterAction, clearSaves } = useGameSave(gameMode);
 
   // Эффект для обновления движка при изменении роли пользователя
   useEffect(() => {
+    console.log('🔍 useEffect для обновления движка');
+    console.log('  - user:', user);
+    console.log('  - user?.role:', user?.role);
+    
     if (user?.role) {
+      console.log('✅ Вызываем updateEngineForUser с ролью:', user.role);
       updateEngineForUser(user.role);
+    } else {
+      console.log('❌ Роль пользователя не найдена, используем дефолтный движок');
     }
   }, [user?.role, updateEngineForUser]);
 
@@ -2198,6 +2207,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 newScore={(() => {
                   const currentRecord = isAdmin
                     ? adminRecord ?? 0
+                    : gameMode === 'zen' 
+                    ? user?.zenRecord ?? 0
                     : user?.record ?? 0;
                   return score > currentRecord ? score : currentRecord;
                 })()}
@@ -2663,8 +2674,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           onComplete={() => setExplosionFlash({ isActive: false })}
         />
 
-        {/* Баннер для тестеров */}
-        {(user?.role === 'tester' || isAdmin) && <PseudoAdBanner />}
+        {/* Баннер для тестеров (только в Classic режиме) */}
+        {(user?.role === 'tester' || isAdmin) && gameMode !== 'zen' && <PseudoAdBanner />}
       </div>
     </div>
   );
