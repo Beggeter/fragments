@@ -38,8 +38,8 @@ type SpinnerCell = {
 };
 
 // Вынесем параметры скорости и длительности наверх, чтобы использовать их в обоих компонентах
-const FLY_SPEED = 300; // px/sec (можно подстроить)
-const BOUNCE_DURATION = 0.4; // сек, длительность взрыва
+const FLY_SPEED = 500; // px/sec (можно подстроить)
+const BOUNCE_DURATION = 0.3; // сек, длительность взрыва
 const EXPLOSION_OFFSET = 80; // px, насколько выше поля будет взрыв - увеличили
 
 type LineProps = {

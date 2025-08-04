@@ -4,6 +4,7 @@ import Image, { StaticImageData } from "next/image";
 import { vibrate } from "@/utils/helpers";
 import { useSettingsStore } from "@/lib/state/settings";
 import { handlePointerUp } from "@/utils/events";
+import { playClick } from "@/lib/utils/sound";
 
 interface MenuButtonProps {
   text?: string | ReactNode; // Текст или любой React узел для содержимого кнопки
@@ -49,6 +50,7 @@ const MenuButton: FC<MenuButtonProps> = ({
       return;
     }
     vibrate(vibration);
+    playClick()
     onClick?.();
   };
 
@@ -153,7 +155,7 @@ const MenuButton: FC<MenuButtonProps> = ({
       {notificationCount !== undefined && notificationCount > 0 && (
         <span
           className="absolute -top-4 -right-4 notif-gradient text-white text-md w-8 h-8
-         flex items-center justify-center rounded-full font-figtree-mulish font-bold text-[1.5rem] z-20"
+         flex items-center justify-center rounded-full font-figtree-mulish font-bold text-[1.5rem] z-20 "
         >
           {notificationCount}
         </span>

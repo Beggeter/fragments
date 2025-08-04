@@ -93,5 +93,25 @@
     "description": "находится в разработке. Скоро будет доступен!",
     "understood": "Понятно",
     "close": "Закрыть"
+  },
+  "bonuses": {
+    "title": "Ежедневные бонусы",
+    "day": "День {{number}}",
+    "week": "Неделя {{week}}",
+    "claim": "Забрать",
+    "zen_title": "🌟 ZEN Бонусы",
+    "zen_description": "Получай в 2 раза больше бонусов с подпиской ZEN!",
+    "zen_subscribe": "🔓 Оформить подписку ZEN",
+    "zen_only_title": "Только с подпиской:",
+    "zen_types": {
+      "whirlwind": "Вихрь",
+      "bomb": "Бомба",
+      "undo": "Отмена хода"
+    },
+    "no_ads": "Без рекламы",
+    "zen_mode": "ZEN-режим"
+  },
+  "common": {
+    "close": "Закрыть"
   }
 }

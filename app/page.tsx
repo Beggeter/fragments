@@ -551,7 +551,7 @@ const HomePage: React.FC = () => {
       }}
     >
       {/* Overlay spinner */}
-      {showSpinnerAnimation && boardRect && (
+      {/* {showSpinnerAnimation && boardRect && (
         <div
           style={{
             position: "fixed",
@@ -573,7 +573,7 @@ const HomePage: React.FC = () => {
             onLineBreakpoint={handleLineBreakpoint}
           />
         </div>
-      )}
+      )} */}
 
       {/* Piece Return Animation */}
       {pieceReturnAnimation && boardRect && (
@@ -588,16 +588,8 @@ const HomePage: React.FC = () => {
         />
       )}
 
-      <div
-        className={`glow-side glow-left${
-          showSpinnerAnimation ? " glow-visible" : ""
-        }`}
-      />
-      <div
-        className={`glow-side glow-right${
-          showSpinnerAnimation ? " glow-visible" : ""
-        }`}
-      />
+      {/* подсветка краев для whirlwind перенесена в GameBoard  */}
+
 
       {/* Dev-панель для ручного переключения экрана */}
       {/* {isDev && (
