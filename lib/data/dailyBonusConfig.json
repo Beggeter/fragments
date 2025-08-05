@@ -20,8 +20,8 @@
         },
         {
           "day": 4,
-          "regular": { "type": "booster", "name": "laser", "quantity": 1 },
-          "premium": { "type": "booster", "name": "laser", "quantity": 2 }
+          "regular": { "type": "booster", "name": "whirlwind", "quantity": 1 },
+          "premium": { "type": "booster", "name": "whirlwind", "quantity": 2 }
         },
         {
           "day": 5,
@@ -60,8 +60,8 @@
         },
         {
           "day": 4,
-          "regular": { "type": "booster", "name": "laser", "quantity": 2 },
-          "premium": { "type": "booster", "name": "laser", "quantity": 3 }
+          "regular": { "type": "booster", "name": "whirlwind", "quantity": 2 },
+          "premium": { "type": "booster", "name": "whirlwind", "quantity": 3 }
         },
         {
           "day": 5,
@@ -100,8 +100,8 @@
         },
         {
           "day": 4,
-          "regular": { "type": "booster", "name": "laser", "quantity": 3 },
-          "premium": { "type": "booster", "name": "laser", "quantity": 4 }
+          "regular": { "type": "booster", "name": "whirlwind", "quantity": 3 },
+          "premium": { "type": "booster", "name": "whirlwind", "quantity": 4 }
         },
         {
           "day": 5,
@@ -140,8 +140,8 @@
         },
         {
           "day": 4,
-          "regular": { "type": "booster", "name": "laser", "quantity": 4 },
-          "premium": { "type": "booster", "name": "laser", "quantity": 5 }
+          "regular": { "type": "booster", "name": "whirlwind", "quantity": 4 },
+          "premium": { "type": "booster", "name": "whirlwind", "quantity": 5 }
         },
         {
           "day": 5,

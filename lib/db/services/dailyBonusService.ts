@@ -189,6 +189,10 @@ export class DailyBonusService {
       const boosterType = await BoosterService.getBoosterTypeByName(reward.name);
       if (boosterType) {
         await BoosterService.addUserBooster(userId, boosterType.id, reward.quantity);
+      } else {
+        console.error(`Booster type '${reward.name}' not found in database`);
+        // Можно либо выбросить ошибку, либо продолжить без выдачи бустера
+        // throw new Error(`Booster type '${reward.name}' not found`);
       }
     }
 
