@@ -5,38 +5,38 @@
       "days": [
         {
           "day": 1,
-          "regular": { "type": "currency", "amount": 100 },
-          "premium": { "type": "currency", "amount": 150 }
+          "regular": { "type": "currency", "amount": 1 },
+          "premium": { "type": "currency", "amount": 2 }
         },
         {
           "day": 2,
-          "regular": { "type": "booster", "name": "bomb", "quantity": 1 },
-          "premium": { "type": "booster", "name": "bomb", "quantity": 2 }
+          "regular": { "type": "currency", "amount": 2 },
+          "premium": { "type": "booster", "name": "undo", "amount": 1 }
         },
         {
           "day": 3,
-          "regular": { "type": "currency", "amount": 150 },
-          "premium": { "type": "currency", "amount": 225 }
+          "regular": { "type": "currency", "amount": 1 },
+          "premium": { "type": "currency", "amount": 2 }
         },
         {
           "day": 4,
-          "regular": { "type": "booster", "name": "whirlwind", "quantity": 1 },
-          "premium": { "type": "booster", "name": "whirlwind", "quantity": 2 }
+          "regular": { "type": "currency", "amount": 2 },
+          "premium": { "type": "booster", "name": "bomb", "amount": 1 }
         },
         {
           "day": 5,
-          "regular": { "type": "currency", "amount": 200 },
-          "premium": { "type": "currency", "amount": 300 }
+          "regular": { "type": "currency", "amount": 1 },
+          "premium": { "type": "currency", "amount": 4 }
         },
         {
           "day": 6,
-          "regular": { "type": "booster", "name": "whirlwind", "quantity": 1 },
-          "premium": { "type": "booster", "name": "whirlwind", "quantity": 2 }
+          "regular": { "type": "currency", "amount": 5 },
+          "premium": { "type": "currency", "amount": 10 }
         },
         {
           "day": 7,
-          "regular": { "type": "currency", "amount": 300 },
-          "premium": { "type": "currency", "amount": 500 }
+          "regular": { "type": "currency", "amount": 1 },
+          "premium": { "type": "booster", "name": "whirlwind", "amount": 1 }
         }
       ]
     },
@@ -45,38 +45,38 @@
       "days": [
         {
           "day": 1,
-          "regular": { "type": "currency", "amount": 150 },
-          "premium": { "type": "currency", "amount": 225 }
+          "regular": { "type": "currency", "amount": 1 },
+          "premium": { "type": "currency", "amount": 2 }
         },
         {
           "day": 2,
-          "regular": { "type": "booster", "name": "bomb", "quantity": 2 },
-          "premium": { "type": "booster", "name": "bomb", "quantity": 3 }
+          "regular": { "type": "currency", "amount": 2 },
+          "premium": { "type": "booster", "name": "undo", "amount": 1 }
         },
         {
           "day": 3,
-          "regular": { "type": "currency", "amount": 200 },
-          "premium": { "type": "currency", "amount": 300 }
+          "regular": { "type": "currency", "amount": 1 },
+          "premium": { "type": "currency", "amount": 2 }
         },
         {
           "day": 4,
-          "regular": { "type": "booster", "name": "whirlwind", "quantity": 2 },
-          "premium": { "type": "booster", "name": "whirlwind", "quantity": 3 }
+          "regular": { "type": "currency", "amount": 2 },
+          "premium": { "type": "booster", "name": "bomb", "amount": 1 }
         },
         {
           "day": 5,
-          "regular": { "type": "currency", "amount": 250 },
-          "premium": { "type": "currency", "amount": 375 }
+          "regular": { "type": "currency", "amount": 1 },
+          "premium": { "type": "currency", "amount": 4 }
         },
         {
           "day": 6,
-          "regular": { "type": "booster", "name": "whirlwind", "quantity": 2 },
-          "premium": { "type": "booster", "name": "whirlwind", "quantity": 3 }
+          "regular": { "type": "currency", "amount": 5 },
+          "premium": { "type": "currency", "amount": 10 }
         },
         {
           "day": 7,
-          "regular": { "type": "currency", "amount": 400 },
-          "premium": { "type": "currency", "amount": 600 }
+          "regular": { "type": "booster", "name": "bomb", "amount": 1 },
+          "premium": { "type": "currency", "amount": 20 }
         }
       ]
     },
@@ -85,38 +85,38 @@
       "days": [
         {
           "day": 1,
-          "regular": { "type": "currency", "amount": 200 },
-          "premium": { "type": "currency", "amount": 300 }
+          "regular": { "type": "currency", "amount": 1 },
+          "premium": { "type": "currency", "amount": 2 }
         },
         {
           "day": 2,
-          "regular": { "type": "booster", "name": "bomb", "quantity": 3 },
-          "premium": { "type": "booster", "name": "bomb", "quantity": 4 }
+          "regular": { "type": "currency", "amount": 2 },
+          "premium": { "type": "booster", "name": "undo", "amount": 1 }
         },
         {
           "day": 3,
-          "regular": { "type": "currency", "amount": 250 },
-          "premium": { "type": "currency", "amount": 375 }
+          "regular": { "type": "currency", "amount": 1 },
+          "premium": { "type": "currency", "amount": 2 }
         },
         {
           "day": 4,
-          "regular": { "type": "booster", "name": "whirlwind", "quantity": 3 },
-          "premium": { "type": "booster", "name": "whirlwind", "quantity": 4 }
+          "regular": { "type": "currency", "amount": 2 },
+          "premium": { "type": "booster", "name": "bomb", "amount": 1 }
         },
         {
           "day": 5,
-          "regular": { "type": "currency", "amount": 300 },
-          "premium": { "type": "currency", "amount": 450 }
+          "regular": { "type": "currency", "amount": 1 },
+          "premium": { "type": "currency", "amount": 4 }
         },
         {
           "day": 6,
-          "regular": { "type": "booster", "name": "whirlwind", "quantity": 3 },
-          "premium": { "type": "booster", "name": "whirlwind", "quantity": 4 }
+          "regular": { "type": "currency", "amount": 5 },
+          "premium": { "type": "currency", "amount": 10 }
         },
         {
           "day": 7,
-          "regular": { "type": "currency", "amount": 500 },
-          "premium": { "type": "currency", "amount": 750 }
+          "regular": { "type": "currency", "amount": 10 },
+          "premium": { "type": "booster", "name": "undo", "amount": 2 }
         }
       ]
     },
@@ -125,38 +125,38 @@
       "days": [
         {
           "day": 1,
-          "regular": { "type": "currency", "amount": 250 },
-          "premium": { "type": "currency", "amount": 375 }
+          "regular": { "type": "currency", "amount": 1 },
+          "premium": { "type": "currency", "amount": 2 }
         },
         {
           "day": 2,
-          "regular": { "type": "booster", "name": "bomb", "quantity": 4 },
-          "premium": { "type": "booster", "name": "bomb", "quantity": 5 }
+          "regular": { "type": "currency", "amount": 2 },
+          "premium": { "type": "booster", "name": "undo", "amount": 1 }
         },
         {
           "day": 3,
-          "regular": { "type": "currency", "amount": 300 },
-          "premium": { "type": "currency", "amount": 450 }
+          "regular": { "type": "currency", "amount": 1 },
+          "premium": { "type": "currency", "amount": 2 }
         },
         {
           "day": 4,
-          "regular": { "type": "booster", "name": "whirlwind", "quantity": 4 },
-          "premium": { "type": "booster", "name": "whirlwind", "quantity": 5 }
+          "regular": { "type": "currency", "amount": 2 },
+          "premium": { "type": "booster", "name": "bomb", "amount": 1 }
         },
         {
           "day": 5,
-          "regular": { "type": "currency", "amount": 350 },
-          "premium": { "type": "currency", "amount": 525 }
+          "regular": { "type": "currency", "amount": 1 },
+          "premium": { "type": "currency", "amount": 4 }
         },
         {
           "day": 6,
-          "regular": { "type": "booster", "name": "whirlwind", "quantity": 4 },
-          "premium": { "type": "booster", "name": "whirlwind", "quantity": 5 }
+          "regular": { "type": "currency", "amount": 5 },
+          "premium": { "type": "currency", "amount": 10 }
         },
         {
           "day": 7,
-          "regular": { "type": "currency", "amount": 600 },
-          "premium": { "type": "currency", "amount": 1000 }
+          "regular": { "type": "booster", "name": "undo", "amount": 1 },
+          "premium": { "type": "booster", "name": "whirlwind", "amount": 2 }
         }
       ]
     }

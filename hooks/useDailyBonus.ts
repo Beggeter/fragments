@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useUser } from './useUser';
+import { useAdminAuth } from './useAdminAuth';
 
 interface DailyBonusReward {
   type: 'currency' | 'booster';
@@ -39,13 +40,25 @@ interface DailyBonusResponse {
 
 export const useDailyBonus = () => {
   const { user, sessionToken } = useUser();
+  const { isAdmin } = useAdminAuth();
   const [bonusData, setBonusData] = useState<DailyBonusResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Определяем telegramId для использования
+  const getTelegramId = () => {
+    // Для админа в режиме разработки используем тестовый ID
+    if (isAdmin && process.env.NODE_ENV === 'development' && !user?.telegramId) {
+      return '610936383';
+    }
+    return user?.telegramId;
+  };
+
   // Загружаем данные о бонусах
   const loadBonusData = async () => {
-    if (!user?.telegramId || !sessionToken) {
+    const telegramId = getTelegramId();
+    
+    if (!telegramId) {
       setError('User not authenticated');
       return;
     }
@@ -54,10 +67,15 @@ export const useDailyBonus = () => {
     setError(null);
 
     try {
-      const response = await fetch(`/api/users/${user.telegramId}/bonus`, {
-        headers: {
-          'Authorization': `Bearer ${sessionToken}`
-        }
+      const headers: HeadersInit = {};
+      
+      // Добавляем токен только если он есть
+      if (sessionToken) {
+        headers['Authorization'] = `Bearer ${sessionToken}`;
+      }
+
+      const response = await fetch(`/api/users/${telegramId}/bonus`, {
+        headers
       });
 
       if (!response.ok) {
@@ -77,7 +95,9 @@ export const useDailyBonus = () => {
 
   // Получаем бонус
   const claimBonus = async () => {
-    if (!user?.telegramId || !sessionToken) {
+    const telegramId = getTelegramId();
+    
+    if (!telegramId) {
       setError('User not authenticated');
       return false;
     }
@@ -86,12 +106,18 @@ export const useDailyBonus = () => {
     setError(null);
 
     try {
-      const response = await fetch(`/api/users/${user.telegramId}/bonus`, {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json'
+      };
+      
+      // Добавляем токен только если он есть
+      if (sessionToken) {
+        headers['Authorization'] = `Bearer ${sessionToken}`;
+      }
+
+      const response = await fetch(`/api/users/${telegramId}/bonus`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${sessionToken}`,
-          'Content-Type': 'application/json'
-        }
+        headers
       });
 
       if (!response.ok) {
@@ -131,12 +157,13 @@ export const useDailyBonus = () => {
   // Проверяем, есть ли у пользователя Zen подписка
   const hasZenSubscription = user?.role === 'premium' || user?.role === 'admin' || user?.role === 'tester';
 
-  // Загружаем данные при изменении пользователя
+  // Загружаем данные при изменении пользователя или админ-статуса
   useEffect(() => {
-    if (user?.telegramId && sessionToken) {
+    const telegramId = getTelegramId();
+    if (telegramId) {
       loadBonusData();
     }
-  }, [user?.telegramId, sessionToken]);
+  }, [user?.telegramId, sessionToken, isAdmin]);
 
   return {
     bonusData,

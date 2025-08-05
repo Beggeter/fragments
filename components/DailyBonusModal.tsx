@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import MenuButton from "./UI/MenuButton";
@@ -47,40 +47,6 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
     canClaimToday,
   } = useDailyBonus();
 
-  // Если данные еще загружаются, показываем загрузку
-  if (isLoading) {
-    return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-        <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-md border border-white/20 p-8">
-          <div className="text-white text-center">Loading...</div>
-        </div>
-      </div>
-    );
-  }
-
-  // Если произошла ошибка, показываем её
-  if (error) {
-    return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-        <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-md border border-white/20 p-8">
-          <div className="text-white text-center">Error: {error}</div>
-          <button onClick={onClose} className="mt-4 text-blue-400">Close</button>
-        </div>
-      </div>
-    );
-  }
-
-  // Если нет данных, показываем загрузку
-  if (!bonusData) {
-    return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-        <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-md border border-white/20 p-8">
-          <div className="text-white text-center">Loading bonus data...</div>
-        </div>
-      </div>
-    );
-  }
-
   // Преобразуем данные из API в формат для компонента
   const transformRewards = (weekData: any): DailyReward[] => {
     return weekData.days.map((day: any, index: number) => {
@@ -120,7 +86,58 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
     });
   };
 
-  const currentWeekData = bonusData.weeks.find(w => w.week === (currentWeek ?? 1));
+  // ВСЕ useMemo хуки должны быть здесь, до любых условных return
+  const currentWeekData = useMemo(() => 
+    bonusData?.weeks.find(w => w.week === (currentWeek ?? 1)), 
+    [bonusData?.weeks, currentWeek]
+  );
+
+  const classicRewards = useMemo(() => 
+    currentWeekData ? transformRewards(currentWeekData) : [], 
+    [currentWeekData, currentDay, canClaimToday]
+  );
+
+  const zenRewards = useMemo(() => 
+    currentWeekData ? transformZenRewards(currentWeekData) : [], 
+    [currentWeekData, currentDay, canClaimToday]
+  );
+
+  const unlockAnimations = useUnlockAnimations(classicRewards);
+
+  // Если данные еще загружаются, показываем загрузку
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-md border border-white/20 p-8">
+          <div className="text-white text-center">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Если произошла ошибка, показываем её
+  if (error) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-md border border-white/20 p-8">
+          <div className="text-white text-center">Error: {error}</div>
+          <button onClick={onClose} className="mt-4 text-blue-400">Close</button>
+        </div>
+      </div>
+    );
+  }
+
+  // Если нет данных, показываем загрузку
+  if (!bonusData) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-md border border-white/20 p-8">
+          <div className="text-white text-center">Loading bonus data...</div>
+        </div>
+      </div>
+    );
+  }
+
   if (!currentWeekData) {
     return (
       <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -131,11 +148,6 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
       </div>
     );
   }
-
-  const classicRewards = transformRewards(currentWeekData);
-  const zenRewards = transformZenRewards(currentWeekData);
-
-  const unlockAnimations = useUnlockAnimations(classicRewards);
 
   const getStatusIcon = (reward: DailyReward) => {
     if (reward.status === "claimed") return "✅";

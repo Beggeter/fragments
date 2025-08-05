@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { DailyReward } from "@/components/DailyBonusModal"; // путь подкорректируй, если надо
 import { RewardStatus } from "@/types/components";
 
@@ -13,9 +13,17 @@ interface StoredBonusState {
 export function useUnlockAnimations(currentWeekRewards: DailyReward[]): boolean[] {
   const [unlockAnimations, setUnlockAnimations] = useState<boolean[]>([]);
 
+  // Создаем стабильную зависимость для useEffect
+  const rewardsKey = useMemo(() => {
+    if (!currentWeekRewards.length) return '';
+    return currentWeekRewards.map(r => `${r.status}-${r.type}-${r.amount}`).join('|');
+  }, [currentWeekRewards]);
 
   useEffect(() => {
-    if (!currentWeekRewards.length) return;
+    if (!currentWeekRewards.length) {
+      setUnlockAnimations([]);
+      return;
+    }
 
     const today = new Date().toISOString().slice(0, 10);
 
@@ -50,7 +58,7 @@ export function useUnlockAnimations(currentWeekRewards: DailyReward[]): boolean[
       statuses: newStatuses,
     };
     localStorage.setItem(LOCAL_KEY, JSON.stringify(stored));
-  }, [currentWeekRewards]);
+  }, [rewardsKey]); // Используем стабильную зависимость
 
   return unlockAnimations;
 }
