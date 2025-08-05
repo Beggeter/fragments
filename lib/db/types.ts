@@ -65,6 +65,9 @@ export interface CurrencyTransactionMetadata {
   itemId?: string;
   price?: number;
   currency?: string;
+  // Метаданные для ежедневных бонусов
+  week?: number;
+  day?: number;
 }
 
 export interface GameData {

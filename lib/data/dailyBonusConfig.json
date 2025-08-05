@@ -1,0 +1,164 @@
+{
+  "weeks": [
+    {
+      "week": 1,
+      "days": [
+        {
+          "day": 1,
+          "regular": { "type": "currency", "amount": 100 },
+          "premium": { "type": "currency", "amount": 150 }
+        },
+        {
+          "day": 2,
+          "regular": { "type": "booster", "name": "bomb", "quantity": 1 },
+          "premium": { "type": "booster", "name": "bomb", "quantity": 2 }
+        },
+        {
+          "day": 3,
+          "regular": { "type": "currency", "amount": 150 },
+          "premium": { "type": "currency", "amount": 225 }
+        },
+        {
+          "day": 4,
+          "regular": { "type": "booster", "name": "laser", "quantity": 1 },
+          "premium": { "type": "booster", "name": "laser", "quantity": 2 }
+        },
+        {
+          "day": 5,
+          "regular": { "type": "currency", "amount": 200 },
+          "premium": { "type": "currency", "amount": 300 }
+        },
+        {
+          "day": 6,
+          "regular": { "type": "booster", "name": "whirlwind", "quantity": 1 },
+          "premium": { "type": "booster", "name": "whirlwind", "quantity": 2 }
+        },
+        {
+          "day": 7,
+          "regular": { "type": "currency", "amount": 300 },
+          "premium": { "type": "currency", "amount": 500 }
+        }
+      ]
+    },
+    {
+      "week": 2,
+      "days": [
+        {
+          "day": 1,
+          "regular": { "type": "currency", "amount": 150 },
+          "premium": { "type": "currency", "amount": 225 }
+        },
+        {
+          "day": 2,
+          "regular": { "type": "booster", "name": "bomb", "quantity": 2 },
+          "premium": { "type": "booster", "name": "bomb", "quantity": 3 }
+        },
+        {
+          "day": 3,
+          "regular": { "type": "currency", "amount": 200 },
+          "premium": { "type": "currency", "amount": 300 }
+        },
+        {
+          "day": 4,
+          "regular": { "type": "booster", "name": "laser", "quantity": 2 },
+          "premium": { "type": "booster", "name": "laser", "quantity": 3 }
+        },
+        {
+          "day": 5,
+          "regular": { "type": "currency", "amount": 250 },
+          "premium": { "type": "currency", "amount": 375 }
+        },
+        {
+          "day": 6,
+          "regular": { "type": "booster", "name": "whirlwind", "quantity": 2 },
+          "premium": { "type": "booster", "name": "whirlwind", "quantity": 3 }
+        },
+        {
+          "day": 7,
+          "regular": { "type": "currency", "amount": 400 },
+          "premium": { "type": "currency", "amount": 600 }
+        }
+      ]
+    },
+    {
+      "week": 3,
+      "days": [
+        {
+          "day": 1,
+          "regular": { "type": "currency", "amount": 200 },
+          "premium": { "type": "currency", "amount": 300 }
+        },
+        {
+          "day": 2,
+          "regular": { "type": "booster", "name": "bomb", "quantity": 3 },
+          "premium": { "type": "booster", "name": "bomb", "quantity": 4 }
+        },
+        {
+          "day": 3,
+          "regular": { "type": "currency", "amount": 250 },
+          "premium": { "type": "currency", "amount": 375 }
+        },
+        {
+          "day": 4,
+          "regular": { "type": "booster", "name": "laser", "quantity": 3 },
+          "premium": { "type": "booster", "name": "laser", "quantity": 4 }
+        },
+        {
+          "day": 5,
+          "regular": { "type": "currency", "amount": 300 },
+          "premium": { "type": "currency", "amount": 450 }
+        },
+        {
+          "day": 6,
+          "regular": { "type": "booster", "name": "whirlwind", "quantity": 3 },
+          "premium": { "type": "booster", "name": "whirlwind", "quantity": 4 }
+        },
+        {
+          "day": 7,
+          "regular": { "type": "currency", "amount": 500 },
+          "premium": { "type": "currency", "amount": 750 }
+        }
+      ]
+    },
+    {
+      "week": 4,
+      "days": [
+        {
+          "day": 1,
+          "regular": { "type": "currency", "amount": 250 },
+          "premium": { "type": "currency", "amount": 375 }
+        },
+        {
+          "day": 2,
+          "regular": { "type": "booster", "name": "bomb", "quantity": 4 },
+          "premium": { "type": "booster", "name": "bomb", "quantity": 5 }
+        },
+        {
+          "day": 3,
+          "regular": { "type": "currency", "amount": 300 },
+          "premium": { "type": "currency", "amount": 450 }
+        },
+        {
+          "day": 4,
+          "regular": { "type": "booster", "name": "laser", "quantity": 4 },
+          "premium": { "type": "booster", "name": "laser", "quantity": 5 }
+        },
+        {
+          "day": 5,
+          "regular": { "type": "currency", "amount": 350 },
+          "premium": { "type": "currency", "amount": 525 }
+        },
+        {
+          "day": 6,
+          "regular": { "type": "booster", "name": "whirlwind", "quantity": 4 },
+          "premium": { "type": "booster", "name": "whirlwind", "quantity": 5 }
+        },
+        {
+          "day": 7,
+          "regular": { "type": "currency", "amount": 600 },
+          "premium": { "type": "currency", "amount": 1000 }
+        }
+      ]
+    }
+  ]
+} 

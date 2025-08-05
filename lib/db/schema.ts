@@ -106,6 +106,21 @@ export const recordHistory = pgTable("record_history", {
   createdAtIdx: index("record_created_at_idx").on(table.createdAt),
 }));
 
+// Ежедневные бонусы пользователей
+export const dailyBonuses = pgTable("daily_bonuses", {
+  id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: 'cascade' }),
+  currentWeek: integer("current_week").notNull().default(1),
+  currentDay: integer("current_day").notNull().default(1),
+  lastClaimDate: timestamp("last_claim_date"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index("daily_bonus_user_id_idx").on(table.userId),
+  lastClaimDateIdx: index("daily_bonus_last_claim_date_idx").on(table.lastClaimDate),
+  uniqueUserBonus: primaryKey({ columns: [table.userId] }),
+}));
+
 // Отношения
 export const usersRelations = relations(users, ({ one, many }) => ({
   currentGame: one(userGames, {
@@ -115,6 +130,10 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   boosters: many(userBoosters),
   currencyTransactions: many(currencyTransactions),
   recordHistory: many(recordHistory),
+  dailyBonus: one(dailyBonuses, {
+    fields: [users.id],
+    references: [dailyBonuses.userId],
+  }),
 }));
 
 export const userGamesRelations = relations(userGames, ({ one }) => ({
@@ -149,6 +168,13 @@ export const currencyTransactionsRelations = relations(currencyTransactions, ({ 
 export const recordHistoryRelations = relations(recordHistory, ({ one }) => ({
   user: one(users, {
     fields: [recordHistory.userId],
+    references: [users.id],
+  }),
+}));
+
+export const dailyBonusesRelations = relations(dailyBonuses, ({ one }) => ({
+  user: one(users, {
+    fields: [dailyBonuses.userId],
     references: [users.id],
   }),
 })); 

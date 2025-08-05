@@ -8,6 +8,27 @@
       "when": 1754152153125,
       "tag": "0000_redundant_jackal",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1754152153126,
+      "tag": "0001_natural_warbird",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1754152153127,
+      "tag": "0002_add_zen_mode",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1754152153128,
+      "tag": "0003_daily_bonuses",
+      "breakpoints": true
     }
   ]
 }

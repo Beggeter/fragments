@@ -1,0 +1,647 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "id": "0003_daily_bonuses",
+  "prevId": "0002_add_zen_mode",
+  "tables": {
+    "booster_types": {
+      "name": "booster_types",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "hasDefault": true,
+          "default": "identity"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "hasDefault": false
+        },
+        "price": {
+          "name": "price",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": false
+        },
+        "effect": {
+          "name": "effect",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "uniqueConstraints": {
+        "booster_types_name_unique": {
+          "name": "booster_types_name_unique",
+          "columns": ["name"]
+        }
+      }
+    },
+    "currency_transactions": {
+      "name": "currency_transactions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "hasDefault": true,
+          "default": "identity"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": false
+        },
+        "amount": {
+          "name": "amount",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": false
+        },
+        "type": {
+          "name": "type",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": false
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "hasDefault": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "hasDefault": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "currency_created_at_idx": {
+          "name": "currency_created_at_idx",
+          "columns": ["created_at"]
+        },
+        "currency_type_idx": {
+          "name": "currency_type_idx",
+          "columns": ["type"]
+        },
+        "currency_user_id_idx": {
+          "name": "currency_user_id_idx",
+          "columns": ["user_id"]
+        }
+      },
+      "foreignKeys": {
+        "currency_transactions_user_id_users_id_fk": {
+          "name": "currency_transactions_user_id_users_id_fk",
+          "tableFrom": "currency_transactions",
+          "tableTo": "users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      }
+    },
+    "daily_bonuses": {
+      "name": "daily_bonuses",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "hasDefault": true,
+          "default": "identity"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": false
+        },
+        "current_week": {
+          "name": "current_week",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": 1
+        },
+        "current_day": {
+          "name": "current_day",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": 1
+        },
+        "last_claim_date": {
+          "name": "last_claim_date",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "hasDefault": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "daily_bonus_last_claim_date_idx": {
+          "name": "daily_bonus_last_claim_date_idx",
+          "columns": ["last_claim_date"]
+        },
+        "daily_bonus_user_id_idx": {
+          "name": "daily_bonus_user_id_idx",
+          "columns": ["user_id"]
+        }
+      },
+      "foreignKeys": {
+        "daily_bonuses_user_id_users_id_fk": {
+          "name": "daily_bonuses_user_id_users_id_fk",
+          "tableFrom": "daily_bonuses",
+          "tableTo": "users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "uniqueConstraints": {
+        "daily_bonus_user_unique_idx": {
+          "name": "daily_bonus_user_unique_idx",
+          "columns": ["user_id"]
+        }
+      }
+    },
+    "record_history": {
+      "name": "record_history",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "hasDefault": true,
+          "default": "identity"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": false
+        },
+        "game_mode": {
+          "name": "game_mode",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": "'classic'"
+        },
+        "score": {
+          "name": "score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": false
+        },
+        "level": {
+          "name": "level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": false
+        },
+        "game_data": {
+          "name": "game_data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "hasDefault": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "record_created_at_idx": {
+          "name": "record_created_at_idx",
+          "columns": ["created_at"]
+        },
+        "record_game_mode_idx": {
+          "name": "record_game_mode_idx",
+          "columns": ["game_mode"]
+        },
+        "record_score_idx": {
+          "name": "record_score_idx",
+          "columns": ["score"]
+        },
+        "record_user_id_idx": {
+          "name": "record_user_id_idx",
+          "columns": ["user_id"]
+        }
+      },
+      "foreignKeys": {
+        "record_history_user_id_users_id_fk": {
+          "name": "record_history_user_id_users_id_fk",
+          "tableFrom": "record_history",
+          "tableTo": "users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      }
+    },
+    "user_boosters": {
+      "name": "user_boosters",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "hasDefault": false
+        },
+        "booster_type_id": {
+          "name": "booster_type_id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "hasDefault": false
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "user_booster_type_idx": {
+          "name": "user_booster_type_idx",
+          "columns": ["booster_type_id"]
+        },
+        "user_booster_user_id_idx": {
+          "name": "user_booster_user_id_idx",
+          "columns": ["user_id"]
+        }
+      },
+      "foreignKeys": {
+        "user_boosters_booster_type_id_booster_types_id_fk": {
+          "name": "user_boosters_booster_type_id_booster_types_id_fk",
+          "tableFrom": "user_boosters",
+          "tableTo": "booster_types",
+          "columnsFrom": ["booster_type_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "user_boosters_user_id_users_id_fk": {
+          "name": "user_boosters_user_id_users_id_fk",
+          "tableFrom": "user_boosters",
+          "tableTo": "users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      }
+    },
+    "user_games": {
+      "name": "user_games",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "hasDefault": true,
+          "default": "identity"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": false
+        },
+        "game_mode": {
+          "name": "game_mode",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": "'classic'"
+        },
+        "board_state": {
+          "name": "board_state",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": false
+        },
+        "current_pieces": {
+          "name": "current_pieces",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": false
+        },
+        "score": {
+          "name": "score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": 0
+        },
+        "level": {
+          "name": "level",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": 1
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": true
+        },
+        "final_score": {
+          "name": "final_score",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "hasDefault": false
+        },
+        "game_data": {
+          "name": "game_data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false,
+          "hasDefault": false
+        },
+        "ended_at": {
+          "name": "ended_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "hasDefault": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "game_mode_idx": {
+          "name": "game_mode_idx",
+          "columns": ["game_mode"]
+        },
+        "is_active_idx": {
+          "name": "is_active_idx",
+          "columns": ["is_active"]
+        },
+        "user_id_idx": {
+          "name": "user_id_idx",
+          "columns": ["user_id"]
+        }
+      },
+      "foreignKeys": {
+        "user_games_user_id_users_id_fk": {
+          "name": "user_games_user_id_users_id_fk",
+          "tableFrom": "user_games",
+          "tableTo": "users",
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      }
+    },
+    "users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "hasDefault": true,
+          "default": "identity"
+        },
+        "telegram_id": {
+          "name": "telegram_id",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": false
+        },
+        "username": {
+          "name": "username",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false,
+          "hasDefault": false
+        },
+        "first_name": {
+          "name": "first_name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false,
+          "hasDefault": false
+        },
+        "last_name": {
+          "name": "last_name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": false,
+          "hasDefault": false
+        },
+        "avatar_url": {
+          "name": "avatar_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "hasDefault": false
+        },
+        "role": {
+          "name": "role",
+          "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": "'user'"
+        },
+        "record": {
+          "name": "record",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": 0
+        },
+        "zen_record": {
+          "name": "zen_record",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": 0
+        },
+        "currency": {
+          "name": "currency",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "hasDefault": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "role_idx": {
+          "name": "role_idx",
+          "columns": ["role"]
+        },
+        "telegram_id_idx": {
+          "name": "telegram_id_idx",
+          "columns": ["telegram_id"]
+        }
+      },
+      "foreignKeys": {},
+      "uniqueConstraints": {
+        "users_telegram_id_unique": {
+          "name": "users_telegram_id_unique",
+          "columns": ["telegram_id"]
+        }
+      }
+    }
+  }
+} 

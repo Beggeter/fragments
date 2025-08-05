@@ -5,50 +5,122 @@ import MenuButton from "./UI/MenuButton";
 import ClickEffect from "./ClickEffect";
 import { Booster, RewardStatus } from "@/types/components";
 import { useUnlockAnimations } from "@/hooks/useUnlockAnimation";
-import rewards from "./store/bonusItems";
+import { useDailyBonus } from "@/hooks/useDailyBonus";
+import { useUser } from "@/hooks/useUser";
 
 interface DailyBonusModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentWeek: number;
-  currentDay: number;
-  hasZenSubscription: boolean;
-  onClaimReward: () => void;
-  rewards: {
-    classic: ReadonlyArray<DailyReward>;
-    zen: ReadonlyArray<DailyReward>;
-  };
+  onOpenShop?: () => void;
 }
 
 export type DailyReward =
   | {
-      type: "shard";
+      type: "currency";
       amount: number;
       status?: RewardStatus;
     }
   | {
       type: "booster";
       amount: number;
-      boosterType: Booster;
+      boosterType: string;
       status?: RewardStatus;
     };
 
 export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
   isOpen,
   onClose,
-  currentWeek,
-  currentDay,
-  hasZenSubscription,
-  onClaimReward,
-  rewards,
+  onOpenShop,
 }) => {
   if (!isOpen) return null;
 
   const { t } = useTranslation();
-  const currentRewards = rewards.classic ?? [];
-  console.log("Current rewards", rewards.classic);
+  const { user } = useUser();
+  const {
+    bonusData,
+    isLoading,
+    error,
+    claimBonus,
+    hasZenSubscription,
+    currentWeek,
+    currentDay,
+    canClaimToday,
+  } = useDailyBonus();
 
-  const unlockAnimations = useUnlockAnimations(currentRewards as DailyReward[]);
+  // Если данные еще загружаются, показываем загрузку
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-md border border-white/20 p-8">
+          <div className="text-white text-center">Loading...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Если произошла ошибка, показываем её
+  if (error) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-md border border-white/20 p-8">
+          <div className="text-white text-center">Error: {error}</div>
+          <button onClick={onClose} className="mt-4 text-blue-400">Close</button>
+        </div>
+      </div>
+    );
+  }
+
+  // Если нет данных, не показываем модалку
+  if (!bonusData) {
+    return null;
+  }
+
+  // Преобразуем данные из API в формат для компонента
+  const transformRewards = (weekData: any): DailyReward[] => {
+    return weekData.days.map((day: any, index: number) => {
+      const isClaimed = index < currentDay - 1;
+      const isAvailable = index === currentDay - 1 && canClaimToday;
+      const isLocked = index > currentDay - 1;
+
+      let status: RewardStatus = 'locked';
+      if (isClaimed) status = 'claimed';
+      else if (isAvailable) status = 'available';
+
+      return {
+        type: day.regular.type,
+        amount: day.regular.amount,
+        boosterType: day.regular.boosterType,
+        status,
+      };
+    });
+  };
+
+  const transformZenRewards = (weekData: any): DailyReward[] => {
+    return weekData.days.map((day: any, index: number) => {
+      const isClaimed = index < currentDay - 1;
+      const isAvailable = index === currentDay - 1 && canClaimToday;
+      const isLocked = index > currentDay - 1;
+
+      let status: RewardStatus = 'locked';
+      if (isClaimed) status = 'claimed';
+      else if (isAvailable) status = 'available';
+
+      return {
+        type: day.premium.type,
+        amount: day.premium.amount,
+        boosterType: day.premium.boosterType,
+        status,
+      };
+    });
+  };
+
+  const currentWeekData = bonusData.weeks.weeks.find(w => w.week === currentWeek);
+  if (!currentWeekData) return null;
+
+  const classicRewards = transformRewards(currentWeekData);
+  const zenRewards = transformZenRewards(currentWeekData);
+
+  const unlockAnimations = useUnlockAnimations(classicRewards);
 
   const getStatusIcon = (reward: DailyReward) => {
     if (reward.status === "claimed") return "✅";
@@ -57,12 +129,34 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
     return "";
   };
 
-  const renderImage = (src: string, size: "small" | "large") => (
-    <img
-      src={src}
-      className={`${size === "large" ? "h-12 w-12" : "w-6 h-6"} `}
-    ></img>
-  );
+  const renderImage = (reward: DailyReward, size: "small" | "large") => {
+    if (reward.type === "currency") {
+      return (
+        <img
+          src="/crystal.svg"
+          className={`${size === "large" ? "h-12 w-12" : "w-6 h-6"}`}
+          alt="Currency"
+        />
+      );
+    } else if (reward.type === "booster") {
+      const boosterSrc = reward.boosterType === "undo" 
+        ? "/boosters/back.png" 
+        : reward.boosterType === "bomb"
+        ? "/boosters/bomb.svg"
+        : reward.boosterType === "whirlwind"
+        ? "/boosters/whirlwind.svg"
+        : "/boosters/bomb.svg"; // fallback
+      
+      return (
+        <img
+          src={boosterSrc}
+          className={`${size === "large" ? "h-12 w-12" : "w-6 h-6"}`}
+          alt={reward.boosterType}
+        />
+      );
+    }
+    return null;
+  };
 
   const renderRewardGrid = (
     rewards: ReadonlyArray<DailyReward>,
@@ -134,11 +228,37 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
   }) => {
     const gradient = isZen ? "gold-gradient" : "settings-gradient";
     const hideStatusIcon = isZen && !hasZenSubscription;
+
+    const handleClick = async () => {
+      if (reward.status === "available") {
+        if (isZen) {
+          // Для ZEN карточек проверяем подписку
+          if (hasZenSubscription) {
+            const success = await claimBonus();
+            if (success) {
+              console.log('Zen bonus claimed successfully!');
+            }
+          } else {
+            // Если нет подписки, открываем магазин
+            onClose();
+            onOpenShop?.();
+          }
+        } else {
+          // Для обычных карточек просто получаем бонус
+          const success = await claimBonus();
+          if (success) {
+            console.log('Classic bonus claimed successfully!');
+          }
+        }
+      }
+    };
+
     return (
       <ClickEffect
+        onClick={handleClick}
         className={`relative flex flex-col items-center justify-between rounded-lg flex-1 h-full scale-active backdrop-blur-2xl shadow-lg text-white font-figtree-mulish  ${
           reward.status === "available"
-            ? `border-white/30 bg-white/10 shimmer-effect ${gradient}`
+            ? `border-white/30 bg-white/10 shimmer-effect ${gradient} cursor-pointer`
             : "border-white/10 bg-white/5"
         } ${
           reward.status === "claimed" || reward.status === "skipped"
@@ -157,11 +277,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
         </div>
         {/* Icon */}
         <div className={`${size === "small" ? "text-2xl" : "text-4xl"} `}>
-          {reward.type === "shard"
-            ? renderImage("/crystal.svg", size)
-            : reward.boosterType === "undo"
-            ? renderImage("/boosters/back.png", size)
-            : renderImage("/boosters/bomb.svg", size)}
+          {renderImage(reward, size)}
         </div>
         {/* Amount */}
         <div
@@ -169,7 +285,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
             size === "small" ? "text-sm" : "text-xl"
           } font-bold font-figtree-mulish`}
         >
-          {reward.type === "shard" ? `+${reward.amount}` : reward.amount}
+          {reward.type === "currency" ? `+${reward.amount}` : reward.amount}
         </div>
         {/* Status */}
         {getStatusIcon(reward) && !hideStatusIcon && (
@@ -197,21 +313,34 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
       </ClickEffect>
     );
   };
-  const ClaimButton = () => (
-    <ClickEffect>
-      <button
-        onClick={onClaimReward}
-        className={`mx-auto mt-4 mb-4 block rounded-xl py-2 w-[50%]  text-white text-lg font-bold
-                     bg-gradient-to-br green-gradient scale-active font-figtree-mulish ${
-                       claimAvailable ? "shimmer-effect" : ""
-                     } drop-shadow-[0_0_20px_#40ae54]`}
-      >
-        {t("bonuses.claim")}
-      </button>
-    </ClickEffect>
-  );
-  const claimAvailable =
-    rewards.classic[currentDay - 1]?.status === "available";
+  const ClaimButton = () => {
+    const handleClaim = async () => {
+      const success = await claimBonus();
+      if (success) {
+        // Можно добавить уведомление об успехе
+        console.log('Bonus claimed successfully!');
+        // Если у пользователя есть ZEN подписка, он получает оба бонуса
+        if (hasZenSubscription) {
+          console.log('User has Zen subscription - both bonuses claimed!');
+        }
+      }
+    };
+
+    return (
+      <ClickEffect>
+        <button
+          onClick={handleClaim}
+          disabled={!canClaimToday || isLoading}
+          className={`mx-auto mt-4 mb-4 block rounded-xl py-2 w-[50%] text-white text-lg font-bold
+                       bg-gradient-to-br green-gradient scale-active font-figtree-mulish ${
+                         canClaimToday && !isLoading ? "shimmer-effect" : "opacity-50"
+                       } drop-shadow-[0_0_20px_#40ae54]`}
+        >
+          {isLoading ? "Claiming..." : t("bonuses.claim")}
+        </button>
+      </ClickEffect>
+    );
+  };
   return (
     <ClickEffect
       onClick={onClose}
@@ -266,25 +395,14 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
           {hasZenSubscription ? (
             <>
               {/* ZEN-подписка активна — отображаем только ZEN-блок */}
-              {renderRewardGrid(rewards.zen, true)}
-              <ClaimButton></ClaimButton>
+              {renderRewardGrid(zenRewards, true)}
+              <ClaimButton />
             </>
           ) : (
             <>
               {/* ZEN-подписка не активна — отображаем Classic + затемнённую ZEN */}
-              {renderRewardGrid(rewards.classic)}
-              {/* <ClickEffect>
-                <button
-                  onClick={onClaimReward}
-                  className={`mx-auto mt-4 mb-4 block rounded-xl py-2 w-[50%]  text-white text-lg font-bold
-                     bg-gradient-to-br green-gradient active:scale-[0.98] font-figtree-mulish ${
-                       claimAvailable ? "shimmer-effect" : ""
-                     } drop-shadow-[0_0_20px_#40ae54]`}
-                >
-                  {t("bonuses.claim")}
-                </button>
-              </ClickEffect> */}
-              <ClaimButton></ClaimButton>
+              {renderRewardGrid(classicRewards)}
+              <ClaimButton />
               {/* Реклама ZEN */}
               <div className="relative mt-4 pt-2 pb-4">
                 {/* Градиентный фон на всю ширину модалки */}
@@ -310,7 +428,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
                   </div>
 
                   <div className="mb-6">
-                    {renderRewardGrid(rewards.zen, true)}
+                    {renderRewardGrid(zenRewards, true)}
                   </div>
 
                   <div className="text-center text-sm text-yellow-100 font-figtree-mulish mb-6 leading-relaxed">
@@ -339,7 +457,10 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
                   <div className="relative text-center scale-active  mt-6">
                     <ClickEffect>
                       <button
-                        onClick={() => {}}
+                        onClick={() => {
+                          onClose();
+                          onOpenShop?.();
+                        }}
                         className="rounded-xl orange-gradient mx-auto w-[50%] font-figtree-mulish 
                       py-2 text-white font-bold text-lg relative z-10 drop-shadow-[0_0_30px_#f76d1f]   "
                       >

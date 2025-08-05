@@ -17,6 +17,7 @@
     "db:safe-clean": "tsx scripts/safe-clean.ts",
     "db:migrate-zen": "tsx scripts/migrate-zen-mode.ts",
     "db:migrate-records": "tsx scripts/migrate-separate-records.ts",
+    "db:apply-daily-bonus": "tsx scripts/apply-daily-bonus-migration.ts",
     "stars:setup-webhook": "node scripts/setup-stars-webhook.js"
   },
   "dependencies": {

@@ -15,7 +15,6 @@ import ComingSoonModal from "@/components/UI/ComingSoonModal";
 import { useUser } from "@/hooks/useUser";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { DailyBonusModal } from "./DailyBonusModal";
-import rewards from "./store/bonusItems";
 
 interface MainMenuProps {
   onStartClassic: () => void;
@@ -96,14 +95,7 @@ const MainMenu: FC<MainMenuProps> = ({
       <DailyBonusModal
         isOpen={showBonusModal}
         onClose={() => setShowBonusModal(false)}
-        currentWeek={2}
-        currentDay={1}
-        hasZenSubscription={false}
-        onClaimReward={() => {}}
-        rewards={{
-          classic: rewards.classic[1],
-          zen: rewards.zen[0],
-        }}
+        onOpenShop={onOpenShop}
       />
     </>
   );
