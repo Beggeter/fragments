@@ -281,6 +281,20 @@ const HomePage: React.FC = () => {
   }, []); // Запускаем только один раз при монтировании
 
   useEffect(() => {
+    const preventContextMenu = (e: MouseEvent | TouchEvent) => {
+      e.preventDefault(); // Отключить контекстное меню
+    };
+
+    // Отключаем контекстное меню на всей странице
+    document.addEventListener('contextmenu', preventContextMenu);
+
+    // Очистка при размонтировании компонента
+    return () => {
+      document.removeEventListener('contextmenu', preventContextMenu);
+    };
+  }, []);
+
+  useEffect(() => {
     if (showSpinnerAnimation) {
       document.body.classList.add("screen-shake");
       const shakeTimeout = setTimeout(() => {

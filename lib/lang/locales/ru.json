@@ -101,17 +101,17 @@
     "claim": "Забрать",
     "zen_title": "🌟 ZEN Бонусы",
     "zen_description": "Получай в 2 раза больше бонусов с подпиской ZEN!",
-    "zen_subscribe": "🔓 Оформить подписку ZEN",
+    "zen_subscribe": "Оформить ZEN",
     "zen_only_title": "Только с подпиской:",
-    "zen_types": {
-      "whirlwind": "Вихрь",
-      "bomb": "Бомба",
-      "undo": "Отмена хода"
-    },
     "no_ads": "Без рекламы",
-    "zen_mode": "ZEN-режим"
+    "to_zen_mode": "ZEN-режиму",
+    "a_month": "в месяц",
+    "access_to": "доступ к"
+
+
   },
   "common": {
-    "close": "Закрыть"
+    "close": "Закрыть",
+    "and": "и"
   }
 }

@@ -101,17 +101,15 @@
     "claim": "Claim",
     "zen_title": "🌟 ZEN Bonuses",
     "zen_description": "Get 2x more bonuses with a ZEN subscription!",
-    "zen_subscribe": "🔓 Subscribe to ZEN",
+    "zen_subscribe": "Subscribe to ZEN",
     "zen_only_title": "Only with a subscription:",
-    "zen_types": {
-      "whirlwind": "Whirlwind",
-      "bomb": "Bomb",
-      "undo": "Undo"
-    },
     "no_ads": "No ads",
-    "zen_mode": "ZEN mode"
+    "to_zen_mode": "ZEN mode",
+    "a_month": "a month",
+    "access_to": "access to"
   },
   "common": {
-    "close": "Close"
+    "close": "Close",
+    "and": "end"
   }
 }

@@ -125,11 +125,11 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
   const getMedalForPosition = (position: number) => {
     switch (position) {
       case 1:
-        return "🥇";
+       return '/record.png'
       case 2:
-        return "🥈";
+        return "/cup_silver.svg";
       case 3:
-        return "🥉";
+        return "/cup_bronze.svg";
       default:
         return null;
     }

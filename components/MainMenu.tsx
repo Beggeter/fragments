@@ -7,6 +7,7 @@ import cart from "@/public/cart.svg";
 import powers from "@/public/powerups.svg";
 import stars from "@/public/stars.svg";
 import gift from "@/public/gift.svg";
+import crown from "@/public/crown.svg";
 import record from "@/public/record.png";
 import MenuButton from "@/components/UI/MenuButton";
 import BackgroundAnimation from "@/components/UI/BackgroundAnimation";
@@ -15,7 +16,6 @@ import { useUser } from "@/hooks/useUser";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { DailyBonusModal } from "./DailyBonusModal";
 import rewards from "./store/bonusItems";
-
 
 interface MainMenuProps {
   onStartClassic: () => void;
@@ -30,20 +30,28 @@ interface BottomButtonsProps {
   canAccessZen: boolean;
 }
 
-const MainMenu: FC<MainMenuProps> = ({ onStartClassic, onStartZen, onOpenShop, onOpenLeaderboard }) => {
+const MainMenu: FC<MainMenuProps> = ({
+  onStartClassic,
+  onStartZen,
+  onOpenShop,
+  onOpenLeaderboard,
+}) => {
   const [fadeIn, setFadeIn] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
   const { user } = useUser();
   const { isAdmin } = useAdminAuth();
   const [showBonusModal, setShowBonusModal] = useState(false);
 
-
   useEffect(() => {
     setFadeIn(true);
   }, []);
 
   // Проверяем доступ к Zen режиму
-  const canAccessZen = isAdmin || user?.role === 'tester' || user?.role === 'admin' || user?.role === 'premium';
+  const canAccessZen =
+    isAdmin ||
+    user?.role === "tester" ||
+    user?.role === "admin" ||
+    user?.role === "premium";
 
   return (
     <>
@@ -71,8 +79,8 @@ const MainMenu: FC<MainMenuProps> = ({ onStartClassic, onStartZen, onOpenShop, o
             }}
           />
 
-          <BottomButtons 
-            onStartClassic={onStartClassic} 
+          <BottomButtons
+            onStartClassic={onStartClassic}
             onStartZen={onStartZen}
             onShowComingSoon={() => setShowComingSoon(true)}
             canAccessZen={canAccessZen}
@@ -112,15 +120,8 @@ const TopButtons: FC<{
       style={{ paddingTop: "var(--tg-content-safe-area-inset-top, 0px)" }}
     >
       {/* Left side - Store */}
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col  gap-6">
         {/* Store */}
-        <MenuButton
-          leftIcon={cart}
-          rightIcon={powers}
-          gradientClass="orange-gradient"
-          className="w-[35vw] sm:w-1/2 md:w-1/3 max-w-3xs rounded-r-2xl menu-button-static"
-          onClick={onOpenShop}
-        />
         <MenuButton
           text={
             <>
@@ -128,55 +129,64 @@ const TopButtons: FC<{
               <span>Bonus</span>
             </>
           }
-          textClasses="font-bold leading-6 text-[1.7em]"
+          textClasses="font-bold leading-6 text-[1.7em] flex-1"
           gradientClass="orange-gradient"
-          className="w-[35vw] sm:w-1/2 md:w-1/3 max-w-3xs rounded-r-2xl menu-button-static shimmer-effect"
+          className="min-w-[36vw]   rounded-r-2xl menu-button-static shimmer-effect"
           onClick={onOpenBonusModal}
           leftIcon={gift}
           // notificationCount={1}
         />
-        {/* Leaderboard - перемещен под магазин */}
-        {/* {onOpenLeaderboard && (
-          <MenuButton
-            leftIcon={record}
-            gradientClass="orange-gradient"
-            className="w-[35vw] sm:w-1/2 md:w-1/3 max-w-3xs rounded-r-2xl menu-button-static"
-            onClick={onOpenLeaderboard}
-          />
-        )} */}
+        <MenuButton
+          leftIcon={cart}
+          rightIcon={powers}
+          gradientClass="orange-gradient"
+          className="min-w-[36vw]   rounded-r-2xl menu-button-static"
+          onClick={onOpenShop}
+        />
       </div>
 
-      {/* Right side - пустое место */}
+      {/* Right side */}
       {onOpenLeaderboard && (
         <MenuButton
           leftIcon={record}
           gradientClass="orange-gradient"
-          className="w-[35vw] sm:w-1/2 md:w-1/3 max-w-3xs rounded-l-2xl menu-button-static"
+          className="w-[25vw]  rounded-l-2xl menu-button-static"
           onClick={onOpenLeaderboard}
         />
       )}
-      {/* <MenuButton
-        text={
-          <>
-            <span>Daily</span>
-            <span>Bonus</span>
-          </>
-        }
-        textClasses="font-bold leading-6 text-[1.7em]"
-        gradientClass="orange-gradient"
-        className="w-[35vw] sm:w-1/2 md:w-1/3 max-w-3xs rounded-l-2xl menu-button-static"
-        onClick={onOpenLeaderboard}
-        leftIcon={gift}
-      /> */}
     </div>
   );
 };
 
-
-const BottomButtons: FC<BottomButtonsProps> = ({ onStartClassic, onStartZen, onShowComingSoon, canAccessZen }) => {
-
+const BottomButtons: FC<BottomButtonsProps> = ({
+  onStartClassic,
+  onStartZen,
+  onShowComingSoon,
+  canAccessZen,
+}) => {
   return (
     <div className="flex flex-col gap-4 items-center w-full z-100">
+      {canAccessZen ? (
+        <MenuButton
+          text="Zen"
+          rightIcon={crown}
+          gradientClass="pink-gradient"
+          className="rounded-3xl px-6 py-10 max-w-md w-[55vw] sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3"
+          textClasses="font-black italic text-[2.3rem] text-lg"
+          imageClasses="h-[3rem] min-w-[3rem] drop-shadow-md"
+          onClick={onStartZen}
+        />
+      ) : (
+        <MenuButton
+          text="Zen"
+          rightIcon={crown}
+          gradientClass="gray-gradient-disabled"
+          className="rounded-3xl px-6 py-10 max-w-md w-[55vw] sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3 opacity-70"
+          textClasses="font-black italic text-[2.3rem] text-lg opacity-70"
+          imageClasses="h-[3rem] min-w-[3rem] opacity-70"
+          onClick={onShowComingSoon}
+        />
+      )}
       <MenuButton
         text="Classic"
         rightIcon={infinity}
@@ -186,27 +196,6 @@ const BottomButtons: FC<BottomButtonsProps> = ({ onStartClassic, onStartZen, onS
         imageClasses="h-[2rem] min-w-[3rem] drop-shadow-md"
         onClick={onStartClassic}
       />
-      {canAccessZen ? (
-        <MenuButton
-          text="Zen"
-          rightIcon={stars}
-          gradientClass="purple-gradient"
-          className="rounded-3xl px-6 py-10 max-w-md w-[55vw] sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3"
-          textClasses="font-black italic text-[2.3rem] text-lg"
-          imageClasses="h-[3rem] min-w-[3rem] drop-shadow-md"
-          onClick={onStartZen}
-        />
-      ) : (
-        <MenuButton
-          text="Zen"
-          rightIcon={stars}
-          gradientClass="gray-gradient-disabled"
-          className="rounded-3xl px-6 py-10 max-w-md w-[55vw] sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3 opacity-70"
-          textClasses="font-black italic text-[2.3rem] text-lg opacity-70"
-          imageClasses="h-[3rem] min-w-[3rem] opacity-70"
-          onClick={onShowComingSoon}
-        />
-      )}
     </div>
   );
 };

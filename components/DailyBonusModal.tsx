@@ -4,7 +4,6 @@ import { motion } from "framer-motion";
 import MenuButton from "./UI/MenuButton";
 import ClickEffect from "./ClickEffect";
 import { Booster, RewardStatus } from "@/types/components";
-import { ScrollBounceContainer } from "./UI/ScrollBounceContainer";
 import { useUnlockAnimations } from "@/hooks/useUnlockAnimation";
 import rewards from "./store/bonusItems";
 
@@ -134,6 +133,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
     isZen: boolean;
   }) => {
     const gradient = isZen ? "gold-gradient" : "settings-gradient";
+    const hideStatusIcon = isZen && !hasZenSubscription;
     return (
       <ClickEffect
         className={`relative flex flex-col items-center justify-between rounded-lg flex-1 h-full scale-active backdrop-blur-2xl shadow-lg text-white font-figtree-mulish  ${
@@ -169,25 +169,26 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
             size === "small" ? "text-sm" : "text-xl"
           } font-bold font-figtree-mulish`}
         >
-          {`${reward.amount}`}
+          {reward.type === "shard" ? `+${reward.amount}` : reward.amount}
         </div>
         {/* Status */}
-        {getStatusIcon(reward) && (
+        {getStatusIcon(reward) && !hideStatusIcon && (
           <div
-            className={`absolute -bottom-3 -right-3 ${
-              reward.status === "locked" ? "-rotate-25" : ""
-            } ${size === "small" ? " text-xl  " : "text-3xl"}`}
+            className={`absolute bottom-1 right-1 rounded-full bg-black/40 backdrop-blur-md text-white flex items-center justify-center ${
+              size === "small" ? "w-5 h-5 text-xs" : "w-6 h-6 text-xl"
+            }`}
           >
             {getStatusIcon(reward)}
           </div>
         )}
-        {reward.status === "locked" && (
+
+        {reward.status === "locked" && !hideStatusIcon && (
           <motion.div
             initial={animateUnlock ? { scale: 1, opacity: 1 } : false}
             animate={animateUnlock ? { scale: 1.8, opacity: 0 } : false}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className={`absolute -bottom-3 -right-3 -rotate-25 ${
-              size === "small" ? "text-xl" : "text-3xl"
+            className={`absolute bottom-1 right-1  ${
+              size === "small" ? "text-xs" : "text-xl"
             }`}
           >
             🔒
@@ -196,6 +197,19 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
       </ClickEffect>
     );
   };
+  const ClaimButton = () => (
+    <ClickEffect>
+      <button
+        onClick={onClaimReward}
+        className={`mx-auto mt-4 mb-4 block rounded-xl py-2 w-[50%]  text-white text-lg font-bold
+                     bg-gradient-to-br green-gradient scale-active font-figtree-mulish ${
+                       claimAvailable ? "shimmer-effect" : ""
+                     } drop-shadow-[0_0_20px_#40ae54]`}
+      >
+        {t("bonuses.claim")}
+      </button>
+    </ClickEffect>
+  );
   const claimAvailable =
     rewards.classic[currentDay - 1]?.status === "available";
   return (
@@ -204,17 +218,29 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-hidden"
     >
       <div
-        className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-md border border-white/20 overflow-hidden max-w-lg w-full fade-in-animation-fast flex flex-col max-h-[70dvh]"
+        className="bg-white/10 backdrop-blur-xl rounded-3xl  shadow-md border border-white/20 overflow-hidden
+         max-w-lg w-full fade-in-animation-fast flex flex-col max-h-[90dvh] min-h-fit "
         onClick={(e) => e.stopPropagation()}
       >
         {/* === ШАПКА МОДАЛКИ === */}
-        <div className="flex justify-between items-center px-8 py-4 border-b bg-white/1 backdrop-blur-lg border-white/10 shrink-0">
-          <div className="text-2xl font-bold text-white font-figtree-mulish">
-            {t("bonuses.title", "Ежедневные бонусы")}
+        <div className="flex justify-between items-center px-8 pt-4    ">
+          <div className="flex flex-row gap-0 items-center justify-between  ">
+            <img
+              src={"/gift.svg"}
+              className="w-8 h-8 items-center mb-1.5 -mr-4 drop-shadow-2xl"
+            ></img>
+            <div className="inline-block relative">
+              <h1 className="absolute text-2xl font-bold tracking-wider text-blue-600/30 font-figtree-mulish px-8 transform translate-x-1 translate-y-1">
+                {t("bonuses.week", { week: currentWeek })}
+              </h1>
+              <h1 className="relative text-2xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-purple-300 to-indigo-300 font-figtree-mulish px-8">
+                {t("bonuses.week", { week: currentWeek })}
+              </h1>
+            </div>
           </div>
           <ClickEffect>
             <button
-              className="text-4xl text-white hover:text-gray-300"
+              className="text-5xl text-white hover:text-gray-300"
               onClick={onClose}
               aria-label={t("common.close", "Закрыть")}
             >
@@ -224,71 +250,63 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
         </div>
 
         {/* === КОНТЕНТ === */}
-        <div className="overflow-y-auto overflow-x-hidden px-8  grow">
+        <div className=" overflow-x-hidden px-8 pt-4   justify-center ">
           {/* Надпись Неделя */}
-          <div className="justify-center flex text-center w-full mt-4 mb-3">
+          {/* <div className="justify-center flex text-center w-full mt-4 mb-3">
             <div className="inline-block relative">
               <h1 className="absolute text-2xl font-bold tracking-wider text-blue-600/30 font-figtree-mulish px-8 transform translate-x-1 translate-y-1">
-              {t("bonuses.week", { week: currentWeek })}
+                {t("bonuses.week", { week: currentWeek })}
               </h1>
               <h1 className="relative text-2xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-purple-300 to-indigo-300 font-figtree-mulish px-8">
-              {t("bonuses.week", { week: currentWeek })}
+                {t("bonuses.week", { week: currentWeek })}
               </h1>
             </div>
-          </div>
+          </div> */}
 
           {hasZenSubscription ? (
             <>
               {/* ZEN-подписка активна — отображаем только ZEN-блок */}
               {renderRewardGrid(rewards.zen, true)}
-              <MenuButton
-                onClick={onClaimReward}
-                gradientClass="green-gradient"
-                text={t("bonuses.claim")}
-                textClasses="text-3xl"
-                disabled={!claimAvailable}
-                className={`w-full mt-8 py-3 px-6 rounded-xl mb-8 ${
-                  claimAvailable ? "shimmer-effect" : ""
-                } `}
-              />
+              <ClaimButton></ClaimButton>
             </>
           ) : (
             <>
               {/* ZEN-подписка не активна — отображаем Classic + затемнённую ZEN */}
               {renderRewardGrid(rewards.classic)}
-              <MenuButton
-                onClick={onClaimReward}
-                gradientClass="green-gradient"
-                text={t("bonuses.claim")}
-                textClasses="text-3xl"
-                disabled={!claimAvailable}
-                className={`w-full mt-8 py-3 px-6 rounded-xl ${
-                  claimAvailable ? "shimmer-effect animate-" : ""
-                } `}
-              />
+              {/* <ClickEffect>
+                <button
+                  onClick={onClaimReward}
+                  className={`mx-auto mt-4 mb-4 block rounded-xl py-2 w-[50%]  text-white text-lg font-bold
+                     bg-gradient-to-br green-gradient active:scale-[0.98] font-figtree-mulish ${
+                       claimAvailable ? "shimmer-effect" : ""
+                     } drop-shadow-[0_0_20px_#40ae54]`}
+                >
+                  {t("bonuses.claim")}
+                </button>
+              </ClickEffect> */}
+              <ClaimButton></ClaimButton>
               {/* Реклама ZEN */}
-              <div className="relative mt-8 pt-6 pb-8">
+              <div className="relative mt-4 pt-2 pb-4">
                 {/* Градиентный фон на всю ширину модалки */}
                 <div className="absolute inset-0 -mx-8  bg-gradient-to-br rounded-3xl from-[#ffe8b5]/10 via-[#ffd580]/10 to-[#f6c243]/10 backdrop-blur-md border-t border-b border-white/10 pointer-events-none" />
 
                 {/* Контент поверх фона с внутренними отступами */}
                 <div className="relative z-10 ">
-                  <div className="text-center mb-6">
-                    <div className=" flex flex-row items-center justify-center">
-
-                    <h3 className="text-2xl font-bold text-yellow-300 drop-shadow-sm tracking-wide mb-2 font-figtree-mulish">
-                    ZEN
-                    </h3>
-                    
+                  <div className="text-center mb-1">
+                    <div className=" flex flex-row items-center justify-center gap-2">
+                      <h3 className="text-2xl font-bold text-yellow-300 drop-shadow-sm tracking-wide my-2 font-figtree-mulish">
+                        ZEN
+                      </h3>
+                      <img src={"/crown.svg"} className="h-10 w-10"></img>
                     </div>
-                    <p className="text-md  text-yellow-100 font-figtree-mulish leading-relaxed">
+                    {/* <p className="text-md  text-yellow-100 font-figtree-mulish leading-relaxed">
                       Получай{" "}
                       <span className="text-white font-semibold">
                         в 2 раза больше
                       </span>{" "}
                       бонусов с подпиской{" "}
                       <span className="text-white font-semibold">ZEN</span>!
-                    </p>
+                    </p> */}
                   </div>
 
                   <div className="mb-6">
@@ -296,29 +314,44 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
                   </div>
 
                   <div className="text-center text-sm text-yellow-100 font-figtree-mulish mb-6 leading-relaxed">
-                    Только с подпиской:{" "}
-                    <span className="text-white font-semibold">Вихрь</span>,{" "}
-                    <span className="text-white font-semibold">Бомба</span> и{" "}
+                    {t("bonuses.zen_only_title") + " "}
                     <span className="text-white font-semibold">
-                      Отмена хода
-                    </span>
-                    , +115 💠 в месяц!
+                      Whirlwind
+                    </span>,{" "}
+                    <span className="text-white font-semibold">Bomb</span>{" "}
+                    {t("common.and")}{" "}
+                    <span className="text-white font-semibold">Undo</span>, +115{" "}
+                    <img
+                      src={"/crystal.svg"}
+                      className="w-4 h-4 inline align-middle"
+                    ></img>{" "}
+                    {t("bonuses.a_month")}!
                     <br />
                     <span className="text-white font-semibold">
-                      Без рекламы
+                      {t("bonuses.no_ads")}
                     </span>
-                    , доступ к{" "}
-                    <span className="text-white font-semibold">ZEN-режиму</span>
+                    , {t("bonuses.access_to")}{" "}
+                    <span className="text-white font-semibold">
+                      {t("bonuses.to_zen_mode")}
+                    </span>
                   </div>
 
-                  <MenuButton
-                    onClick={() => {}}
-                    text="🔓 Оформить подписку ZEN"
-                    innerShadows={false}
-                    textClasses="text-black text-lg"
-                    gradientClass=" from-yellow-400 via-amber-400 to-yellow-500"
-                    className="w-full py-3 px-6 rounded-xl bg-gradient-to-r font-bold   transition-all  "
-                  ></MenuButton>
+                  <div className="relative text-center scale-active  mt-6">
+                    <ClickEffect>
+                      <button
+                        onClick={() => {}}
+                        className="rounded-xl orange-gradient mx-auto w-[50%] font-figtree-mulish 
+                      py-2 text-white font-bold text-lg relative z-10 drop-shadow-[0_0_30px_#f76d1f]   "
+                      >
+                        {t("bonuses.zen_subscribe")}
+                      </button>
+                      <img
+                        src="/stars.svg"
+                        alt="Stars"
+                        className="absolute top-0  left-1/2 -translate-x-1/2 -translate-y-3/5 z-20 w-20 h-12"
+                      />
+                    </ClickEffect>
+                  </div>
                 </div>
               </div>
             </>

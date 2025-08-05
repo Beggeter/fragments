@@ -286,7 +286,7 @@ export const LoadingSpinner = ({
 
   return (
     <div
-      className="relative mx-auto store-scroll border-2 border-amber-900"
+      className="relative mx-auto store-scroll "
       style={{
         width: boardWidth + 100,
         height: boardHeight + EXTRA,
