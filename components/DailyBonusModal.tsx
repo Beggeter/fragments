@@ -120,7 +120,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
     });
   };
 
-  const currentWeekData = bonusData.weeks.find(w => w.week === currentWeek);
+  const currentWeekData = bonusData.weeks.find(w => w.week === (currentWeek ?? 1));
   if (!currentWeekData) {
     return (
       <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">

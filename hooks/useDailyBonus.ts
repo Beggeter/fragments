@@ -65,6 +65,7 @@ export const useDailyBonus = () => {
       }
 
       const data = await response.json();
+      console.log('Daily Bonus API Response:', data);
       setBonusData(data);
     } catch (err) {
       console.error('Error loading bonus data:', err);
@@ -145,8 +146,8 @@ export const useDailyBonus = () => {
     loadBonusData,
     getCurrentDayRewards,
     hasZenSubscription,
-    currentWeek: bonusData?.currentWeek || 1,
-    currentDay: bonusData?.currentDay || 1,
-    canClaimToday: bonusData?.canClaimToday || false,
+    currentWeek: bonusData?.currentWeek ?? 1,
+    currentDay: bonusData?.currentDay ?? 1,
+    canClaimToday: bonusData?.canClaimToday ?? false,
   };
 }; 
