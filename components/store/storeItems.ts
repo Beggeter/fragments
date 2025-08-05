@@ -71,7 +71,7 @@ export const ZEN_SUBS = [
   {
     period: "1m",
     priceCrystals: 320,
-    priceStars: 120,
+    priceStars: 160,
     percent: null,
     bonuses: [{ count: 2, name: "Undo" }],
     // Период брать через t('shop.zen_period_1m')

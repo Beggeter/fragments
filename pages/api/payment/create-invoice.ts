@@ -13,9 +13,10 @@ const bot = new TelegramBot(botToken, { polling: false });
 interface CreateInvoiceRequest {
   userId: number;
   item: {
-    type: 'shards' | 'booster';
+    type: 'shards' | 'booster' | 'subscription';
     itemId: string;
     quantity?: number;
+    price?: number;
   };
 }
 
@@ -111,6 +112,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
           prices: [{
             label: `${booster.name}${quantity > 1 ? ` x${quantity}` : ''}`,
             amount: totalPrice
+          }],
+          need_name: false,
+          need_phone_number: false,
+          need_email: false,
+          need_shipping_address: false,
+          is_flexible: false,
+        };
+        break;
+      }
+
+      case 'subscription': {
+        const subscriptionPeriod = item.itemId; // 'month', 'year', etc.
+        const price = item.price || 0;
+
+        if (!price) {
+          return res.status(400).json({ success: false, error: 'Price is required for subscription' });
+        }
+
+        // Создаем compact payload
+        paymentPayload = {
+          u: userId,               // userId
+          t: 'subscription',      // itemType
+          i: subscriptionPeriod,  // itemId (period)
+          p: price,               // price
+        };
+
+        const periodText = subscriptionPeriod === 'month' ? 'месяц' : 
+                          subscriptionPeriod === 'year' ? 'год' : 
+                          subscriptionPeriod;
+
+        invoiceData = {
+          title: `ZEN подписка (${periodText})`,
+          description: `Подписка ZEN на ${periodText} с премиум бонусами`,
+          payload: JSON.stringify(paymentPayload),
+          currency: 'XTR',
+          prices: [{
+            label: `ZEN подписка (${periodText})`,
+            amount: price
           }],
           need_name: false,
           need_phone_number: false,

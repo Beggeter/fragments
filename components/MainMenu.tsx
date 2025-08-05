@@ -19,13 +19,14 @@ import { DailyBonusModal } from "./DailyBonusModal";
 interface MainMenuProps {
   onStartClassic: () => void;
   onStartZen?: () => void;
-  onOpenShop: () => void;
+  onOpenShop: (initialTab?: string) => void;
   onOpenLeaderboard?: () => void;
 }
 interface BottomButtonsProps {
   onStartClassic: () => void;
   onStartZen?: () => void;
   onShowComingSoon: () => void;
+  onOpenShop: (initialTab?: string) => void;
   canAccessZen: boolean;
 }
 
@@ -50,7 +51,8 @@ const MainMenu: FC<MainMenuProps> = ({
     isAdmin ||
     user?.role === "tester" ||
     user?.role === "admin" ||
-    user?.role === "premium";
+    user?.role === "premium" ||
+    !!user?.hasZenSubscription;
 
   return (
     <>
@@ -82,6 +84,7 @@ const MainMenu: FC<MainMenuProps> = ({
             onStartClassic={onStartClassic}
             onStartZen={onStartZen}
             onShowComingSoon={() => setShowComingSoon(true)}
+            onOpenShop={onOpenShop}
             canAccessZen={canAccessZen}
           />
         </main>
@@ -154,6 +157,7 @@ const BottomButtons: FC<BottomButtonsProps> = ({
   onStartClassic,
   onStartZen,
   onShowComingSoon,
+  onOpenShop,
   canAccessZen,
 }) => {
   return (
@@ -176,7 +180,7 @@ const BottomButtons: FC<BottomButtonsProps> = ({
           className="rounded-3xl px-6 py-10 max-w-md w-[55vw] sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3 opacity-70"
           textClasses="font-black italic text-[2.3rem] text-lg opacity-70"
           imageClasses="h-[3rem] min-w-[3rem] opacity-70"
-          onClick={onShowComingSoon}
+          onClick={() => onOpenShop("zen")}
         />
       )}
       <MenuButton

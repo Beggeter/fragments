@@ -31,7 +31,8 @@ type Screen =
   | "settings"
   | "gameover"
   | "shop"
-  | "leaderboard";
+  | "leaderboard"
+  | "zen";
 
 // Функция для надежного определения Telegram WebApp
 const isLaunchedInTelegram = (): boolean => {
@@ -479,7 +480,7 @@ const HomePage: React.FC = () => {
     // НЕ устанавливаем currentScreen - пусть логика авторизации сама определит
   };
 
-  const handleOpenShop = useCallback(() => {
+  const handleOpenShop = useCallback((initialTab?: string) => {
     // Determine where to return after shop
     if (currentScreen === "classic mode" || currentScreen === "zen mode") {
       setShopReturnTo(currentScreen);
@@ -487,6 +488,10 @@ const HomePage: React.FC = () => {
       setShopReturnTo("main menu");
     }
     setCurrentScreen("shop");
+    // Если передан initialTab, сохраняем его для ShopScreen
+    if (initialTab === "zen") {
+      setShopReturnTo("zen");
+    }
   }, [currentScreen]);
 
   const handleShopBack = useCallback(() => {
@@ -705,7 +710,7 @@ const HomePage: React.FC = () => {
       {currentScreen === "shop" && (
         <ShopScreen
           onBack={handleShopBack}
-          initialTab={shopReturnTo === "classic mode" || shopReturnTo === "zen mode" ? "boosters" : "shards"}
+          initialTab={shopReturnTo === "zen" ? "zen" : shopReturnTo === "classic mode" || shopReturnTo === "zen mode" ? "boosters" : "shards"}
         />
       )}
 

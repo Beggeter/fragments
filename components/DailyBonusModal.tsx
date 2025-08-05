@@ -190,9 +190,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
     isZen = false
   ) => (
     <div
-      className={`flex items-stretch gap-2 h-full ${
-        !hasZenSubscription && isZen ? "opacity-60" : ""
-      }`}
+      className={`flex items-stretch gap-2 h-full`}
     >
       {/* Left side - 2 rows of 3 items */}
       <div className="flex flex-col gap-2 w-[60%]">
@@ -254,7 +252,6 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
     isZen: boolean;
   }) => {
     const gradient = isZen ? "gold-gradient" : "settings-gradient";
-    const hideStatusIcon = isZen && !hasZenSubscription;
 
     const handleClick = async () => {
       if (reward.status === "available") {
@@ -315,7 +312,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
           {reward.type === "currency" ? `+${reward.amount}` : reward.amount}
         </div>
         {/* Status */}
-        {getStatusIcon(reward) && !hideStatusIcon && (
+        {getStatusIcon(reward) && (
           <div
             className={`absolute bottom-1 right-1 rounded-full bg-black/40 backdrop-blur-md text-white flex items-center justify-center ${
               size === "small" ? "w-5 h-5 text-xs" : "w-6 h-6 text-xl"
@@ -325,7 +322,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
           </div>
         )}
 
-        {reward.status === "locked" && !hideStatusIcon && (
+        {reward.status === "locked" && (
           <motion.div
             initial={animateUnlock ? { scale: 1, opacity: 1 } : false}
             animate={animateUnlock ? { scale: 1.8, opacity: 0 } : false}

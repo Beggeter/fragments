@@ -10,8 +10,7 @@ import ShardPurchaseModal from "./store/ShardPurchaseModal";
 import { ShardPack } from "@/types/shop";
 import ClickEffect from "./ClickEffect";
 import { useTranslation } from "react-i18next";
-import ComingSoonModal from "./UI/ComingSoonModal";
-import { createShardsInvoice, showTelegramAlert } from "@/lib/utils/telegramStars";
+import { createShardsInvoice, showTelegramAlert, createZenInvoice } from "@/lib/utils/telegramStars";
 import TgStarIcon from "./UI/TgStarIcon";
 
 const TABS_KEYS = ["shards", "boosters", "zen"] as const;
@@ -312,7 +311,6 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
     null
   );
   const [isShardModalOpen, setIsShardModalOpen] = useState(false);
-  const [isComingSoonModalOpen, setIsComingSoonModalOpen] = useState(false);
 
   // Обработчик клика по пакету кристаллов
   const handleShardPackClick = async (pack: ShardPack) => {
@@ -505,21 +503,52 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
     setIsZenModalOpen(true);
   };
 
-  const handleZenPurchaseConfirm = (paymentMethod: "crystals" | "stars") => {
-    /**
-     * BACKEND: Покупка ZEN-подписки
-     * Вызвать эндпоинт/функцию для покупки подписки:
-     * period: selectedSub?.period
-     * paymentMethod: "crystals" | "stars"
-     * userId: user?.id
-     *
-     * После успешной покупки обновить баланс и статус подписки пользователя.
-     */
-    // TODO: реализовать покупку подписки через API
-    // Пример:
-    // await buyZenSubscription({ userId: user?.id, period: selectedSub?.period, paymentMethod })
-    setIsZenModalOpen(false);
-    setSelectedSub(null);
+  const handleZenPurchaseConfirm = async (paymentMethod: "crystals" | "stars") => {
+    if (!user?.id) {
+      showTelegramAlert('Пользователь не авторизован');
+      return;
+    }
+
+    if (!selectedSub) {
+      showTelegramAlert('Подписка не выбрана');
+      return;
+    }
+
+    if (paymentMethod === "crystals") {
+      // Покупка за кристаллы - проверяем баланс
+      if (balance < selectedSub.priceCrystals) {
+        showTelegramAlert('Недостаточно кристаллов для покупки подписки');
+        return;
+      }
+
+      // TODO: Реализовать покупку за кристаллы через API
+      showTelegramAlert('Покупка за кристаллы пока не поддерживается');
+      return;
+    }
+
+    // Покупка за Stars через Telegram
+    try {
+      const result = await createZenInvoice(
+        user.id, 
+        selectedSub.period, 
+        selectedSub.priceStars
+      );
+
+      if (result.success) {
+        showTelegramAlert('ZEN подписка успешно активирована!');
+        setIsZenModalOpen(false);
+        setSelectedSub(null);
+        // Обновляем данные пользователя после успешной покупки
+        await checkUserSession();
+      } else if (result.error === 'Payment cancelled') {
+        showTelegramAlert('Оплата отменена');
+      } else {
+        showTelegramAlert('Ошибка создания инвойса: ' + (result.error || 'Неизвестная ошибка'));
+      }
+    } catch (error) {
+      console.error('Error creating ZEN invoice:', error);
+      showTelegramAlert('Ошибка при создании инвойса');
+    }
   };
 
   const handleZenModalClose = () => {
@@ -601,26 +630,20 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
       </div>
       {/* Tab-панель */}
       <div className="flex gap-2 justify-center mt-2 mb-8">
-        {TABS_KEYS.map((key) => (
-          <ClickEffect key={key}>
-            <button
-              onClick={() => {
-                if (key === "zen") {
-                  setIsComingSoonModalOpen(true);
-                } else {
-                  setTab(key);
-                }
-              }}
-              className={`px-6 py-2 rounded-full text-lg font-extrabold transition-colors duration-300 border border-white/20  font-figtree-mulish ${
-                tab === key
-                  ? "bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg"
-                  : "bg-white/10 backdrop-blur-md text-white  "
-              } ${key === "zen" ? "opacity-75 cursor-not-allowed" : ""}`}
-            >
-              {t(`shop.${key}`)}
-            </button>
-          </ClickEffect>
-        ))}
+                 {TABS_KEYS.map((key) => (
+           <ClickEffect key={key}>
+             <button
+               onClick={() => setTab(key)}
+               className={`px-6 py-2 rounded-full text-lg font-extrabold transition-colors duration-300 border border-white/20  font-figtree-mulish ${
+                 tab === key
+                   ? "bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg"
+                   : "bg-white/10 backdrop-blur-md text-white  "
+               }`}
+             >
+               {t(`shop.${key}`)}
+             </button>
+           </ClickEffect>
+         ))}
       </div>
       {/* Содержимое вкладок */}
       <div className="flex flex-col flex-1 justify-start items-center px-4 py-2 ">
@@ -746,12 +769,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
         />
       )}
 
-      {/* Coming Soon Modal для Zen */}
-      <ComingSoonModal
-        isOpen={isComingSoonModalOpen}
-        onClose={() => setIsComingSoonModalOpen(false)}
-        feature="ZEN режим"
-      />
+      
     </div>
   );
 };

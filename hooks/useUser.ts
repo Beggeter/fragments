@@ -16,6 +16,8 @@ interface User {
   lastLoginAt: string;
   record: number; // Classic mode record
   zenRecord: number; // Zen mode record
+  hasZenSubscription: boolean; // Статус ZEN подписки
+  zenSubscriptionEndDate?: string; // Дата окончания ZEN подписки
 }
 
 interface UserState {

@@ -208,8 +208,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           price: paymentPayload.price
         });
 
-        // TODO: Реализовать логику подписок когда она будет готова
-        console.log('⚠️ Subscription processing not implemented yet');
+        // Обрабатываем ZEN подписку
+        const subscriptionPeriod = paymentPayload.itemId; // 'month', 'year', etc.
+        const price = paymentPayload.price || 0;
+
+        // Вычисляем дату окончания подписки
+        const now = new Date();
+        let endDate: Date;
+        
+        if (subscriptionPeriod === 'month') {
+          endDate = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+        } else if (subscriptionPeriod === 'year') {
+          endDate = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+        } else {
+          // По умолчанию месяц
+          endDate = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+        }
+
+        // Обновляем статус подписки пользователя
+        try {
+          await UserService.updateUser(paymentPayload.userId, {
+            hasZenSubscription: true,
+            zenSubscriptionEndDate: endDate
+          });
+          
+          console.log('✅ ZEN subscription activated successfully:', {
+            userId: paymentPayload.userId,
+            subscriptionPeriod: subscriptionPeriod,
+            endDate: endDate,
+            price: price
+          });
+        } catch (subscriptionError) {
+          console.error('❌ Failed to activate ZEN subscription:', subscriptionError);
+          return res.status(500).json({ error: 'Failed to activate subscription' });
+        }
         break;
       }
 

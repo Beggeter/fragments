@@ -206,4 +206,77 @@ export const createBoosterInvoice = async (
       error: error.message || 'Failed to create invoice' 
     };
   }
+};
+
+// Создает инвойс для покупки ZEN подписки
+export const createZenInvoice = async (
+  userId: number,
+  subscriptionPeriod: string,
+  priceStars: number
+): Promise<{ success: boolean; error?: string }> => {
+  try {
+    if (typeof window === 'undefined') {
+      throw new Error('Not in browser environment');
+    }
+
+    console.log('👑 Creating ZEN subscription invoice:', {
+      userId,
+      subscriptionPeriod,
+      priceStars
+    });
+
+    // 1. Создаем инвойс на сервере
+    const response = await fetch('/api/payment/create-invoice', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId,
+        item: { 
+          type: 'subscription', 
+          itemId: subscriptionPeriod,
+          price: priceStars
+        }
+      })
+    });
+
+    const data = await response.json();
+    
+    if (!data.success || !data.invoice_url) {
+      throw new Error(data.error || 'Failed to create invoice');
+    }
+
+    console.log('📄 ZEN invoice created, opening with URL:', data.invoice_url);
+
+    // 2. Открываем инвойс через TMA SDK v3
+    const { invoice } = await import('@telegram-apps/sdk');
+    
+    // Проверяем поддержку
+    if (!invoice.isSupported()) {
+      throw new Error('Invoice API not supported');
+    }
+
+    // 3. Открываем инвойс с URL
+    const status = await invoice.open(data.invoice_url, 'url');
+    
+    console.log('💰 ZEN payment status:', status);
+    
+    // 4. Обрабатываем результат
+    if (status === 'paid') {
+      console.log('✅ ZEN subscription payment successful');
+      return { success: true };
+    } else if (status === 'cancelled') {
+      console.log('❌ ZEN payment cancelled by user');
+      return { success: false, error: 'Payment cancelled' };
+    } else {
+      console.log('❌ ZEN payment failed:', status);
+      return { success: false, error: `Payment failed: ${status}` };
+    }
+
+  } catch (error: any) {
+    console.error('❌ Error creating ZEN invoice:', error);
+    return { 
+      success: false, 
+      error: error.message || 'Failed to create ZEN invoice' 
+    };
+  }
 }; 

@@ -23,6 +23,8 @@ export const users = pgTable("users", {
   record: integer("record").notNull().default(0), // Classic mode record (legacy)
   zenRecord: integer("zen_record").notNull().default(0), // Zen mode record
   currency: integer("currency").notNull().default(0),
+  hasZenSubscription: boolean("has_zen_subscription").notNull().default(false), // Статус ZEN подписки
+  zenSubscriptionEndDate: timestamp("zen_subscription_end_date"), // Дата окончания ZEN подписки
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
