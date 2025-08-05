@@ -12,40 +12,34 @@ interface ZenGameBoardProps {
   onOpenShop?: () => void;
 }
 
-export const ZenGameBoard: React.FC<ZenGameBoardProps> = ({ onBackToMenu, onOpenShop }) => {
-  const {
-    score,
-    gameOver,
-    initializeGame,
-    resetGame,
-    updateEngineForUser,
-  } = useGameStore();
+export const ZenGameBoard: React.FC<ZenGameBoardProps> = ({
+  onBackToMenu,
+  onOpenShop,
+}) => {
+  const { score, gameOver, initializeGame, resetGame, updateEngineForUser } =
+    useGameStore();
 
   const { user } = useUser();
   const { isAdmin } = useAdminAuth();
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Используем отдельную систему сохранения для Zen режима
-  const { loadGame, saveAfterAction, forceSave } = useGameSave('zen');
+  const { loadGame, saveAfterAction, forceSave } = useGameSave("zen");
 
   useEffect(() => {
     const initializeZenGame = async () => {
-      console.log('🧘 Initializing Zen mode...');
-      
       // Обновляем движок для ZEN режима
-      updateEngineForUser('zen');
-      
+      updateEngineForUser("zen");
+
       // Пытаемся загрузить сохраненную игру
       const hasSavedGame = await loadGame();
-      
+
       if (!hasSavedGame) {
         // Если нет сохраненной игры, инициализируем новую
-        console.log('🧘 Starting new Zen game');
         initializeGame();
       } else {
-        console.log('🧘 Loaded saved Zen game');
       }
-      
+
       // Небольшая задержка для плавности
       setTimeout(() => {
         setIsLoading(false);
@@ -63,17 +57,17 @@ export const ZenGameBoard: React.FC<ZenGameBoardProps> = ({ onBackToMenu, onOpen
     };
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden') {
+      if (document.visibilityState === "hidden") {
         forceSave();
       }
     };
 
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       // Сохраняем при размонтировании компонента
       forceSave();
     };
@@ -107,11 +101,11 @@ export const ZenGameBoard: React.FC<ZenGameBoardProps> = ({ onBackToMenu, onOpen
   if (gameOver) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center">
-              <GameOver 
-        onPlayAgain={handleRestart}
-        onBackToMenu={handleBackToMenu}
-        gameMode="zen"
-      />
+        <GameOver
+          onPlayAgain={handleRestart}
+          onBackToMenu={handleBackToMenu}
+          gameMode="zen"
+        />
       </div>
     );
   }
@@ -119,7 +113,7 @@ export const ZenGameBoard: React.FC<ZenGameBoardProps> = ({ onBackToMenu, onOpen
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 relative overflow-hidden">
       {/* ZEN режим - точно такой же интерфейс как в Classic */}
-      <GameBoard 
+      <GameBoard
         onScoreUpdate={(score) => {
           // Сохраняем после каждого хода в Zen режиме
           setTimeout(() => saveAfterAction(), 100);
@@ -135,8 +129,6 @@ export const ZenGameBoard: React.FC<ZenGameBoardProps> = ({ onBackToMenu, onOpen
         }}
         gameMode="zen"
       />
-
-
     </div>
   );
-}; 
+};

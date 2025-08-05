@@ -26,9 +26,6 @@ export const DraggablePiecesSection: React.FC<DraggablePiecesProps> = ({
   panelRefs,
   disabled = false,
 }) => {
-  console.log('🔍 DraggablePiecesSection render');
-  console.log('  - currentPieces:', currentPieces);
-  console.log('  - currentPieces.length:', currentPieces?.length);
   
   // Создаем массив с фиксированными позициями
   const piecesWithPositions = [0, 1, 2].map((index) => {
@@ -38,11 +35,7 @@ export const DraggablePiecesSection: React.FC<DraggablePiecesProps> = ({
     return piece;
   });
   
-  console.log('  - piecesWithPositions:', piecesWithPositions);
-  console.log('  - piecesWithPositions.map(p => p?.id):', piecesWithPositions.map(p => p?.id));
-
   const { justGeneratedPieces } = useGameStore();
-
 
   const handleStart = (
     e: React.MouseEvent | React.TouchEvent,

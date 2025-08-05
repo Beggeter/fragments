@@ -54,14 +54,14 @@ export const useGameSave = (gameMode: 'classic' | 'zen' = 'classic') => {
       
       // Проверяем версию сохранения
       if (gameState.version !== GAME_SAVE_VERSION) {
-        console.warn('Game save version mismatch, clearing old save');
+        // console.warn('Game save version mismatch, clearing old save');
         localStorage.removeItem(storageKey);
         return null;
       }
 
       // Проверяем, что режим игры совпадает
       if (gameState.gameMode && gameState.gameMode !== gameMode) {
-        console.warn('Game mode mismatch, clearing save');
+        // console.warn('Game mode mismatch, clearing save');
         localStorage.removeItem(storageKey);
         return null;
       }
@@ -70,14 +70,14 @@ export const useGameSave = (gameMode: 'classic' | 'zen' = 'classic') => {
       const now = Date.now();
       const oneDay = 24 * 60 * 60 * 1000;
       if (now - gameState.timestamp > oneDay) {
-        console.warn('Game save is too old, clearing');
+        // console.warn('Game save is too old, clearing');
         localStorage.removeItem(storageKey);
         return null;
       }
 
       return gameState;
     } catch (error) {
-      console.error('Failed to load game from localStorage:', error);
+      // console.error('Failed to load game from localStorage:', error);
       return null;
     }
   }, [getStorageKey, gameMode]);
@@ -86,7 +86,7 @@ export const useGameSave = (gameMode: 'classic' | 'zen' = 'classic') => {
   const loadFromServer = useCallback(async (): Promise<SavedGameState | null> => {
     const targetUserId = isAdmin ? '610936383' : user?.telegramId;
     if (!targetUserId || !isAuthenticated) {
-      console.log('User not authenticated, skipping server load');
+      // console.log('User not authenticated, skipping server load');
       return null;
     }
 
@@ -100,7 +100,7 @@ export const useGameSave = (gameMode: 'classic' | 'zen' = 'classic') => {
       
       if (!response.ok) {
         if (response.status === 404) {
-          console.log(`No saved ${gameMode} game on server`);
+          // console.log(`No saved ${gameMode} game on server`);
           return null;
         }
         throw new Error(`Server load failed: ${response.status}`);
@@ -110,7 +110,7 @@ export const useGameSave = (gameMode: 'classic' | 'zen' = 'classic') => {
       const serverGame = data.currentGame;
 
       if (!serverGame) {
-        console.log(`No current ${gameMode} game on server`);
+        // console.log(`No current ${gameMode} game on server`);
         return null;
       }
 
@@ -126,10 +126,10 @@ export const useGameSave = (gameMode: 'classic' | 'zen' = 'classic') => {
       };
 
       lastServerSyncRef.current = Date.now();
-      console.log(`${gameMode} game loaded from server`);
+      // console.log(`${gameMode} game loaded from server`);
       return gameState;
     } catch (error) {
-      console.error(`Failed to load ${gameMode} game from server:`, error);
+      // console.error(`Failed to load ${gameMode} game from server:`, error);
       return null;
     }
   }, [user?.telegramId, isAuthenticated, isAdmin, gameMode]);
@@ -140,9 +140,9 @@ export const useGameSave = (gameMode: 'classic' | 'zen' = 'classic') => {
       const storageKey = getStorageKey();
       const stateWithMode = { ...gameState, gameMode };
       localStorage.setItem(storageKey, JSON.stringify(stateWithMode));
-      console.log(`${gameMode} game saved to localStorage`);
+      // console.log(`${gameMode} game saved to localStorage`);
     } catch (error) {
-      console.error(`Failed to save ${gameMode} game to localStorage:`, error);
+      // console.error(`Failed to save ${gameMode} game to localStorage:`, error);
     }
   }, [getStorageKey, gameMode]);
 
@@ -150,7 +150,7 @@ export const useGameSave = (gameMode: 'classic' | 'zen' = 'classic') => {
   const saveToServer = useCallback(async (gameState: SavedGameState) => {
     const targetUserId = isAdmin ? '610936383' : user?.telegramId;
     if (!targetUserId || !isAuthenticated) {
-      console.log('User not authenticated, skipping server save');
+      // console.log('User not authenticated, skipping server save');
       return false;
     }
 
@@ -175,7 +175,7 @@ export const useGameSave = (gameMode: 'classic' | 'zen' = 'classic') => {
       // Добавляем токен авторизации если он есть (нужно для production)
       if (sessionToken) {
         headers['Authorization'] = `Bearer ${sessionToken}`;
-        console.log('🔐 Added authorization token to game-sync request');
+        // console.log('🔐 Added authorization token to game-sync request');
       }
 
       // Используем разные endpoints для разных режимов
@@ -198,7 +198,7 @@ export const useGameSave = (gameMode: 'classic' | 'zen' = 'classic') => {
       // Проверяем, обновился ли рекорд на сервере
       if (result.recordUpdated && result.newRecord !== undefined && user) {
         const currentRecord = gameMode === 'zen' ? user.zenRecord : user.record;
-        console.log('🏆 Record updated during auto-save! Local user record updated from', currentRecord, 'to', result.newRecord);
+        // console.log('🏆 Record updated during auto-save! Local user record updated from', currentRecord, 'to', result.newRecord);
         // Здесь нужно обновить локальное состояние пользователя
         // Но у нас нет прямого доступа к updateUser из useUser
         // Можно использовать событие или колбэк для уведомления
@@ -208,10 +208,10 @@ export const useGameSave = (gameMode: 'classic' | 'zen' = 'classic') => {
       }
 
       lastServerSyncRef.current = Date.now();
-      console.log(`${gameMode} game saved to server, record updated:`, result.recordUpdated);
+      // console.log(`${gameMode} game saved to server, record updated:`, result.recordUpdated);
       return true;
     } catch (error) {
-      console.error(`Failed to save ${gameMode} game to server:`, error);
+      // console.error(`Failed to save ${gameMode} game to server:`, error);
       return false;
     }
   }, [user?.telegramId, isAuthenticated, isAdmin, user, gameMode]);
@@ -255,20 +255,20 @@ export const useGameSave = (gameMode: 'classic' | 'zen' = 'classic') => {
       gameStore.piecesPlaced % 10 === 0; // Или каждые 10 ходов
 
     if (shouldSaveToServer && isAuthenticated) {
-      console.log('💾 Triggering server save:', {
-        reason: currentScore > userRecord ? 'new record' : 'periodic save',
-        score: currentScore,
-        record: userRecord,
-        piecesPlaced: gameStore.piecesPlaced,
-        gameMode: gameMode
-      });
+      // console.log('💾 Triggering server save:', {
+      //   reason: currentScore > userRecord ? 'new record' : 'periodic save',
+      //   score: currentScore,
+      //   record: userRecord,
+      //   piecesPlaced: gameStore.piecesPlaced,
+      //   gameMode: gameMode
+      // });
       await saveToServer(gameState);
     }
   }, [saveToLocalStorage, saveToServer, user?.record, user?.zenRecord, isAuthenticated, gameMode]);
 
   // Загрузка игры с приоритетом
   const loadGame = useCallback(async (): Promise<boolean> => {
-    console.log(`Loading ${gameMode} game state...`);
+    // console.log(`Loading ${gameMode} game state...`);
 
     // Сначала пытаемся загрузить с сервера
     let serverState = null;
@@ -285,20 +285,20 @@ export const useGameSave = (gameMode: 'classic' | 'zen' = 'classic') => {
     if (serverState && localState) {
       // Есть оба состояния - выбираем более новое
       if (serverState.timestamp > localState.timestamp) {
-        console.log('Using server state (newer)');
+        // console.log('Using server state (newer)');
         finalState = serverState;
       } else {
-        console.log('Using local state (newer)');
+        // console.log('Using local state (newer)');
         finalState = localState;
       }
     } else if (serverState) {
-      console.log('Using server state (only available)');
+      // console.log('Using server state (only available)');
       finalState = serverState;
     } else if (localState) {
-      console.log('Using local state (only available)');
+      // console.log('Using local state (only available)');
       finalState = localState;
     } else {
-      console.log(`No saved ${gameMode} game found`);
+      // console.log(`No saved ${gameMode} game found`);
       return false;
     }
 
@@ -309,7 +309,7 @@ export const useGameSave = (gameMode: 'classic' | 'zen' = 'classic') => {
       // Проверяем валидность состояния
       if (!finalState.board || !Array.isArray(finalState.board) || 
           !finalState.currentPieces || !Array.isArray(finalState.currentPieces)) {
-        console.warn('Invalid game state, starting new game');
+        // console.warn('Invalid game state, starting new game');
         return false;
       }
 
@@ -323,16 +323,16 @@ export const useGameSave = (gameMode: 'classic' | 'zen' = 'classic') => {
         };
       });
 
-      console.log('Restoring game state with pieces:', fixedPieces.map(p => ({
-        id: p.id,
-        uniqueId: p.uniqueId,
-        color: p.color,
-        matrixSize: `${p.matrix.length}x${p.matrix[0]?.length}`,
-      })));
+      // console.log('Restoring game state with pieces:', fixedPieces.map(p => ({
+      //   id: p.id,
+      //   uniqueId: p.uniqueId,
+      //   color: p.color,
+      //   matrixSize: `${p.matrix.length}x${p.matrix[0]?.length}`,
+      // })));
 
-      console.log('Board state:', finalState.board.map(row => 
-        row.map(cell => ({ value: cell.value, color: cell.color }))
-      ));
+      // console.log('Board state:', finalState.board.map(row => 
+      //   row.map(cell => ({ value: cell.value, color: cell.color }))
+      // ));
 
       gameStore.restoreGameState({
         board: finalState.board,
@@ -342,7 +342,7 @@ export const useGameSave = (gameMode: 'classic' | 'zen' = 'classic') => {
         placedPiecesCount: finalState.placedPiecesCount,
       });
 
-      console.log(`${gameMode} game state restored successfully`);
+      // console.log(`${gameMode} game state restored successfully`);
       return true;
     }
 
@@ -351,7 +351,7 @@ export const useGameSave = (gameMode: 'classic' | 'zen' = 'classic') => {
 
   // Принудительное сохранение (только на сервер при выходе)
   const forceSave = useCallback(async () => {
-    console.log(`Force saving ${gameMode} game to server...`);
+    // console.log(`Force saving ${gameMode} game to server...`);
     const gameStore = useGameStore.getState();
     
     // Сохраняем board как есть - он уже содержит Cell[][] с цветами
@@ -386,9 +386,9 @@ export const useGameSave = (gameMode: 'classic' | 'zen' = 'classic') => {
     try {
       const storageKey = getStorageKey();
       localStorage.removeItem(storageKey);
-      console.log(`${gameMode} local saves cleared`);
+      // console.log(`${gameMode} local saves cleared`);
     } catch (error) {
-      console.error(`Failed to clear ${gameMode} local saves:`, error);
+      // console.error(`Failed to clear ${gameMode} local saves:`, error);
     }
   }, [getStorageKey, gameMode]);
 

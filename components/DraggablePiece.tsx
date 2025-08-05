@@ -23,16 +23,16 @@ export const DraggablePiece: React.FC<DraggablePieceProps> = ({
   onTransitionEnd,
   animateAppear = false,
 }) => {
-  console.log('🔍 DraggablePiece render:', {
-    pieceId: piece?.id,
-    pieceUniqueId: piece?.uniqueId,
-    hasMatrix: !!piece?.matrix,
-    matrixSize: piece?.matrix ? `${piece.matrix.length}x${piece.matrix[0]?.length}` : 'N/A',
-    pieceColor: piece?.color,
-  });
+  // console.log('🔍 DraggablePiece render:', {
+  //   pieceId: piece?.id,
+  //   pieceUniqueId: piece?.uniqueId,
+  //   hasMatrix: !!piece?.matrix,
+  //   matrixSize: piece?.matrix ? `${piece.matrix.length}x${piece.matrix[0]?.length}` : 'N/A',
+  //   pieceColor: piece?.color,
+  // });
   
   if (!piece || !piece.matrix) {
-    console.warn('DraggablePiece: missing piece or matrix', { piece });
+    // console.warn('DraggablePiece: missing piece or matrix', { piece });
     return null;
   }
 

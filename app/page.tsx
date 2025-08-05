@@ -183,9 +183,7 @@ const HomePage: React.FC = () => {
       // Инициализируем TMA SDK
       try {
         await init();
-      } catch (error) {
-        // Удаляю все console.log, console.error, console.warn и любые отладочные комментарии/выводы
-      }
+      } catch (error) {}
       // Проверяем, что мы на клиенте
       if (typeof window === "undefined") {
         return;
@@ -224,7 +222,6 @@ const HomePage: React.FC = () => {
           ) {
             tg.requestFullscreen();
           } else if (!shouldEnableFullscreen) {
-            // Удаляю все console.log, console.error, console.warn и любые отладочные комментарии/выводы
           }
 
           const user = tg.initDataUnsafe?.user;
@@ -259,12 +256,9 @@ const HomePage: React.FC = () => {
                   setIsInitialized(true);
                   return;
                 } else {
-                  // Удаляю все console.log, console.error, console.warn и любые отладочные комментарии/выводы
                 }
               }
-            } catch (error) {
-              // Удаляю все console.log, console.error, console.warn и любые отладочные комментарии/выводы
-            }
+            } catch (error) {}
           }
         }
 
@@ -287,11 +281,11 @@ const HomePage: React.FC = () => {
     };
 
     // Отключаем контекстное меню на всей странице
-    document.addEventListener('contextmenu', preventContextMenu);
+    document.addEventListener("contextmenu", preventContextMenu);
 
     // Очистка при размонтировании компонента
     return () => {
-      document.removeEventListener('contextmenu', preventContextMenu);
+      document.removeEventListener("contextmenu", preventContextMenu);
     };
   }, []);
 
@@ -424,9 +418,10 @@ const HomePage: React.FC = () => {
 
         // Определяем режим игры для отправки на сервер
         const gameMode = currentScreen === "zen mode" ? "zen" : "classic";
-        const endpoint = gameMode === "zen" 
-          ? `/api/users/${telegramId}/zen-game`
-          : `/api/users/${telegramId}/game`;
+        const endpoint =
+          gameMode === "zen"
+            ? `/api/users/${telegramId}/zen-game`
+            : `/api/users/${telegramId}/game`;
 
         // Отправляем результат игры на сервер
         const response = await fetch(endpoint, {
@@ -452,20 +447,20 @@ const HomePage: React.FC = () => {
 
           // Обновляем рекорд если он изменился
           if (result.newRecord !== undefined && user) {
-            if (gameMode === 'zen') {
+            if (gameMode === "zen") {
               updateUser({ zenRecord: result.newRecord });
             } else {
               updateUser({ record: result.newRecord });
             }
           }
         } else {
-          // Удаляю все console.log, console.error, console.warn и любые отладочные комментарии/выводы
+          // ошибка игнорируется
         }
       } else {
-        // Удаляю все console.log, console.error, console.warn и любые отладочные комментарии/выводы
+        // ошибка игнорируется
       }
     } catch (error) {
-      // Удаляю все console.log, console.error, console.warn и любые отладочные комментарии/выводы
+      // ошибка игнорируется
     }
 
     // Устанавливаем shopReturnTo перед переходом на экран gameover
@@ -480,19 +475,22 @@ const HomePage: React.FC = () => {
     // НЕ устанавливаем currentScreen - пусть логика авторизации сама определит
   };
 
-  const handleOpenShop = useCallback((initialTab?: string) => {
-    // Determine where to return after shop
-    if (currentScreen === "classic mode" || currentScreen === "zen mode") {
-      setShopReturnTo(currentScreen);
-    } else {
-      setShopReturnTo("main menu");
-    }
-    setCurrentScreen("shop");
-    // Если передан initialTab, сохраняем его для ShopScreen
-    if (initialTab === "zen") {
-      setShopReturnTo("zen");
-    }
-  }, [currentScreen]);
+  const handleOpenShop = useCallback(
+    (initialTab?: string) => {
+      // Determine where to return after shop
+      if (currentScreen === "classic mode" || currentScreen === "zen mode") {
+        setShopReturnTo(currentScreen);
+      } else {
+        setShopReturnTo("main menu");
+      }
+      setCurrentScreen("shop");
+      // Если передан initialTab, сохраняем его для ShopScreen
+      if (initialTab === "zen") {
+        setShopReturnTo("zen");
+      }
+    },
+    [currentScreen]
+  );
 
   const handleShopBack = useCallback(() => {
     if (shopReturnTo === "classic mode" || shopReturnTo === "zen mode") {
@@ -609,7 +607,6 @@ const HomePage: React.FC = () => {
 
       {/* подсветка краев для whirlwind перенесена в GameBoard  */}
 
-
       {/* Dev-панель для ручного переключения экрана */}
       {/* {isDev && (
         <div
@@ -710,7 +707,13 @@ const HomePage: React.FC = () => {
       {currentScreen === "shop" && (
         <ShopScreen
           onBack={handleShopBack}
-          initialTab={shopReturnTo === "zen" ? "zen" : shopReturnTo === "classic mode" || shopReturnTo === "zen mode" ? "boosters" : "shards"}
+          initialTab={
+            shopReturnTo === "zen"
+              ? "zen"
+              : shopReturnTo === "classic mode" || shopReturnTo === "zen mode"
+              ? "boosters"
+              : "shards"
+          }
         />
       )}
 

@@ -86,7 +86,6 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
       setIsLoading(false);
       setIsRefreshing(false);
     } catch (err) {
-      console.error("Error fetching leaderboards:", err);
       setError(t("leaderboard.error"));
       setIsLoading(false);
       setIsRefreshing(false);

@@ -27,10 +27,6 @@ const useBoardAndCellSizes = () => {
       }
       if (cellRef.current) {
         setDynamicCellSize(cellRef.current.getBoundingClientRect().width);
-        console.log(
-          "Updated dynamicCellSize:",
-          cellRef.current.getBoundingClientRect().width
-        );
       }
     };
 
@@ -121,9 +117,7 @@ export const useDnDLogic = () => {
       const rect = boardRect;
 
       if (!rect || !currentDragPosition) {
-        console.warn(
-          "boardRect or dragPosition not available in calculateGridPosition"
-        );
+
         return null;
       }
 

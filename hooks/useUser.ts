@@ -43,13 +43,13 @@ export const useUser = () => {
   useEffect(() => {
     const handleRecordUpdated = (event: CustomEvent) => {
       const { newRecord, gameMode = 'classic' } = event.detail;
-      console.log('🎯 Received recordUpdated event:', newRecord, 'for gameMode:', gameMode);
+      // console.log('🎯 Received recordUpdated event:', newRecord, 'for gameMode:', gameMode);
       
       setUserState(prev => {
         if (prev.user) {
           const currentRecord = gameMode === 'zen' ? prev.user.zenRecord : prev.user.record;
           if (newRecord > currentRecord) {
-            console.log(`📈 Updating local user ${gameMode} record from`, currentRecord, 'to', newRecord);
+            // console.log(`📈 Updating local user ${gameMode} record from`, currentRecord, 'to', newRecord);
             return {
               ...prev,
               user: {
@@ -76,17 +76,17 @@ export const useUser = () => {
       return;
     }
 
-    console.log("Checking user session...");
+    // console.log("Checking user session...");
 
     // --- Admin mode (dev only) ---
     const adminMode = localStorage.getItem('adminMode');
-    console.log("Admin mode:", adminMode, "NODE_ENV:", process.env.NODE_ENV);
+    // console.log("Admin mode:", adminMode, "NODE_ENV:", process.env.NODE_ENV);
     if (adminMode === 'true' && process.env.NODE_ENV === 'development') {
-      console.log("Using admin mode, fetching user 610936383");
+      // console.log("Using admin mode, fetching user 610936383");
       try {
         const res = await fetch('/api/users/610936383');
         const user = await res.json();
-        console.log("Admin user loaded:", user);
+        // console.log("Admin user loaded:", user);
         
         setUserState({
           user,
@@ -96,7 +96,7 @@ export const useUser = () => {
         });
         return;
       } catch (e) {
-        console.error("Error loading admin user:", e);
+        // console.error("Error loading admin user:", e);
         setUserState(prev => ({ ...prev, isLoading: false }));
         return;
       }
@@ -106,34 +106,34 @@ export const useUser = () => {
       const sessionToken = localStorage.getItem('sessionToken');
       const userData = localStorage.getItem('userData');
       
-      console.log("Session token:", sessionToken ? "exists" : "missing");
-      console.log("User data:", userData ? "exists" : "missing");
+      // console.log("Session token:", sessionToken ? "exists" : "missing");
+      // console.log("User data:", userData ? "exists" : "missing");
 
       if (sessionToken && userData) {
         const user = JSON.parse(userData);
-        console.log("Parsed user data:", user);
+        // console.log("Parsed user data:", user);
         
         // Проверяем, не истек ли токен (простая проверка)
         const tokenData = JSON.parse(atob(sessionToken));
         const now = Math.floor(Date.now() / 1000);
         
-        console.log("Token expiry:", tokenData.exp, "Current time:", now);
+        // console.log("Token expiry:", tokenData.exp, "Current time:", now);
         
         if (tokenData.exp > now) {
-          console.log("Token is valid, refreshing user data from server");
+          // console.log("Token is valid, refreshing user data from server");
           // Всегда получаем свежие данные с сервера, особенно баланс
           await refreshUserData(user.telegramId, sessionToken);
           return;
         } else {
-          console.log("Token expired, logging out");
+          // console.log("Token expired, logging out");
           // Токен истек, очищаем данные
           logout();
         }
       } else {
-        console.log("No session token or user data found");
+        // console.log("No session token or user data found");
       }
     } catch (error) {
-      console.error('Error checking user session:', error);
+      // console.error('Error checking user session:', error);
       logout();
     }
 
@@ -149,7 +149,7 @@ export const useUser = () => {
       });
       if (res.ok) {
         const freshUser = await res.json();
-        console.log("Fresh user data loaded from server:", freshUser);
+        // console.log("Fresh user data loaded from server:", freshUser);
         
         // Обновляем localStorage БЕЗ currency - баланс всегда с сервера
         const { currency, ...userDataForStorage } = freshUser;
@@ -162,11 +162,11 @@ export const useUser = () => {
           isAuthenticated: true,
         });
       } else {
-        console.error('Failed to refresh user data');
+        // console.error('Failed to refresh user data');
         setUserState(prev => ({ ...prev, isLoading: false }));
       }
     } catch (error) {
-      console.error('Error refreshing user data:', error);
+      // console.error('Error refreshing user data:', error);
       setUserState(prev => ({ ...prev, isLoading: false }));
     }
   };
@@ -236,7 +236,7 @@ export const useUser = () => {
           return freshUser.currency;
         }
       } catch (error) {
-        console.error('Error refreshing balance:', error);
+        // console.error('Error refreshing balance:', error);
       }
     }
     return userState.user?.currency || 0;

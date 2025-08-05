@@ -54,9 +54,9 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
       const isAvailable = index === currentDay - 1 && canClaimToday;
       const isLocked = index > currentDay - 1;
 
-      let status: RewardStatus = 'locked';
-      if (isClaimed) status = 'claimed';
-      else if (isAvailable) status = 'available';
+      let status: RewardStatus = "locked";
+      if (isClaimed) status = "claimed";
+      else if (isAvailable) status = "available";
 
       return {
         type: day.regular.type,
@@ -73,9 +73,9 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
       const isAvailable = index === currentDay - 1 && canClaimToday;
       const isLocked = index > currentDay - 1;
 
-      let status: RewardStatus = 'locked';
-      if (isClaimed) status = 'claimed';
-      else if (isAvailable) status = 'available';
+      let status: RewardStatus = "locked";
+      if (isClaimed) status = "claimed";
+      else if (isAvailable) status = "available";
 
       return {
         type: day.premium.type,
@@ -87,18 +87,18 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
   };
 
   // ВСЕ useMemo хуки должны быть здесь, до любых условных return
-  const currentWeekData = useMemo(() => 
-    bonusData?.weeks.find(w => w.week === (currentWeek ?? 1)), 
+  const currentWeekData = useMemo(
+    () => bonusData?.weeks.find((w) => w.week === (currentWeek ?? 1)),
     [bonusData?.weeks, currentWeek]
   );
 
-  const classicRewards = useMemo(() => 
-    currentWeekData ? transformRewards(currentWeekData) : [], 
+  const classicRewards = useMemo(
+    () => (currentWeekData ? transformRewards(currentWeekData) : []),
     [currentWeekData, currentDay, canClaimToday]
   );
 
-  const zenRewards = useMemo(() => 
-    currentWeekData ? transformZenRewards(currentWeekData) : [], 
+  const zenRewards = useMemo(
+    () => (currentWeekData ? transformZenRewards(currentWeekData) : []),
     [currentWeekData, currentDay, canClaimToday]
   );
 
@@ -121,7 +121,9 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
       <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
         <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-md border border-white/20 p-8">
           <div className="text-white text-center">Error: {error}</div>
-          <button onClick={onClose} className="mt-4 text-blue-400">Close</button>
+          <button onClick={onClose} className="mt-4 text-blue-400">
+            Close
+          </button>
         </div>
       </div>
     );
@@ -143,15 +145,17 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
       <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
         <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-md border border-white/20 p-8">
           <div className="text-white text-center">Week data not found</div>
-          <button onClick={onClose} className="mt-4 text-blue-400">Close</button>
+          <button onClick={onClose} className="mt-4 text-blue-400">
+            Close
+          </button>
         </div>
       </div>
     );
   }
 
   const getStatusIcon = (reward: DailyReward) => {
-    if (reward.status === "claimed") return "✅";
-    if (reward.status === "skipped") return "❌";
+    if (reward.status === "claimed") return "/tick.svg";
+    if (reward.status === "skipped") return "/cross.svg";
     // if (reward.status === "locked") return "🔒";
     return "";
   };
@@ -166,14 +170,15 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
         />
       );
     } else if (reward.type === "booster") {
-      const boosterSrc = reward.boosterType === "undo" 
-        ? "/boosters/back.png" 
-        : reward.boosterType === "bomb"
-        ? "/boosters/bomb.svg"
-        : reward.boosterType === "whirlwind"
-        ? "/boosters/whirlwind.svg"
-        : "/boosters/bomb.svg"; // fallback
-      
+      const boosterSrc =
+        reward.boosterType === "undo"
+          ? "/boosters/back.png"
+          : reward.boosterType === "bomb"
+          ? "/boosters/bomb.svg"
+          : reward.boosterType === "whirlwind"
+          ? "/boosters/whirlwind.svg"
+          : "/boosters/bomb.svg"; // fallback
+
       return (
         <img
           src={boosterSrc}
@@ -189,9 +194,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
     rewards: ReadonlyArray<DailyReward>,
     isZen = false
   ) => (
-    <div
-      className={`flex items-stretch gap-2 h-full`}
-    >
+    <div className={`flex items-stretch gap-2 h-full`}>
       {/* Left side - 2 rows of 3 items */}
       <div className="flex flex-col gap-2 w-[60%]">
         {/* First row */}
@@ -258,10 +261,8 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
         if (isZen) {
           // Для ZEN карточек проверяем подписку
           if (hasZenSubscription) {
-            const success = await claimBonus();
-            if (success) {
-              console.log('Zen bonus claimed successfully!');
-            }
+            await claimBonus();
+            
           } else {
             // Если нет подписки, открываем магазин
             onClose();
@@ -269,10 +270,8 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
           }
         } else {
           // Для обычных карточек просто получаем бонус
-          const success = await claimBonus();
-          if (success) {
-            console.log('Classic bonus claimed successfully!');
-          }
+          await claimBonus();
+          
         }
       }
     };
@@ -286,7 +285,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
             : "border-white/10 bg-white/5"
         } ${
           reward.status === "claimed" || reward.status === "skipped"
-            ? "black-gradient opacity-70"
+            ? "black-gradient opacity-80"
             : ""
         } ${reward.status === "locked" ? `${gradient}` : ""}
        ${size === "small" ? "p-2 gap-1" : "p-4 "}`}
@@ -313,41 +312,33 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
         </div>
         {/* Status */}
         {getStatusIcon(reward) && (
-          <div
-            className={`absolute bottom-1 right-1 rounded-full bg-black/40 backdrop-blur-md text-white flex items-center justify-center ${
-              size === "small" ? "w-5 h-5 text-xs" : "w-6 h-6 text-xl"
+          <img
+            className={`absolute bottom-1 right-1   ${
+              size === "small" ? "w-[12px] h-[12px] text-xs" : "w-6 h-6 text-xl"
             }`}
-          >
-            {getStatusIcon(reward)}
-          </div>
+            src={getStatusIcon(reward)}
+          ></img>
         )}
 
         {reward.status === "locked" && !isZen && (
-          <motion.div
+          <motion.img
             initial={animateUnlock ? { scale: 1, opacity: 1 } : false}
             animate={animateUnlock ? { scale: 1.8, opacity: 0 } : false}
             transition={{ duration: 0.6, ease: "easeOut" }}
-            className={`absolute bottom-1 right-1  ${
-              size === "small" ? "text-xs" : "text-xl"
+            src={"/lock.svg"}
+            className={`absolute bottom-1 right-1   ${
+              size === "small"
+                ? "text-xs w-[12px] h-[12px]"
+                : "text-xl w-[20px] h-[20px]"
             }`}
-          >
-            🔒
-          </motion.div>
+          ></motion.img>
         )}
       </ClickEffect>
     );
   };
   const ClaimButton = () => {
     const handleClaim = async () => {
-      const success = await claimBonus();
-      if (success) {
-        // Можно добавить уведомление об успехе
-        console.log('Bonus claimed successfully!');
-        // Если у пользователя есть ZEN подписка, он получает оба бонуса
-        if (hasZenSubscription) {
-          console.log('User has Zen subscription - both bonuses claimed!');
-        }
-      }
+      await claimBonus();
     };
 
     return (
@@ -357,7 +348,9 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
           disabled={!canClaimToday || isLoading}
           className={`mx-auto mt-4 mb-4 block rounded-xl py-2 w-[50%] text-white text-lg font-bold
                        bg-gradient-to-br green-gradient scale-active font-figtree-mulish ${
-                         canClaimToday && !isLoading ? "shimmer-effect" : "opacity-50"
+                         canClaimToday && !isLoading
+                           ? "shimmer-effect"
+                           : "opacity-50"
                        } drop-shadow-[0_0_20px_#40ae54]`}
         >
           {isLoading ? "Claiming..." : t("bonuses.claim")}

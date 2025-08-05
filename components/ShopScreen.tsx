@@ -122,7 +122,11 @@ function ZenDescriptionCard({
       onClick={onScrollToSubscriptions}
       className="relative bg-white/10 backdrop-blur-md rounded-3xl shadow-xl flex flex-col items-center justify-between p-8 w-full max-w-lg border border-white/20 mb-8 hover:bg-white/15 hover:border-white/30 transition-all duration-300 cursor-pointer"
     >
-      <img src="/stars.svg" alt="ZEN" className=" w-40 h-30 -my-6 -mt-6 drop-shadow-[0_0_20px_#FF48C2]" />
+      <img
+        src="/stars.svg"
+        alt="ZEN"
+        className=" w-40 h-30 -my-6 -mt-6 drop-shadow-[0_0_20px_#FF48C2]"
+      />
       <div className="mb-3 text-3xl font-extrabold text-white font-figtree-mulish menu-shadow tracking-wide text-center">
         {t("shop.zen_subscription")}
       </div>
@@ -197,7 +201,7 @@ function ZenSubCard({
     <ClickEffect
       onClick={onClick}
       className="relative bg-white/10 backdrop-blur-md rounded-3xl shadow-xl flex flex-row gap-4
-     items-center justify-between p-10 w-full border border-white/20
+     items-center justify-between p-10 py-7 w-full border border-white/20
       hover:scale-[1.02] scale-active transition-transform hover:bg-white/15 hover:border-white/30 mb-4 cursor-pointer"
     >
       {percent && (
@@ -351,7 +355,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
 
       setIsBalanceLoading(false);
     } catch (error) {
-      console.error("Error updating balance:", error);
+      // console.error("Error updating balance:", error);
       setIsBalanceLoading(false);
     }
   }, [refreshBalance, isAdmin]);
@@ -421,12 +425,6 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
     }
 
     try {
-      console.log("🛒 Purchasing booster:", {
-        boosterTypeId: selectedBooster.id,
-        quantity,
-        userId: user.telegramId,
-      });
-
       const sessionToken =
         typeof window !== "undefined"
           ? localStorage.getItem("sessionToken")
@@ -478,7 +476,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
         }
       }
     } catch (error) {
-      console.error("❌ Error purchasing booster:", error);
+      // console.error("❌ Error purchasing booster:", error);
 
       if (typeof window !== "undefined" && window.Telegram?.WebApp) {
         const webApp = window.Telegram.WebApp as any;
@@ -553,7 +551,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
         );
       }
     } catch (error) {
-      console.error("Error creating ZEN invoice:", error);
+      // console.error("Error creating ZEN invoice:", error);
       showTelegramAlert("Ошибка при создании инвойса");
     }
   };
@@ -741,8 +739,8 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
           playerBalanceCrystals={isAdmin ? adminBalance ?? 333 : balance}
         />
       )}
-      {selectedShardPack &&
-        null // Отключаем ShardPurchaseModal, чтобы не открывалось окно
+      {
+        selectedShardPack && null // Отключаем ShardPurchaseModal, чтобы не открывалось окно
       }
       {/* InsufficientShardsModal */}
       {isInsufficientShardsModalOpen && insufficientModalData && (

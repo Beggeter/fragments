@@ -92,14 +92,14 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
         return;
       }
 
-      console.log("🚀 Creating Telegram Stars booster invoice:", {
-        userId,
-        boosterId: booster.id,
-        boosterName: booster.name,
-        quantity,
-        unitPrice: booster.price_stars,
-        totalPrice: booster.price_stars * quantity,
-      });
+      // console.log("🚀 Creating Telegram Stars booster invoice:", {
+      //   userId,
+      //   boosterId: booster.id,
+      //   boosterName: booster.name,
+      //   quantity,
+      //   unitPrice: booster.price_stars,
+      //   totalPrice: booster.price_stars * quantity,
+      // });
 
       // Создаем инвойс через Telegram Stars API
       const result = await createBoosterInvoice(
@@ -111,8 +111,6 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
       );
 
       if (result.success) {
-        console.log('✅ Payment successful!');
-        
         // Показываем уведомление пользователю
         showTelegramAlert('Оплата прошла успешно! Бустер добавлен.');
         
@@ -131,7 +129,6 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
         }
       }
     } catch (e: any) {
-      console.error("❌ Error creating Telegram Stars booster invoice:", e);
       setError(
         "Ошибка создания инвойса: " + (e.message || "Неизвестная ошибка")
       );

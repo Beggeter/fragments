@@ -518,14 +518,11 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   // Функция для второй фазы undo - анимация возвращения фигуры
   const startPieceReturnAnimation = useCallback(() => {
-    console.log("🔄 startPieceReturnAnimation called");
     if (!undoData) {
-      console.log("🔄 No undoData, returning");
       return;
     }
 
     const { currentState, restorePiecesState } = undoData;
-    console.log("🔄 startPieceReturnAnimation: currentState", currentState);
 
     if (currentState.placedPiece && currentState.placedPiecePosition) {
       // Найти контейнер для возвращения фигуры
@@ -533,15 +530,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         ".draggable-pieces-section"
       );
       const targetRect = piecesContainer?.getBoundingClientRect() || null;
-
-      console.log("🔄 Phase 2: Starting piece return animation", {
-        piece: currentState.placedPiece.id,
-        fromPosition: currentState.placedPiecePosition,
-        targetRect: targetRect
-          ? { width: targetRect.width, height: targetRect.height }
-          : null,
-      });
-
+    
+      // 🔄 Phase 2: Starting piece return animation
       if (onPieceReturnAnimation) {
         onPieceReturnAnimation({
           piece: currentState.placedPiece,
@@ -554,17 +544,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
       // Завершить undo после анимации возвращения фигуры
       setTimeout(async () => {
-        console.log("🔄 Phase 2: Piece return animation completed");
         restorePiecesState();
         setUndoData(null); // Очищаем данные undo
         setUndoActive(false);
-        await saveAfterAction().catch(console.error);
+        await saveAfterAction();
       }, 800); // Время анимации возвращения фигуры
     } else {
       // Если нет фигуры для возвращения, завершаем undo сразу
-      console.log(
-        "🔄 Phase 2: No piece to return, completing undo immediately"
-      );
       restorePiecesState();
       setUndoData(null); // Очищаем данные undo
       setUndoActive(false);
@@ -583,15 +569,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   // Эффект для обновления движка при изменении роли пользователя
   useEffect(() => {
-    console.log('🔍 useEffect для обновления движка');
-    console.log('  - user:', user);
-    console.log('  - user?.role:', user?.role);
+
     
     if (user?.role) {
-      console.log('✅ Вызываем updateEngineForUser с ролью:', user.role);
+      // ✅ Вызываем updateEngineForUser с ролью
       updateEngineForUser(user.role);
     } else {
-      console.log('❌ Роль пользователя не найдена, используем дефолтный движок');
+      // ❌ Роль пользователя не найдена, используем дефолтный движок');
     }
   }, [user?.role, updateEngineForUser]);
 
@@ -658,15 +642,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   const handleSpinnerFinish = useCallback(async () => {
     setShowSpinnerAnimation(false);
-    // const currentScore = useGameStore.getState().score;
-  // const newScore = score + 300;
-  
-  // useGameStore.setState({
-  //   score: newScore,
-  // });
-
-  await saveAfterAction().catch(console.error);
-
+    await saveAfterAction();
     setTimeout(() => {
       setClearedLines(new Set());
     }, 500);
@@ -700,10 +676,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       tgid = 610936383;
     }
     if (!tgid) {
-      console.log("No telegram ID available for fetching boosters");
       return;
     }
-    console.log("Fetching boosters for telegram ID:", tgid);
     const sessionToken =
       typeof window !== "undefined"
         ? localStorage.getItem("sessionToken")
@@ -714,7 +688,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
     const res = await fetch(`/api/users/${tgid}/boosters`, { headers });
     const data = await res.json();
-    console.log("Boosters API response:", data);
     const boostersForPanel = (data.availableBoosters as Array<any>).map(
       (booster: any) => {
         const userBooster = (data.userBoosters as Array<any>).find(
@@ -733,21 +706,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         };
       }
     );
-    console.log("Processed boosters:", boostersForPanel);
     setBoosters(boostersForPanel);
   }, [user?.telegramId, isAdmin]);
 
   useEffect(() => {
-    console.log(
-      "useEffect triggered for fetchBoosters, user:",
-      user,
-      "isAdmin:",
-      isAdmin
-    );
-    console.log(
-      "Admin mode in localStorage:",
-      typeof window !== "undefined" ? localStorage.getItem("adminMode") : "N/A"
-    );
     fetchBoosters();
   }, [fetchBoosters]);
 
@@ -820,7 +782,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       if (currentPieces.length === 0) {
         // Если это намеренный перезапуск, не загружаем сохранение
         if (isIntentionalRestart || externalIsIntentionalRestart) {
-          console.log("Intentional restart, starting new game");
           initializeGame();
           handleRestartComplete(); // Используем стабильную функцию
           return;
@@ -831,10 +792,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
         if (!gameLoaded) {
           // Если сохраненной игры нет, начинаем новую
-          console.log("No saved game found, starting new game");
           initializeGame();
         } else {
-          console.log("Saved game loaded successfully");
         }
       }
     };
@@ -1035,9 +994,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           ]);
 
           // Сохраняем игру после размещения фигуры
-          saveAfterAction().catch((error) => {
-            console.error("Error saving game after action:", error);
-          });
+          saveAfterAction()
         },
       });
     },
@@ -1172,7 +1129,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   // Функция для удаления строки или столбца
   const handleLaserCellClick = (row: number, col: number) => {
-    console.log("Laser click", row, col);
     if (!board) return;
     const isRow = true; // TODO: добавить определение по координате клика
     let newBoard = board.map((rowArr) => rowArr.map((cell) => ({ ...cell })));
@@ -1198,9 +1154,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     ]);
 
     // Сохраняем игру после использования лазера
-    saveAfterAction().catch((error) => {
-      console.error("Error saving game after laser:", error);
-    });
+    saveAfterAction();
   };
 
   // Новый обработчик undo с двухфазной анимацией
@@ -1212,18 +1166,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     const currentState = history[history.length - 1];
     const previousState = history[history.length - 2];
 
-    console.log("🔄 Undo started:", {
-      hasCurrentState: !!currentState,
-      hasPreviousState: !!previousState,
-      hasClearedCells: !!currentState.clearedCells,
-      hasPlacedPiece: !!currentState.placedPiece,
-      hasPlacedPiecePosition: !!currentState.placedPiecePosition,
-      historyLength: history.length,
-    });
-
+    
     // Функция для восстановления состояния доски (вызывается после анимации восстановления клеток)
     const restoreBoardState = () => {
-      console.log("🔄 Phase 1.5: Restoring board state");
+      // 🔄 Phase 1.5: Restoring board state
 
       // Если есть размещенная фигура, нужно убрать её с доски
       let newBoard = previousState.board.map((row) =>
@@ -1259,15 +1205,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         score: previousState.score,
       });
 
-      console.log("🔄 Board state restored successfully!");
+
     };
 
     // Функция для восстановления состояния фигур (вызывается после анимации возвращения фигуры)
     const restorePiecesState = () => {
-      console.log("🔄 Phase 3: Restoring pieces state", {
-        newPiecesCount: previousState.currentPieces.length,
-        newPiecesPlaced: previousState.piecesPlaced,
-      });
+      // 🔄 Phase 3: Restoring pieces state
 
       useGameStore.setState({
         currentPieces: previousState.currentPieces.map((piece) => ({
@@ -1279,7 +1222,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       // Удаляем последний элемент из истории после завершения всех анимаций
       setHistory((prev) => prev.slice(0, -1));
 
-      console.log("🔄 Undo completed successfully!");
+      // 🔄 Undo completed successfully!
     };
 
     // Сохраняем данные undo для использования в анимациях
@@ -1333,30 +1276,22 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       });
 
       if (restoreCells.length > 0) {
-        console.log(
-          "🔄 Phase 1: Starting field restore animation with",
-          restoreCells.length,
-          "cells"
-        );
+
+        // 🔄 Phase 1: Starting field restore animation with
+
         setRestoreAnimations(restoreCells);
         // onComplete колбэк будет вызван компонентом BoardRestoreAnimationsOverlay
         // когда анимация завершится, и запустит startPieceReturnAnimation()
       } else {
-        console.log(
-          "🔄 Phase 1: No cells to restore, skipping to piece return"
-        );
+
+        // 🔄 Phase 1: No cells to restore, skipping to piece return
+
         restoreBoardState();
         startPieceReturnAnimation();
       }
     } else {
       // Если нет очищенных клеток, сразу восстанавливаем доску и переходим к возвращению фигуры
-      console.log(
-        "🔄 Phase 1: No cleared cells, restoring board and starting piece return"
-      );
-      console.log(
-        "🔄 Debug: startPieceReturnAnimation function:",
-        typeof startPieceReturnAnimation
-      );
+      // 🔄 Phase 1: No cleared cells, restoring board and starting piece return
       restoreBoardState();
 
       // Передаем данные напрямую, так как setUndoData асинхронный
@@ -1378,13 +1313,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         );
         const targetRect = piecesContainer?.getBoundingClientRect() || null;
 
-        console.log("🔄 Phase 2: Starting piece return animation", {
-          piece: undoDataForAnimation.currentState.placedPiece.id,
-          fromPosition: undoDataForAnimation.currentState.placedPiecePosition,
-          targetRect: targetRect
-            ? { width: targetRect.width, height: targetRect.height }
-            : null,
-        });
+        // 🔄 Phase 2: Starting piece return animation
+
 
         if (onPieceReturnAnimation) {
           onPieceReturnAnimation({
@@ -1398,17 +1328,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
         // Завершить undo после анимации возвращения фигуры
         setTimeout(async () => {
-          console.log("🔄 Phase 2: Piece return animation completed");
+          // 🔄 Phase 2: Piece return animation completed
           undoDataForAnimation.restorePiecesState();
           setUndoActive(false);
 
-          await saveAfterAction().catch(console.error);
+          await saveAfterAction();
         }, 800); // Время анимации возвращения фигуры
       } else {
         // Если нет фигуры для возвращения, завершаем undo сразу
-        console.log(
-          "🔄 Phase 2: No piece to return, completing undo immediately"
-        );
         undoDataForAnimation.restorePiecesState();
         setUndoActive(false);
       }
@@ -1419,7 +1346,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   const useBooster = async (boosterName: string) => {
     const booster = boosters.find((b) => b.id === boosterName);
     if (!booster) {
-      console.log("Booster not found:", boosterName);
       return false;
     }
 
@@ -1433,11 +1359,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       tgid = 610936383;
     }
     if (!tgid) {
-      console.log("No telegram ID available for using booster");
       return false;
     }
 
-    console.log("Using booster:", boosterName, "for telegram ID:", tgid);
     const sessionToken =
       typeof window !== "undefined"
         ? localStorage.getItem("sessionToken")
@@ -1457,11 +1381,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     });
     const data = await res.json();
     if (!res.ok) {
-      console.error("Booster use error:", data.error);
       alert(data.error || "Ошибка списания бустера");
       return false;
     }
-    console.log("Booster used successfully:", data);
     await fetchBoosters();
     return true;
   };
@@ -1526,7 +1448,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       key: Date.now(), // <--- добавьте это
     });
 
-    console.log("ExplosionWave set:", { cx, cy });
 
     vibrate(400);
     // Запускаем частицы взрыва
@@ -1583,7 +1504,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       try {
         await saveAfterAction();
       } catch (error) {
-        console.error("Error saving game after bomb:", error);
       }
     }, 300);
     setBombMode(false);
@@ -2105,9 +2025,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       );
 
       // Добавляем дополнительную переменную для отладки
-      if (process.env.NODE_ENV === "development") {
-        console.log("GameBoard: установлена --app-vw:", clampedWidth, "px");
-      }
+      // if (process.env.NODE_ENV === "development") {
+      //   console.log("GameBoard: установлена --app-vw:", clampedWidth, "px");
+      // }
     };
 
     // Устанавливаем сразу
@@ -2292,11 +2212,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 gap={GAP_SIZE_PX}
                 boardRect={null}
                 onComplete={() => {
-                  console.log(
-                    "🔄 Phase 1: Field restore animation completed via onComplete"
-                  );
+                  // 🔄 Phase 1: Field restore animation completed via onComplete
                   setRestoreAnimations([]);
-
                   // Восстанавливаем состояние доски сразу после анимации восстановления клеток
                   if (undoData) {
                     undoData.restoreBoardState();
@@ -2425,7 +2342,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
                 >
                   {/* Волна взрыва */}
                   {explosionWave &&
-                    (console.log("Rendering ExplosionWave", explosionWave),
+                    (
                     (
                       <ExplosionWave
                         key={explosionWave.key} // <--- добавьте key

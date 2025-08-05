@@ -73,7 +73,7 @@ export const useAdminAuth = () => {
         isLoading: false,
       });
     } catch (error) {
-      console.error('Error checking admin status:', error);
+      // console.error('Error checking admin status:', error);
       setAuthState({
         isAdmin: false,
         adminToken: null,

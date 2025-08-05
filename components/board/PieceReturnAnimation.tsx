@@ -55,7 +55,7 @@ const PieceReturnAnimation: React.FC<PieceReturnAnimationProps> = ({
     );
     if (visiblePieces.length === 0) {
       targetContainer = container;
-      console.log(`🎯 Найден пустой контейнер #${i}:`, container);
+      // console.log(`🎯 Найден пустой контейнер #${i}:`, container);
       break;
     }
   }
@@ -63,10 +63,8 @@ const PieceReturnAnimation: React.FC<PieceReturnAnimationProps> = ({
   // Если не нашли пустой контейнер, используем средний контейнер (индекс 1)
   if (!targetContainer && pieceContainers.length >= 2) {
     targetContainer = pieceContainers[1];
-    console.log("🎯 Используем средний контейнер (индекс 1):", targetContainer);
   } else if (!targetContainer && pieceContainers.length > 0) {
     targetContainer = pieceContainers[0];
-    console.log("🎯 Используем первый контейнер:", targetContainer);
   }
 
   // Если есть конкретный контейнер, используем его координаты
@@ -76,50 +74,50 @@ const PieceReturnAnimation: React.FC<PieceReturnAnimationProps> = ({
     targetX = containerRect.left + containerRect.width / 2;
     targetY = containerRect.top + containerRect.height / 2;
 
-    console.log("🎯 Target container found:", {
-      container: targetContainer,
-      rect: {
-        x: targetX,
-        y: targetY,
-        width: containerRect.width,
-        height: containerRect.height,
-      },
-    });
+    // console.log("🎯 Target container found:", {
+    //   container: targetContainer,
+    //   rect: {
+    //     x: targetX,
+    //     y: targetY,
+    //     width: containerRect.width,
+    //     height: containerRect.height,
+    //   },
+    // });
   } else {
     // Fallback к старой логике
     targetX = targetRect ? targetRect.left + targetRect.width / 2 : startX;
     targetY = targetRect ? targetRect.top + targetRect.height * 0.3 : startY;
 
-    console.log("🎯 Using fallback target:", { x: targetX, y: targetY });
+    // console.log("🎯 Using fallback target:", { x: targetX, y: targetY });
   }
 
   // Размер фигуры уже определен выше
 
   // Подробное логирование для отладки
-  console.log("🎯 PieceReturnAnimation координаты:", {
-    "🟢 Начальная позиция (левый верхний угол bounding box)": {
-      x: startX,
-      y: startY,
-    },
-    "🔴 Конечная позиция (центр контейнера)": { x: targetX, y: targetY },
-    "📏 Размер фигуры": { width: pieceWidth, height: pieceHeight },
-    "🎲 Позиция на доске (сетка)": fromPosition,
-    "🎯 Найденный контейнер": targetContainer ? "✅ Найден" : "❌ Не найден",
-    "📐 Размер ячейки": cellSize,
-    "🔹 Зазор": gap,
-    "🎪 Доска": boardRect
-      ? {
-          left: boardRect.left,
-          top: boardRect.top,
-          width: boardRect.width,
-          height: boardRect.height,
-        }
-      : "❌ Не найдена",
-  });
+  // console.log("🎯 PieceReturnAnimation координаты:", {
+  //   "🟢 Начальная позиция (левый верхний угол bounding box)": {
+  //     x: startX,
+  //     y: startY,
+  //   },
+  //   "🔴 Конечная позиция (центр контейнера)": { x: targetX, y: targetY },
+  //   "📏 Размер фигуры": { width: pieceWidth, height: pieceHeight },
+  //   "🎲 Позиция на доске (сетка)": fromPosition,
+  //   "🎯 Найденный контейнер": targetContainer ? "✅ Найден" : "❌ Не найден",
+  //   "📐 Размер ячейки": cellSize,
+  //   "🔹 Зазор": gap,
+  //   "🎪 Доска": boardRect
+  //     ? {
+  //         left: boardRect.left,
+  //         top: boardRect.top,
+  //         width: boardRect.width,
+  //         height: boardRect.height,
+  //       }
+  //     : "❌ Не найдена",
+  // });
 
-  useEffect(() => {
-    console.log(boardRect);
-  }, [boardRect]);
+  // useEffect(() => {
+  //   console.log(boardRect);
+  // }, [boardRect]);
 
   useEffect(() => {
     // Показываем портал-эффект в начале

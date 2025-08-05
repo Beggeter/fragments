@@ -36,10 +36,8 @@ export const useSettingsStore = create<SettingsState>((set) => {
       if (typeof window !== "undefined" && window.Telegram?.WebApp) {
         const tg = window.Telegram.WebApp;
         if (enabled && tg.requestFullscreen && !tg.isFullscreen) {
-          console.log('🎮 Enabling immersive fullscreen via settings');
           tg.requestFullscreen();
         } else if (!enabled && tg.exitFullscreen && tg.isFullscreen) {
-          console.log('🎮 Disabling immersive fullscreen via settings');
           tg.exitFullscreen();
         }
       }

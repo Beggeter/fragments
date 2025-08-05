@@ -25,14 +25,14 @@ const colorGradients: Record<BlockColor, string> = {
 export const Piece: React.FC<PieceProps> = ({ color, size = 32, isClearing, isPreview = false }) => {
   const [imageError, setImageError] = useState(false);
 
-  console.log('🔍 Piece render:', {
-    color,
-    size,
-    isClearing,
-    isPreview,
-    imageError,
-    imageSrc: `/${color}.svg`
-  });
+  // console.log('🔍 Piece render:', {
+  //   color,
+  //   size,
+  //   isClearing,
+  //   isPreview,
+  //   imageError,
+  //   imageSrc: `/${color}.svg`
+  // });
 
   const opacity = isPreview ? 0.4 : 1;
 
@@ -69,7 +69,7 @@ export const Piece: React.FC<PieceProps> = ({ color, size = 32, isClearing, isPr
           opacity,
         }}
         onError={() => {
-          console.log('❌ Image failed to load:', `/${color}.svg`);
+          // console.log('❌ Image failed to load:', `/${color}.svg`);
           setImageError(true);
         }}
       />

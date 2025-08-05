@@ -78,10 +78,8 @@ export default function RootLayout({
                 const shouldEnableFullscreen = fullscreenEnabled !== 'false';
                 
                 if (tg.requestFullscreen && shouldEnableFullscreen) {
-                  console.log('Requesting immersive fullscreen mode...');
                   tg.requestFullscreen();
                 } else if (!shouldEnableFullscreen) {
-                  console.log('Fullscreen disabled by user setting');
                 }
                 
                 tg.disableClosingConfirmation();
@@ -107,31 +105,31 @@ export default function RootLayout({
                     
                     setTimeout(() => {
                       // Логируем полный объект viewport от Telegram
-                      console.log('🔍 Telegram WebApp viewport объект:', {
-                        viewport: tg.viewport,
-                        safeArea: tg.viewport?.safeArea,
-                        height: tg.viewport?.height,
-                        stableHeight: tg.viewport?.stableHeight,
-                        isExpanded: tg.viewport?.isExpanded,
-                        // Дополнительная информация о Telegram WebApp
-                        telegramVersion: tg.version,
-                        platform: tg.platform,
-                        isFullscreen: tg.isFullscreen,
-                        viewportHeight: tg.viewportHeight,
-                        viewportStableHeight: tg.viewportStableHeight
-                      });
+                      // console.log('🔍 Telegram WebApp viewport объект:', {
+                      //   viewport: tg.viewport,
+                      //   safeArea: tg.viewport?.safeArea,
+                      //   height: tg.viewport?.height,
+                      //   stableHeight: tg.viewport?.stableHeight,
+                      //   isExpanded: tg.viewport?.isExpanded,
+                      //   // Дополнительная информация о Telegram WebApp
+                      //   telegramVersion: tg.version,
+                      //   platform: tg.platform,
+                      //   isFullscreen: tg.isFullscreen,
+                      //   viewportHeight: tg.viewportHeight,
+                      //   viewportStableHeight: tg.viewportStableHeight
+                      // });
                       
                       // Получаем безопасные отступы от Telegram
                       let safeAreaTop = 0;
                       try {
                         safeAreaTop = tg.viewport?.safeArea?.top || 0;
-                        console.log('✅ Получен safeAreaTop от Telegram:', safeAreaTop);
+                        // console.log('✅ Получен safeAreaTop от Telegram:', safeAreaTop);
                       } catch (error) {
-                        console.warn('❌ Failed to get safeArea from Telegram:', error);
+                        // console.warn('❌ Failed to get safeArea from Telegram:', error);
                         // Fallback для устройств с notch
                         const hasNotch = window.innerHeight >= 812 && window.innerWidth >= 375;
                         safeAreaTop = hasNotch ? 44 : 20;
-                        console.log('🛡️ Используется fallback safeAreaTop:', safeAreaTop);
+                        // console.log('🛡️ Используется fallback safeAreaTop:', safeAreaTop);
                       }
                       
                       // Добавляем небольшой отступ для кнопок управления Telegram
@@ -143,7 +141,7 @@ export default function RootLayout({
                           telegramControlsOffset = parseInt(savedOffset) || 8;
                         }
                       } catch (error) {
-                        console.warn('Failed to get controls offset from localStorage:', error);
+                        // console.warn('Failed to get controls offset from localStorage:', error);
                       }
                       
                       const totalPaddingTop = safeAreaTop + telegramControlsOffset;
@@ -151,17 +149,17 @@ export default function RootLayout({
                       root.style.setProperty('--content-padding-top', totalPaddingTop + 'px');
                       root.style.setProperty('--content-available-height', 'calc(' + height + 'px - ' + totalPaddingTop + 'px)');
                       
-                      console.log('Fullscreen mode activated:', {
-                        height: height,
-                        safeAreaTop: safeAreaTop,
-                        telegramControlsOffset: telegramControlsOffset,
-                        totalPaddingTop: totalPaddingTop,
-                        availableHeight: (height - totalPaddingTop) + 'px',
-                        viewport: tg.viewport,
-                        hasViewportAPI: !!tg.viewport,
-                        screenWidth: window.innerWidth,
-                        screenHeight: window.innerHeight
-                      });
+                      // console.log('Fullscreen mode activated:', {
+                      //   height: height,
+                      //   safeAreaTop: safeAreaTop,
+                      //   telegramControlsOffset: telegramControlsOffset,
+                      //   totalPaddingTop: totalPaddingTop,
+                      //   availableHeight: (height - totalPaddingTop) + 'px',
+                      //   viewport: tg.viewport,
+                      //   hasViewportAPI: !!tg.viewport,
+                      //   screenWidth: window.innerWidth,
+                      //   screenHeight: window.innerHeight
+                      // });
                     }, 0);
                   } else {
                     document.body.classList.remove('tg-fullscreen');
@@ -169,17 +167,17 @@ export default function RootLayout({
                     root.style.setProperty('--content-padding-top', '0px');
                     root.style.setProperty('--content-available-height', height + 'px');
                     
-                    console.log('Standard mode activated:', {
-                      height: height,
-                      availableHeight: height + 'px'
-                    });
+                    // console.log('Standard mode activated:', {
+                    //   height: height,
+                    //   availableHeight: height + 'px'
+                    // });
                   }
                   
-                  console.log('Viewport updated:', { 
-                    height: height, 
-                    stableHeight: stableHeight, 
-                    isFullscreen: !!tg.isFullscreen 
-                  });
+                  // console.log('Viewport updated:', { 
+                  //   height: height, 
+                  //   stableHeight: stableHeight, 
+                  //   isFullscreen: !!tg.isFullscreen 
+                  // });
                 }
                 
                 updateViewportVars();
@@ -188,29 +186,29 @@ export default function RootLayout({
                   tg.onEvent('viewportChanged', updateViewportVars);
                   
                   tg.onEvent('fullscreenChanged', () => {
-                    console.log('Fullscreen state changed:', tg.isFullscreen);
+                    // console.log('Fullscreen state changed:', tg.isFullscreen);
                     updateViewportVars();
                   });
                   
                   tg.onEvent('fullscreenFailed', () => {
-                    console.log('Fullscreen request failed');
+                    // console.log('Fullscreen request failed');
                   });
                 }
                 
                 window.addEventListener('resize', updateViewportVars);
                 
-                console.log('Telegram WebApp initialized:', {
-                  platform: tg.platform,
-                  version: tg.version,
-                  viewportHeight: tg.viewportHeight,
-                  viewportStableHeight: tg.viewportStableHeight,
-                  isExpanded: tg.isExpanded
-                });
+                // console.log('Telegram WebApp initialized:', {
+                //   platform: tg.platform,
+                //   version: tg.version,
+                //   viewportHeight: tg.viewportHeight,
+                //   viewportStableHeight: tg.viewportStableHeight,
+                //   isExpanded: tg.isExpanded
+                // });
               } else {
                 const root = document.documentElement;
                 root.style.setProperty('--tg-viewport-height', '100vh');
                 root.style.setProperty('--tg-viewport-stable-height', '100vh');
-                console.log('Regular browser mode');
+                // console.log('Regular browser mode');
               }
             }
             

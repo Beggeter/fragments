@@ -15,7 +15,7 @@ const InvoiceSupportInfo: React.FC = () => {
           const { invoice } = await import('@telegram-apps/sdk');
           tmaSupported = invoice.isSupported();
         } catch (e) {
-          console.log('TMA SDK not available');
+          // console.log('TMA SDK not available');
         }
 
         const info = {
@@ -32,7 +32,7 @@ const InvoiceSupportInfo: React.FC = () => {
 
         setSupportInfo(info);
       } catch (error) {
-        console.error('Error checking support:', error);
+        // console.error('Error checking support:', error);
         setSupportInfo({ error: error instanceof Error ? error.message : 'Unknown error' });
       } finally {
         setIsLoading(false);

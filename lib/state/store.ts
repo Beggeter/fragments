@@ -260,14 +260,14 @@ export const useGameStore = create<
     },
 
     initializeGame: () => {
-      console.log('🔍 initializeGame вызван');
-      console.log('  - blockGenerator:', blockGenerator);
-      console.log('  - board:', get().board);
+      // console.log('🔍 initializeGame вызван');
+      // console.log('  - blockGenerator:', blockGenerator);
+      // console.log('  - board:', get().board);
       
       const blocksWithInitialIndex = blockGenerator.generateNextBlocks(
         get().board
       );
-      console.log('  - blocksWithInitialIndex:', blocksWithInitialIndex);
+      // console.log('  - blocksWithInitialIndex:', blocksWithInitialIndex);
       
       set({
         currentPieces: blocksWithInitialIndex,
@@ -304,14 +304,14 @@ export const useGameStore = create<
       const newRound = piecesPlaced + 1 >= 3 ? round + 1 : round;
       const newPiecesPlaced = piecesPlaced + 1 >= 3 ? 0 : piecesPlaced + 1;
 
-      console.log('Removing piece with uniqueId:', draggedPiece.uniqueId);
-      console.log('Current pieces before removal:', currentPieces.map(p => ({ id: p.id, uniqueId: p.uniqueId })));
+      // console.log('Removing piece with uniqueId:', draggedPiece.uniqueId);
+      // console.log('Current pieces before removal:', currentPieces.map(p => ({ id: p.id, uniqueId: p.uniqueId })));
       
       const newCurrentPieces = currentPieces.filter(
         (p) => p.uniqueId !== draggedPiece.uniqueId
       );
       
-      console.log('Current pieces after removal:', newCurrentPieces.map(p => ({ id: p.id, uniqueId: p.uniqueId })));
+      // console.log('Current pieces after removal:', newCurrentPieces.map(p => ({ id: p.id, uniqueId: p.uniqueId })));
 
       // Первое обновление с размещенной фигурой, но без очистки линий
       const newScore = get().score + scoreResult.totalPoints;
@@ -362,17 +362,17 @@ export const useGameStore = create<
 
       // Генерируем новые фигуры СРАЗУ, если разместили все 3
       if (newPiecesPlaced === 0) {
-        console.log('🔍 Генерируем новые фигуры');
-        console.log('  - finalBoard:', hasCellsToClear ? boardAfterClearing : newBoard);
-        console.log('  - blockGenerator:', blockGenerator);
+        // console.log('🔍 Генерируем новые фигуры');
+        // console.log('  - finalBoard:', hasCellsToClear ? boardAfterClearing : newBoard);
+        // console.log('  - blockGenerator:', blockGenerator);
         
         const finalBoard = hasCellsToClear ? boardAfterClearing : newBoard;
         const newBlocks = blockGenerator.generateNextBlocks(finalBoard);
-        console.log('  - newBlocks:', newBlocks);
+        // console.log('  - newBlocks:', newBlocks);
 
         // Проверяем завершение игры после генерации новых фигур
         if (checkGameOver(finalBoard, newBlocks)) {
-          console.log('❌ Game Over после генерации новых фигур');
+          // console.log('❌ Game Over после генерации новых фигур');
           set({
             currentPieces: newBlocks,
             previewBlock: blockGenerator.getPreviewBlock(),
@@ -382,7 +382,7 @@ export const useGameStore = create<
           return;
         }
 
-        console.log('✅ Generated new blocks:', newBlocks.map(b => ({ id: b.id, uniqueId: b.uniqueId })));
+        // console.log('✅ Generated new blocks:', newBlocks.map(b => ({ id: b.id, uniqueId: b.uniqueId })));
         set({
           currentPieces: newBlocks,
           previewBlock: blockGenerator.getPreviewBlock(),
@@ -474,23 +474,23 @@ export const useGameStore = create<
     
     // Функция для обновления движка при изменении роли пользователя
     updateEngineForUser: (userRole?: string) => {
-      console.log('🔍 updateEngineForUser вызван');
-      console.log('  - userRole:', userRole);
+      // console.log('🔍 updateEngineForUser вызван');
+      // console.log('  - userRole:', userRole);
       
       const { score, playerRecord } = get();
-      console.log('  - score:', score);
-      console.log('  - playerRecord:', playerRecord);
+      // console.log('  - score:', score);
+      // console.log('  - playerRecord:', playerRecord);
       
       // Создаем новый движок с учетом роли пользователя
       const newBlockGenerator = EngineSelector.createBlockGenerator(userRole, score, playerRecord);
-      console.log('  - newBlockGenerator:', newBlockGenerator);
+      // console.log('  - newBlockGenerator:', newBlockGenerator);
       
       // Обновляем глобальную переменную blockGenerator
       // Это немного хак, но позволяет обновить движок во время выполнения
       Object.assign(blockGenerator, newBlockGenerator);
       
-      console.log(`🎮 Движок обновлен для роли: ${userRole || 'обычный пользователь'}`);
-      console.log('  - blockGenerator после обновления:', blockGenerator);
+      // console.log(`🎮 Движок обновлен для роли: ${userRole || 'обычный пользователь'}`);
+      // console.log('  - blockGenerator после обновления:', blockGenerator);
     },
   };
 });
