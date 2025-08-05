@@ -30,8 +30,11 @@ interface DailyBonusState {
 }
 
 interface DailyBonusResponse {
-  weeks: DailyBonusConfig;
-  state: DailyBonusState;
+  weeks: DailyBonusWeek[];
+  currentWeek: number;
+  currentDay: number;
+  canClaimToday: boolean;
+  todayReward: DailyBonusReward | null;
 }
 
 export const useDailyBonus = () => {
@@ -97,12 +100,10 @@ export const useDailyBonus = () => {
 
       const data = await response.json();
       
-      // Обновляем локальное состояние
-      if (bonusData) {
-        setBonusData({
-          ...bonusData,
-          state: data.state
-        });
+      // Обновляем локальное состояние после успешного получения бонуса
+      if (bonusData && data.success) {
+        // Перезагружаем данные бонусов
+        await loadBonusData();
       }
 
       return true;
@@ -119,10 +120,10 @@ export const useDailyBonus = () => {
   const getCurrentDayRewards = () => {
     if (!bonusData) return null;
 
-    const currentWeek = bonusData.weeks.weeks.find(w => w.week === bonusData.state.currentWeek);
+    const currentWeek = bonusData.weeks.find(w => w.week === bonusData.currentWeek);
     if (!currentWeek) return null;
 
-    const currentDay = currentWeek.days.find(d => d.day === bonusData.state.currentDay);
+    const currentDay = currentWeek.days.find(d => d.day === bonusData.currentDay);
     return currentDay;
   };
 
@@ -144,8 +145,8 @@ export const useDailyBonus = () => {
     loadBonusData,
     getCurrentDayRewards,
     hasZenSubscription,
-    currentWeek: bonusData?.state.currentWeek || 1,
-    currentDay: bonusData?.state.currentDay || 1,
-    canClaimToday: bonusData?.state.canClaimToday || false,
+    currentWeek: bonusData?.currentWeek || 1,
+    currentDay: bonusData?.currentDay || 1,
+    canClaimToday: bonusData?.canClaimToday || false,
   };
 }; 

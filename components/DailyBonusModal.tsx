@@ -70,9 +70,15 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
     );
   }
 
-  // Если нет данных, не показываем модалку
+  // Если нет данных, показываем загрузку
   if (!bonusData) {
-    return null;
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-md border border-white/20 p-8">
+          <div className="text-white text-center">Loading bonus data...</div>
+        </div>
+      </div>
+    );
   }
 
   // Преобразуем данные из API в формат для компонента
@@ -88,8 +94,8 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
 
       return {
         type: day.regular.type,
-        amount: day.regular.amount,
-        boosterType: day.regular.boosterType,
+        amount: day.regular.amount || 0,
+        boosterType: day.regular.name,
         status,
       };
     });
@@ -107,15 +113,24 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
 
       return {
         type: day.premium.type,
-        amount: day.premium.amount,
-        boosterType: day.premium.boosterType,
+        amount: day.premium.amount || 0,
+        boosterType: day.premium.name,
         status,
       };
     });
   };
 
-  const currentWeekData = bonusData.weeks.weeks.find(w => w.week === currentWeek);
-  if (!currentWeekData) return null;
+  const currentWeekData = bonusData.weeks.find(w => w.week === currentWeek);
+  if (!currentWeekData) {
+    return (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+        <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-md border border-white/20 p-8">
+          <div className="text-white text-center">Week data not found</div>
+          <button onClick={onClose} className="mt-4 text-blue-400">Close</button>
+        </div>
+      </div>
+    );
+  }
 
   const classicRewards = transformRewards(currentWeekData);
   const zenRewards = transformZenRewards(currentWeekData);
