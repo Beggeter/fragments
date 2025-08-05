@@ -12,6 +12,7 @@ import record from "@/public/record.png";
 import MenuButton from "@/components/UI/MenuButton";
 import BackgroundAnimation from "@/components/UI/BackgroundAnimation";
 import ComingSoonModal from "@/components/UI/ComingSoonModal";
+import { ZenAccessModal } from "@/components/UI/ZenAccessModal";
 import { useUser } from "@/hooks/useUser";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { DailyBonusModal } from "./DailyBonusModal";
@@ -26,6 +27,7 @@ interface BottomButtonsProps {
   onStartClassic: () => void;
   onStartZen?: () => void;
   onShowComingSoon: () => void;
+  onShowZenAccessModal: () => void;
   onOpenShop: (initialTab?: string) => void;
   canAccessZen: boolean;
 }
@@ -38,6 +40,7 @@ const MainMenu: FC<MainMenuProps> = ({
 }) => {
   const [fadeIn, setFadeIn] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
+  const [showZenAccessModal, setShowZenAccessModal] = useState(false);
   const { user } = useUser();
   const { isAdmin } = useAdminAuth();
   const [showBonusModal, setShowBonusModal] = useState(false);
@@ -84,6 +87,7 @@ const MainMenu: FC<MainMenuProps> = ({
             onStartClassic={onStartClassic}
             onStartZen={onStartZen}
             onShowComingSoon={() => setShowComingSoon(true)}
+            onShowZenAccessModal={() => setShowZenAccessModal(true)}
             onOpenShop={onOpenShop}
             canAccessZen={canAccessZen}
           />
@@ -94,6 +98,12 @@ const MainMenu: FC<MainMenuProps> = ({
       <ComingSoonModal
         isOpen={showComingSoon}
         onClose={() => setShowComingSoon(false)}
+      />
+      {/* ZEN Access Modal */}
+      <ZenAccessModal
+        isOpen={showZenAccessModal}
+        onClose={() => setShowZenAccessModal(false)}
+        onOpenShop={() => onOpenShop("zen")}
       />
       <DailyBonusModal
         isOpen={showBonusModal}
@@ -157,6 +167,7 @@ const BottomButtons: FC<BottomButtonsProps> = ({
   onStartClassic,
   onStartZen,
   onShowComingSoon,
+  onShowZenAccessModal,
   onOpenShop,
   canAccessZen,
 }) => {
@@ -180,7 +191,7 @@ const BottomButtons: FC<BottomButtonsProps> = ({
           className="rounded-3xl px-6 py-10 max-w-md w-[55vw] sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3 opacity-70"
           textClasses="font-black italic text-[2.3rem] text-lg opacity-70"
           imageClasses="h-[3rem] min-w-[3rem] opacity-70"
-          onClick={() => onOpenShop("zen")}
+          onClick={onShowZenAccessModal}
         />
       )}
       <MenuButton

@@ -212,6 +212,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const subscriptionPeriod = paymentPayload.itemId; // 'month', 'year', etc.
         const price = paymentPayload.price || 0;
 
+        // Проверяем текущую подписку пользователя
+        const currentUser = await UserService.getUserById(paymentPayload.userId);
+        if (!currentUser) {
+          console.error('❌ User not found for subscription:', paymentPayload.userId);
+          return res.status(404).json({ error: 'User not found' });
+        }
+
         // Вычисляем дату окончания подписки
         const now = new Date();
         let endDate: Date;
@@ -225,6 +232,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           endDate = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
         }
 
+        // Если у пользователя уже есть активная подписка, добавляем дни к существующей
+        if (currentUser.hasZenSubscription && currentUser.zenSubscriptionEndDate) {
+          const currentEndDate = new Date(currentUser.zenSubscriptionEndDate);
+          
+          // Если текущая подписка еще активна, добавляем к ней
+          if (currentEndDate > now) {
+            const additionalDays = subscriptionPeriod === 'month' ? 30 : 365;
+            endDate = new Date(currentEndDate.getTime() + (additionalDays * 24 * 60 * 60 * 1000));
+            
+            console.log('📅 Extending existing subscription:', {
+              currentEndDate: currentEndDate,
+              additionalDays: additionalDays,
+              newEndDate: endDate
+            });
+          }
+        }
+
         // Обновляем статус подписки пользователя
         try {
           await UserService.updateUser(paymentPayload.userId, {
@@ -236,7 +260,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             userId: paymentPayload.userId,
             subscriptionPeriod: subscriptionPeriod,
             endDate: endDate,
-            price: price
+            price: price,
+            wasExtended: currentUser.hasZenSubscription && currentUser.zenSubscriptionEndDate && new Date(currentUser.zenSubscriptionEndDate) > now
           });
         } catch (subscriptionError) {
           console.error('❌ Failed to activate ZEN subscription:', subscriptionError);
