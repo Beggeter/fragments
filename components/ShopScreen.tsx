@@ -10,7 +10,11 @@ import ShardPurchaseModal from "./store/ShardPurchaseModal";
 import { ShardPack } from "@/types/shop";
 import ClickEffect from "./ClickEffect";
 import { useTranslation } from "react-i18next";
-import { createShardsInvoice, showTelegramAlert, createZenInvoice } from "@/lib/utils/telegramStars";
+import {
+  createShardsInvoice,
+  showTelegramAlert,
+  createZenInvoice,
+} from "@/lib/utils/telegramStars";
 import TgStarIcon from "./UI/TgStarIcon";
 
 const TABS_KEYS = ["shards", "boosters", "zen"] as const;
@@ -27,7 +31,6 @@ function ShardPackCard({ amount, price, label, labelType, icon, onBuy }: any) {
       className="relative bg-white/10 backdrop-blur-md rounded-3xl shadow-xl flex flex-col scale-active
      items-center p-3 min-w-[100%] w-full min-h-[120px] mx-auto border border-white/20 hover:scale-[1.04] transition-transform hover:bg-white/15 hover:border-white/30"
       onClick={onBuy}
-      
     >
       {/* Лейбл выгоды */}
       {label && (
@@ -39,7 +42,7 @@ function ShardPackCard({ amount, price, label, labelType, icon, onBuy }: any) {
                 : "bg-gradient-to-r from-emerald-400 to-emerald-500 text-white"
             }`}
         >
-          {t(`shop.for_free`, {bonus: label})}
+          {t(`shop.for_free`, { bonus: label })}
         </div>
       )}
       {/* Объединенный контейнер для иконки и количества */}
@@ -119,7 +122,7 @@ function ZenDescriptionCard({
       onClick={onScrollToSubscriptions}
       className="relative bg-white/10 backdrop-blur-md rounded-3xl shadow-xl flex flex-col items-center justify-between p-8 w-full max-w-lg border border-white/20 mb-8 hover:bg-white/15 hover:border-white/30 transition-all duration-300 cursor-pointer"
     >
-      <img src="/stars.svg" alt="ZEN" className=" w-40 h-30  " />
+      <img src="/stars.svg" alt="ZEN" className=" w-40 h-30 -my-6 -mt-6 drop-shadow-[0_0_20px_#FF48C2]" />
       <div className="mb-3 text-3xl font-extrabold text-white font-figtree-mulish menu-shadow tracking-wide text-center">
         {t("shop.zen_subscription")}
       </div>
@@ -195,7 +198,7 @@ function ZenSubCard({
       onClick={onClick}
       className="relative bg-white/10 backdrop-blur-md rounded-3xl shadow-xl flex flex-row gap-4
      items-center justify-between p-10 w-full border border-white/20
-      hover:scale-[1.02] transition-transform hover:bg-white/15 hover:border-white/30 mb-4 cursor-pointer"
+      hover:scale-[1.02] scale-active transition-transform hover:bg-white/15 hover:border-white/30 mb-4 cursor-pointer"
     >
       {percent && (
         <div
@@ -315,17 +318,19 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
   // Обработчик клика по пакету кристаллов
   const handleShardPackClick = async (pack: ShardPack) => {
     if (!user?.id) {
-      showTelegramAlert('Пользователь не авторизован');
+      showTelegramAlert("Пользователь не авторизован");
       return;
     }
     const result = await createShardsInvoice(user.id, pack.amount, pack.price);
     if (result.success) {
-      showTelegramAlert('Оплата прошла успешно! Осколки начислены.');
+      showTelegramAlert("Оплата прошла успешно! Осколки начислены.");
       await handleBalanceUpdate();
-    } else if (result.error === 'Payment cancelled') {
-      showTelegramAlert('Оплата отменена');
+    } else if (result.error === "Payment cancelled") {
+      showTelegramAlert("Оплата отменена");
     } else {
-      showTelegramAlert('Ошибка создания инвойса: ' + (result.error || 'Неизвестная ошибка'));
+      showTelegramAlert(
+        "Ошибка создания инвойса: " + (result.error || "Неизвестная ошибка")
+      );
     }
   };
 
@@ -443,7 +448,6 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
       const result = await response.json();
 
       if (response.ok) {
-        
         // Закрываем модалку
         setIsModalOpen(false);
         setSelectedBooster(null);
@@ -459,11 +463,10 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
           }
         }
       } else {
-        
-                 // Проверяем, если недостаточно средств
-         if (result.error === 'Insufficient currency') {
-           // Предлагаем перейти к покупке кристаллов
-           handleInsufficientFunds(quantity);
+        // Проверяем, если недостаточно средств
+        if (result.error === "Insufficient currency") {
+          // Предлагаем перейти к покупке кристаллов
+          handleInsufficientFunds(quantity);
         } else {
           // Показываем общую ошибку
           if (typeof window !== "undefined" && window.Telegram?.WebApp) {
@@ -503,51 +506,55 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
     setIsZenModalOpen(true);
   };
 
-  const handleZenPurchaseConfirm = async (paymentMethod: "crystals" | "stars") => {
+  const handleZenPurchaseConfirm = async (
+    paymentMethod: "crystals" | "stars"
+  ) => {
     if (!user?.id) {
-      showTelegramAlert('Пользователь не авторизован');
+      showTelegramAlert("Пользователь не авторизован");
       return;
     }
 
     if (!selectedSub) {
-      showTelegramAlert('Подписка не выбрана');
+      showTelegramAlert("Подписка не выбрана");
       return;
     }
 
     if (paymentMethod === "crystals") {
       // Покупка за кристаллы - проверяем баланс
       if (balance < selectedSub.priceCrystals) {
-        showTelegramAlert('Недостаточно кристаллов для покупки подписки');
+        showTelegramAlert("Недостаточно кристаллов для покупки подписки");
         return;
       }
 
       // TODO: Реализовать покупку за кристаллы через API
-      showTelegramAlert('Покупка за кристаллы пока не поддерживается');
+      showTelegramAlert("Покупка за кристаллы пока не поддерживается");
       return;
     }
 
     // Покупка за Stars через Telegram
     try {
       const result = await createZenInvoice(
-        user.id, 
-        selectedSub.period, 
+        user.id,
+        selectedSub.period,
         selectedSub.priceStars
       );
 
       if (result.success) {
-        showTelegramAlert('ZEN подписка успешно активирована!');
+        showTelegramAlert("ZEN подписка успешно активирована!");
         setIsZenModalOpen(false);
         setSelectedSub(null);
         // Обновляем данные пользователя после успешной покупки
         await checkUserSession();
-      } else if (result.error === 'Payment cancelled') {
-        showTelegramAlert('Оплата отменена');
+      } else if (result.error === "Payment cancelled") {
+        showTelegramAlert("Оплата отменена");
       } else {
-        showTelegramAlert('Ошибка создания инвойса: ' + (result.error || 'Неизвестная ошибка'));
+        showTelegramAlert(
+          "Ошибка создания инвойса: " + (result.error || "Неизвестная ошибка")
+        );
       }
     } catch (error) {
-      console.error('Error creating ZEN invoice:', error);
-      showTelegramAlert('Ошибка при создании инвойса');
+      console.error("Error creating ZEN invoice:", error);
+      showTelegramAlert("Ошибка при создании инвойса");
     }
   };
 
@@ -559,7 +566,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
   // Открыть модалку "Недостаточно осколков"
   const handleInsufficientFunds = (quantity: number) => {
     if (!selectedBooster) return;
-    
+
     const playerBal = isAdmin ? adminBalance ?? 333 : balance;
     setInsufficientModalData({
       currentBalance: playerBal,
@@ -630,20 +637,24 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
       </div>
       {/* Tab-панель */}
       <div className="flex gap-2 justify-center mt-2 mb-8">
-                 {TABS_KEYS.map((key) => (
-           <ClickEffect key={key}>
-             <button
-               onClick={() => setTab(key)}
-               className={`px-6 py-2 rounded-full text-lg font-extrabold transition-colors duration-300 border border-white/20  font-figtree-mulish ${
-                 tab === key
-                   ? "bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg"
-                   : "bg-white/10 backdrop-blur-md text-white  "
-               }`}
-             >
-               {t(`shop.${key}`)}
-             </button>
-           </ClickEffect>
-         ))}
+        {TABS_KEYS.map((key) => (
+          <ClickEffect key={key}>
+            <button
+              onClick={() => setTab(key)}
+              className={`px-6 py-2 rounded-full text-lg font-extrabold transition-colors duration-300 border border-white/20  font-figtree-mulish ${
+                tab === key
+                  ? `bg-gradient-to-r ${
+                      tab === "zen"
+                        ? " from-purple-400 to-purple-500 "
+                        : "from-orange-400 to-orange-500"
+                    }  text-white shadow-lg`
+                  : "bg-white/10 backdrop-blur-md text-white  "
+              }`}
+            >
+              {t(`shop.${key}`)}
+            </button>
+          </ClickEffect>
+        ))}
       </div>
       {/* Содержимое вкладок */}
       <div className="flex flex-col flex-1 justify-start items-center px-4 py-2 ">
@@ -730,9 +741,9 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
           playerBalanceCrystals={isAdmin ? adminBalance ?? 333 : balance}
         />
       )}
-      {selectedShardPack && (
+      {selectedShardPack &&
         null // Отключаем ShardPurchaseModal, чтобы не открывалось окно
-      )}
+      }
       {/* InsufficientShardsModal */}
       {isInsufficientShardsModalOpen && insufficientModalData && (
         <InsufficientShardsModal
@@ -768,8 +779,6 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
           }}
         />
       )}
-
-      
     </div>
   );
 };

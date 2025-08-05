@@ -13,6 +13,11 @@ interface LeaderboardEntry {
   avatarUrl?: string;
 }
 
+interface LeaderboardData {
+  leaderboard: LeaderboardEntry[];
+  userPosition: number | null;
+}
+
 interface LeaderboardScreenProps {
   onBack: () => void;
 }
@@ -22,14 +27,20 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
   const { user } = useUser();
   const { isAdmin } = useAdminAuth();
   const [activeTab, setActiveTab] = useState<"classic" | "zen">("classic");
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [userPosition, setUserPosition] = useState<number | null>(null);
+  const [leaderboards, setLeaderboards] = useState<{
+    classic: LeaderboardData;
+    zen: LeaderboardData;
+  }>({
+    classic: { leaderboard: [], userPosition: null },
+    zen: { leaderboard: [], userPosition: null },
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
+  const [showTabChange, setShowTabChange] = useState(false)
 
-  const fetchLeaderboard = async (showRefreshAnimation = false) => {
+  const fetchAllLeaderboards = async (showRefreshAnimation = false) => {
     try {
       if (showRefreshAnimation) {
         setIsRefreshing(true);
@@ -39,84 +50,102 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
       setError(null);
 
       const userIdParam = user ? `&userId=${user.id}` : "";
-      const gameModeParam = `&gameMode=${activeTab}`;
-      const sessionToken = typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : null;
+      const sessionToken =
+        typeof window !== "undefined"
+          ? localStorage.getItem("sessionToken")
+          : null;
       const headers: HeadersInit = {};
       if (sessionToken) {
         headers["Authorization"] = `Bearer ${sessionToken}`;
       }
-      const response = await fetch(`/api/leaderboard?limit=20${userIdParam}${gameModeParam}`, { headers });
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch leaderboard");
+      // Загружаем данные для обоих режимов параллельно
+      const [classicResponse, zenResponse] = await Promise.all([
+        fetch(`/api/leaderboard?limit=20${userIdParam}&gameMode=classic`, { headers }),
+        fetch(`/api/leaderboard?limit=20${userIdParam}&gameMode=zen`, { headers }),
+      ]);
+
+      if (!classicResponse.ok || !zenResponse.ok) {
+        throw new Error("Failed to fetch leaderboards");
       }
 
-      const data = await response.json();
-      console.log("API Response:", data);
-      console.log("User:", user);
-      console.log("User Position from API:", data.userPosition);
+      const classicData = await classicResponse.json();
+      const zenData = await zenResponse.json();
 
-      // Обрабатываем новую структуру данных
-      if (data.leaderboard) {
-        setLeaderboard(data.leaderboard);
-        setUserPosition(data.userPosition || null);
-      } else {
-        // Fallback для старой структуры
-        setLeaderboard(data);
-        setUserPosition(null);
-      }
+      setLeaderboards({
+        classic: {
+          leaderboard: classicData.leaderboard || classicData,
+          userPosition: classicData.userPosition || null,
+        },
+        zen: {
+          leaderboard: zenData.leaderboard || zenData,
+          userPosition: zenData.userPosition || null,
+        },
+      });
 
-      // Сбрасываем состояния загрузки
       setIsLoading(false);
       setIsRefreshing(false);
     } catch (err) {
-      console.error("Error fetching leaderboard:", err);
+      console.error("Error fetching leaderboards:", err);
       setError(t("leaderboard.error"));
       setIsLoading(false);
       setIsRefreshing(false);
     }
   };
-
+  
   useEffect(() => {
-    fetchLeaderboard();
-  }, [user, t, activeTab]);
+    fetchAllLeaderboards();
+  }, [user, t]);
+  
+  useEffect(() => {
+    if (showTabChange) {
+      const timeout = setTimeout(() => setShowTabChange(false), 300);
+      return () => clearTimeout(timeout);
+    }
+  }, [showTabChange]);
 
   const handleRefresh = () => {
-    fetchLeaderboard(true);
+    fetchAllLeaderboards(true);
   };
+
+  const currentLeaderboard = leaderboards[activeTab];
+  const leaderboard = currentLeaderboard.leaderboard;
+  const userPosition = currentLeaderboard.userPosition;
+
   const isUserInVisibleTop20 =
     user && leaderboard.some((entry) => entry.id === user.id);
 
-  // Показываем разделитель и карточку пользователя если он НЕ в топ-20
+  const shouldShowUserCard =
+    user &&
+    userPosition &&
+    !isUserInVisibleTop20 &&
+    (activeTab === "classic" ? user.record > 0 : user.zenRecord > 0);
 
-  const shouldShowUserCard = user && userPosition && !isUserInVisibleTop20 && (activeTab === 'classic' ? user.record > 0 : user.zenRecord > 0);
+  const shouldShowNoRecordMessage =
+    user &&
+    (activeTab === "classic" ? user.record === 0 : user.zenRecord === 0);
 
-
-  // Проверяем, нужно ли показать сообщение для пользователя без рекорда
-  const shouldShowNoRecordMessage = user && (activeTab === 'classic' ? user.record === 0 : user.zenRecord === 0);
-
-  // Создаем карточку пользователя для отображения под разделителем
   const getUserCard = () => {
     if (!user || !userPosition) return null;
 
-    const userRecord = activeTab === 'classic' ? user.record : user.zenRecord;
+    const userRecord = activeTab === "classic" ? user.record : user.zenRecord;
 
     return {
       id: user.id,
-      username: user.username || user.firstName || t('leaderboard.you'),
+      username: user.username || user.firstName || t("leaderboard.you"),
       record: userRecord || 0,
-      avatarUrl:
-        user.avatarUrl || "/blue.svg",
+      avatarUrl: user.avatarUrl || "/blue.svg",
       position: userPosition,
     };
   };
 
-  // Проверяем, может ли пользователь играть в Zen режим
-  const canAccessZen = isAdmin || user?.role === 'tester' || user?.role === 'premium';
+  const canAccessZen =
+    isAdmin || user?.role === "tester" || user?.role === "premium";
 
   const handleZenClick = () => {
     if (canAccessZen) {
       setActiveTab("zen");
+      setShowTabChange(true)
     } else {
       setShowComingSoon(true);
     }
@@ -125,7 +154,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
   const getMedalForPosition = (position: number) => {
     switch (position) {
       case 1:
-       return '/record.png'
+        return "/record.png";
       case 2:
         return "/cup_silver.svg";
       case 3:
@@ -195,14 +224,13 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
       <div className="flex gap-2 justify-center px-4">
         <ClickEffect>
           <button
-            onClick={() => setActiveTab("classic")}
+            onClick={() => {setShowTabChange(true); setActiveTab("classic")}}
             className={`px-6 py-3 rounded-full text-lg font-extrabold transition-all duration-300 border font-figtree-mulish ${
               activeTab === "classic"
                 ? "bg-gradient-to-r from-orange-400 to-orange-500 text-white shadow-lg border-orange-400"
                 : "bg-white/10 backdrop-blur-md text-white border-white/20 hover:bg-white/20 hover:border-white/30"
             }`}
           >
-            {/* {t("leaderboard.classic")} */}
             Classic
           </button>
         </ClickEffect>
@@ -219,7 +247,6 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
             }`}
             disabled={!canAccessZen}
           >
-            {/* {t("leaderboard.zen")} */}
             Zen
           </button>
         </ClickEffect>
@@ -228,12 +255,9 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
       {/* Заголовок */}
       <div className="text-center justify-center pb-2 pt-4">
         <div className="relative inline-block">
-          {/* Тень под текстом */}
           <h1 className="absolute text-[2.5rem] sm:text-6xl font-black tracking-wider text-blue-600/30 font-figtree-mulish px-8  transform translate-x-1 translate-y-1">
             LEADERBOARD
           </h1>
-
-          {/* Основной заголовок */}
           <h1 className="relative text-[2.5rem] sm:text-6xl font-black tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-purple-300 to-indigo-300 font-figtree-mulish px-8 ">
             LEADERBOARD
           </h1>
@@ -241,7 +265,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
       </div>
 
       {/* Контент */}
-      <div className="flex flex-col flex-1 justify-start items-center px-2 sm:px-4">
+      <div className={`flex flex-col flex-1 justify-start items-center px-2 sm:px-4 ${showTabChange ? 'slide-in-animation' : ''} `}>
         <div className="w-full max-w-2xl">
           {error ? (
             <div className="text-center py-12">
@@ -250,7 +274,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
               </div>
               <ClickEffect>
                 <button
-                  onClick={() => fetchLeaderboard()}
+                  onClick={() => fetchAllLeaderboards()}
                   className="bg-gradient-to-r from-orange-400 to-orange-500 hover:from-orange-500 hover:to-orange-600 px-8 py-3 rounded-2xl transition-all duration-300 font-bold font-figtree-mulish shadow-lg"
                 >
                   {t("leaderboard.try_again")}
@@ -290,8 +314,18 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
 
                       {/* Аватар и имя пользователя в контейнере */}
                       <div className="flex-1 min-w-0">
-                        <div className={`flex items-center bg-transparent backdrop-blur-md rounded-2xl px-3 py-2 border-black/20 
-                          ${position === 1 ? 'outline-2 outline-amber-400' : position === 2 ? 'outline-2 outline-[#84ADCE]' : position === 3 ? 'outline-2 outline-[#C6874D]' : ''}`}>
+                        <div
+                          className={`flex items-center bg-transparent backdrop-blur-md rounded-2xl px-3 py-2 border-black/20 
+                          ${
+                            position === 1
+                              ? "outline-2 outline-amber-400"
+                              : position === 2
+                              ? "outline-2 outline-[#84ADCE]"
+                              : position === 3
+                              ? "outline-2 outline-[#C6874D]"
+                              : ""
+                          }`}
+                        >
                           <div className="flex-shrink-0 mr-3">
                             <img
                               src={entry.avatarUrl || "/blue.svg"}
@@ -389,13 +423,14 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
                 {shouldShowNoRecordMessage && (
                   <div className="flex items-center justify-center p-6 border-t border-white/10">
                     <div className="text-center">
-                      <div className="text-2xl mb-2">🎮</div>
+                      <div className="text-2xl mb-1">🎮</div>
                       <div className="text-white font-figtree-mulish text-lg font-bold mb-2">
                         {t("leaderboard.no_record_title") || "Начните играть!"}
                       </div>
                       <div className="text-gray-300 font-figtree-mulish text-sm">
-                        {t("leaderboard.no_record_message") ||
-                          "Сыграйте свою первую игру, чтобы попасть в рейтинг"}
+                        {activeTab === "classic"
+                          ? t("leaderboard.no_record_message")
+                          : t("leaderboard.no_record_message_zen")}
                       </div>
                     </div>
                   </div>

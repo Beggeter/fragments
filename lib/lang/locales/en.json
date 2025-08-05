@@ -87,7 +87,10 @@
     "you": "You",
     "coming_soon": "Coming Soon!",
     "zen_coming_soon": "Zen mode is under development. Coming soon!",
-    "understood": "Got it"
+    "understood": "Got it",
+    "no_record_title" : "Start Playing!",
+    "no_record_message" : "Complete your first game to enter the Leaderboard",
+    "no_record_message_zen" : "Complete your first ZEN game to enter the Leaderboard"
   },
   "coming_soon": {
     "description": "is under development. Coming soon!",
