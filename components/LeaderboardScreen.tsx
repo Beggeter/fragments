@@ -36,7 +36,6 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
   const [showTabChange, setShowTabChange] = useState(false);
   
@@ -47,13 +46,9 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const userEntryRef = useRef<HTMLDivElement>(null);
 
-  const fetchAllLeaderboards = async (showRefreshAnimation = false) => {
+  const fetchAllLeaderboards = async () => {
     try {
-      if (showRefreshAnimation) {
-        setIsRefreshing(true);
-      } else {
-        setIsLoading(true);
-      }
+      setIsLoading(true);
       setError(null);
 
       const userIdParam = user ? `&userId=${user.id}` : "";
@@ -91,11 +86,9 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
       });
 
       setIsLoading(false);
-      setIsRefreshing(false);
     } catch (err) {
       setError(t("leaderboard.error"));
       setIsLoading(false);
-      setIsRefreshing(false);
     }
   };
   
@@ -110,9 +103,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
     }
   }, [showTabChange]);
 
-  const handleRefresh = () => {
-    fetchAllLeaderboards(true);
-  };
+
 
   const currentLeaderboard = leaderboards[activeTab];
   const leaderboard = currentLeaderboard.leaderboard;
@@ -183,7 +174,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
     const position = userPosition;
 
     return (
-      <div className="sticky top-0 z-10 bg-gradient-to-r from-orange-500/20 to-red-500/20 backdrop-blur-md border-b border-orange-500/30 shadow-lg">
+      <div className="sticky bottom-0 z-10 bg-gradient-to-r from-orange-500/20 to-red-500/20 backdrop-blur-md border-t border-orange-500/30 shadow-lg">
         <div className="flex items-center p-3 sm:p-4">
           {/* Позиция */}
           <div className="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 text-white font-bold mr-3 sm:mr-4 font-figtree-mulish text-[1.4rem] sm:text-2xl">
@@ -297,7 +288,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
     <div className="flex relative flex-col min-h-screen text-white menu-bg fade-in-animation-fast">
       {/* Верхняя панель */}
       <div
-        className="flex justify-between items-center px-4 py-4 mb-4"
+        className="flex justify-between items-center px-4 py-4"
         style={{
           paddingTop: "calc(var(--tg-content-safe-area-inset-top, 0px) + 16px)",
         }}
@@ -310,39 +301,10 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
             alt={t("leaderboard.back")}
           />
         </ClickEffect>
-
-        <ClickEffect>
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className={`flex items-center px-4 py-2 rounded-2xl transition-all duration-300 font-figtree-mulish font-bold ${
-              isRefreshing
-                ? "bg-gray-600/50 cursor-not-allowed"
-                : "bg-white/10 backdrop-blur-md hover:bg-white/20 outline outline-white/20"
-            }`}
-          >
-            <svg
-              className={`w-5 h-5 mr-2 ${isRefreshing ? "animate-spin" : ""}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-              />
-            </svg>
-            {isRefreshing
-              ? t("leaderboard.refreshing")
-              : t("leaderboard.refresh")}
-          </button>
-        </ClickEffect>
       </div>
 
       {/* Табы */}
-      <div className="flex gap-2 justify-center px-4">
+      <div className="flex gap-2 justify-center px-4 mb-4">
         <ClickEffect>
           <button
             onClick={() => {setShowTabChange(true); setActiveTab("classic")}}
@@ -407,10 +369,8 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
               {t("leaderboard.no_data")}
             </div>
           ) : (
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-xl border border-white/20 overflow-hidden">
-              {/* Липкая карточка пользователя */}
-              {showStickyUser && <StickyUserCard />}
-              <div className="leaderboard-scroll max-h-[60dvh] pb-6 overflow-y-auto" ref={scrollContainerRef}>
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-xl border border-white/20 overflow-hidden h-[60dvh] flex flex-col">
+              <div className="leaderboard-scroll flex-1 overflow-y-auto" ref={scrollContainerRef}>
                 {/* Топ-20 */}
                 {leaderboard.map((entry, index) => {
                   const position = index + 1;
@@ -490,62 +450,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
                   );
                 })}
 
-                {/* Разделитель с точками */}
-                {shouldShowUserCard && (
-                  <div className="flex justify-center items-center py-6 border-b border-white/10">
-                    <div className="flex space-x-2">
-                      <div className="w-3 h-3 bg-white/60 rounded-full"></div>
-                      <div className="w-3 h-3 bg-white/60 rounded-full"></div>
-                      <div className="w-3 h-3 bg-white/60 rounded-full"></div>
-                    </div>
-                  </div>
-                )}
 
-                {/* Карточка пользователя */}
-                {shouldShowUserCard && getUserCard() && (
-                  <div className="flex items-center p-3 sm:p-4 border-b border-white/10 last:border-b-0 transition-all duration-300 bg-gradient-to-r from-orange-500/20 to-red-500/20 ">
-                    {/* Позиция */}
-                    <div className="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 text-white font-bold mr-3 sm:mr-4 font-figtree-mulish text-[1.4rem] sm:text-2xl">
-                      {getUserCard()?.position}
-                    </div>
-
-                    {/* Аватар и имя пользователя в контейнере */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center bg-black/10 backdrop-blur-md rounded-2xl px-3 py-2  border-black/20">
-                        <div className="flex-shrink-0 mr-3">
-                          <img
-                            src={getUserCard()?.avatarUrl || "/blue.svg"}
-                            alt={getUserCard()?.username}
-                            className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 object-cover border-2 border-white/20"
-                            onError={(e) => {
-                              const target = e.target as HTMLImageElement;
-                              if (target.src !== "/blue.svg") {
-                                target.src = "/blue.svg";
-                              }
-                            }}
-                          />
-                        </div>
-                        <div className="flex items-center min-w-0 flex-1">
-                          <div className="font-bold text-white font-figtree-mulish text-base sm:text-lg truncate">
-                            {getUserCard()?.username}
-                            {!getUserCard()?.username && (
-                              <span className="ml-2 text-orange-400 font-bold flex-shrink-0">
-                                ({t("leaderboard.you")})
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Счёт */}
-                    <div className="text-right flex-shrink-0 ml-3">
-                      <div className="text-lg sm:text-xl font-bold text-yellow-400 font-figtree-mulish">
-                        {getUserCard()?.record.toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
-                )}
 
                 {/* Сообщение для пользователей без рекорда */}
                 {shouldShowNoRecordMessage && (
@@ -564,6 +469,8 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
                   </div>
                 )}
               </div>
+              {/* Липкая карточка пользователя внизу */}
+              {showStickyUser && <StickyUserCard />}
             </div>
           )}
         </div>
