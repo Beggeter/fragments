@@ -120,14 +120,14 @@ function ZenDescriptionCard({
   return (
     <ClickEffect
       onClick={onScrollToSubscriptions}
-      className="relative bg-white/10 backdrop-blur-md rounded-3xl shadow-xl flex flex-col items-center justify-between p-8 w-full max-w-lg border border-white/20 mb-8 hover:bg-white/15 hover:border-white/30 transition-all duration-300 cursor-pointer"
+      className="relative bg-white/10 backdrop-blur-md font-figtree-mulish rounded-3xl shadow-xl flex flex-col items-center justify-between p-8 w-full max-w-lg border border-white/20 mb-8 hover:bg-white/15 hover:border-white/30 transition-all duration-300 cursor-pointer"
     >
       <img
         src="/stars.svg"
         alt="ZEN"
         className=" w-40 h-30 -my-6 -mt-6 drop-shadow-[0_0_20px_#FF48C2]"
       />
-      <div className="mb-3 text-3xl font-extrabold text-white font-figtree-mulish menu-shadow tracking-wide text-center">
+      <div className="mb-3 text-3xl font-extrabold text-white font-figtree-mulish text-shadow-md tracking-wide text-center">
         {t("shop.zen_subscription")}
       </div>
       <div className="flex flex-col gap-4 w-full mt-2">
@@ -135,16 +135,12 @@ function ZenDescriptionCard({
           <span className="text-2xl">✅</span>
           <div className="flex flex-col">
             <span className="font-bold text-lg text-white">
-              Ежедневные награды:{" "}
-              <span className="">
-                +115{" "}
-                <img
-                  src={"/crystal.svg"}
-                  className="w-4 h-4 inline align-middle"
-                ></img>{" "}
-                осколков
-              </span>{" "}
-              в месяц
+              {t("shop.daily_bonuses_1")}{" "}
+              <img
+                src={"/crystal.svg"}
+                className="w-5 h-5 inline align-middle"
+              ></img>{" "}
+              {t("shop.daily_bonuses_2")}
             </span>
           </div>
         </div>
@@ -152,9 +148,8 @@ function ZenDescriptionCard({
           <span className="text-2xl">🎁</span>
           <div className="flex flex-col">
             <span className="font-bold text-lg text-white">
-              Бустеры в подарок: <span className="">«Отмена хода»</span>,{" "}
-              <span className="">«Бомба»</span>,{" "}
-              <span className="">«Вихрь»</span>
+              {t("shop.free_boosters")}: {t("shop.undo")}, {t("shop.bomb")},{" "}
+              {t("shop.whirlwind")}
             </span>
           </div>
         </div>
@@ -162,7 +157,7 @@ function ZenDescriptionCard({
           <span className="text-2xl">🚫</span>
           <div className="flex flex-col">
             <span className="font-bold text-lg text-white">
-              Без рекламы: комфортная игра без отвлечений
+              {t("shop.no_ads")}
             </span>
           </div>
         </div>
@@ -170,7 +165,7 @@ function ZenDescriptionCard({
           <span className="text-2xl">💎</span>
           <div className="flex flex-col">
             <span className="font-bold text-lg text-white">
-              Бонус при покупке подписки
+              {t("shop.purchase_bonus")}
             </span>
           </div>
         </div>
@@ -694,7 +689,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
           <div className="flex flex-col items-center w-full slide-in-animation">
             <div
               ref={storeScrollRef}
-              className="w-full max-h-[80dvh] overflow-y-auto store-scroll py-4 "
+              className="w-full max-h-[75dvh] overflow-y-auto store-scroll py-4 "
             >
               <div className="flex flex-col justify-center items-center w-full">
                 <ZenDescriptionCard

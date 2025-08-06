@@ -255,7 +255,8 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
     animateUnlock?: boolean;
     isZen: boolean;
   }) => {
-    const gradient = isZen ? "gold-gradient" : "settings-gradient";
+    const isZenAd = isZen && !hasZenSubscription ? true : false;
+    const baseGradient = isZen ? "gold-gradient" : "settings-gradient";
 
     const handleClick = async () => {
       if (reward.status === "available") {
@@ -263,11 +264,11 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
           // Для ZEN карточек проверяем подписку
           if (hasZenSubscription) {
             await claimBonus();
-                     } else {
-             // Если нет подписки, открываем магазин
-             onClose();
-             onOpenShop?.("zen");
-           }
+          } else {
+            // Если нет подписки, открываем магазин
+            onClose();
+            onOpenShop?.("zen");
+          }
         } else {
           // Для обычных карточек просто получаем бонус
           await claimBonus();
@@ -278,16 +279,21 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
     return (
       <ClickEffect
         onClick={handleClick}
-        className={`relative flex flex-col items-center justify-between rounded-lg flex-1 h-full scale-active backdrop-blur-2xl shadow-lg text-white font-figtree-mulish  ${
-          reward.status === "available"
-            ? `border-white/30 bg-white/10 shimmer-effect ${gradient} cursor-pointer`
-            : "border-white/10 bg-white/5"
-        } ${
-          reward.status === "claimed" || reward.status === "skipped"
-            ? "black-gradient opacity-80"
-            : ""
-        } ${reward.status === "locked" ? `${gradient}` : ""}
-       ${size === "small" ? "p-2 gap-1" : "p-4 "}`}
+        className={`relative flex flex-col items-center justify-between rounded-lg flex-1 h-full scale-active backdrop-blur-2xl shadow-lg text-white font-figtree-mulish  
+         ${
+           !isZenAd
+             ? `${
+                 reward.status === "available"
+                   ? `border-white/30 shimmer-effect ${baseGradient} cursor-pointer`
+                   : "border-white/10 "
+               } ${
+                 reward.status === "claimed" || reward.status === "skipped"
+                   ? "black-gradient opacity-80"
+                   : ""
+               } ${reward.status === "locked" ? `${baseGradient} ` : ""}
+       `
+             : `${baseGradient}`
+         } ${size === "small" ? "p-2 gap-1" : "p-4 "} `}
       >
         {/* Day */}
         <div
@@ -310,7 +316,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
           {reward.type === "currency" ? `+${reward.amount}` : reward.amount}
         </div>
         {/* Status */}
-        {getStatusIcon(reward) && (
+        {getStatusIcon(reward) && !isZenAd && (
           <img
             className={`absolute bottom-1 right-1   ${
               size === "small" ? "w-[12px] h-[12px] text-xs" : "w-6 h-6 text-xl"
@@ -319,7 +325,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
           ></img>
         )}
 
-        {reward.status === "locked" && isZen && (
+        {reward.status === "locked" && !isZenAd && (
           <motion.img
             initial={animateUnlock ? { scale: 1, opacity: 1 } : false}
             animate={animateUnlock ? { scale: 1.8, opacity: 0 } : false}
@@ -429,20 +435,10 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
                   <div className="text-center mb-1">
                     <div className=" flex flex-row items-center justify-center gap-2">
                       <h3 className="text-lg font-bold text-yellow-100 drop-shadow-sm tracking-wide my-2 font-figtree-mulish">
-                        А с ZEN-подпиской ты будешь получать в 2 раза больше
+                        {t("bonuses.zen_only_title")}
                       </h3>
-                      {/* <CrownIcon className="h-10 w-10" /> */}
                     </div>
-                    {/* <p className="text-md  text-yellow-100 font-figtree-mulish leading-relaxed">
-                      Получай{" "}
-                      <span className="text-white font-semibold">
-                        в 2 раза больше
-                      </span>{" "}
-                      бонусов с подпиской{" "}
-                      <span className="text-white font-semibold">ZEN</span>!
-                    </p> */}
                   </div>
-
                   <div className="mb-6">
                     {renderRewardGrid(zenRewards, true)}
                   </div>
@@ -453,38 +449,18 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
                       src={"/crystal.svg"}
                       className="w-4 h-4 inline align-middle"
                     ></img>{" "}
-                    {"и 5 бустеров в месяц, включая «Бомбу» и «Вихрь» "}
+                    {t("common.and")} {t("bonuses.zen_description")}
                     <br />
-                    {"Без рекламы"}
-                    {/* {t("bonuses.zen_only_title") + " "}
-                    <span className="text-white font-semibold">
-                      Whirlwind
-                    </span>,{" "}
-                    <span className="text-white font-semibold">Bomb</span>{" "}
-                    {t("common.and")}{" "}
-                    <span className="text-white font-semibold">Undo</span>, +115{" "}
-                    <img
-                      src={"/crystal.svg"}
-                      className="w-4 h-4 inline align-middle"
-                    ></img>{" "}
-                    {t("bonuses.a_month")}!
-                    <br />
-                    <span className="text-white font-semibold">
-                      {t("bonuses.no_ads")}
-                    </span>
-                    , {t("bonuses.access_to")}{" "}
-                    <span className="text-white font-semibold">
-                      {t("bonuses.to_zen_mode")}
-                    </span> */}
+                    {t("bonuses.no_ads")}
                   </div>
 
                   <div className="relative text-center scale-active  mt-6">
                     <ClickEffect>
-                                             <button
-                         onClick={() => {
-                           onClose();
-                           onOpenShop?.("zen");
-                         }}
+                      <button
+                        onClick={() => {
+                          onClose();
+                          onOpenShop?.("zen");
+                        }}
                         className="rounded-xl orange-gradient mx-auto w-[50%] font-figtree-mulish 
                       py-2 text-white font-bold text-lg relative z-10    "
                       >
