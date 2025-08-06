@@ -406,11 +406,11 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
                           className={`flex items-center bg-transparent backdrop-blur-md rounded-2xl px-3 py-2 border-black/20 
                           ${
                             position === 1
-                              ? "outline-2 outline-amber-400"
+                              ? "outline-1 outline-amber-400 drop-shadow-[0_0_8px_#FBBF24]"
                               : position === 2
-                              ? "outline-2 outline-[#84ADCE]"
+                              ? "outline-1 outline-[#bbe1ff] drop-shadow-[0_0_8px_#a7c9e4]"
                               : position === 3
-                              ? "outline-2 outline-[#C6874D]"
+                              ? "outline-1 outline-[#df9856] drop-shadow-[0_0_8px_#df9856]"
                               : ""
                           }`}
                         >
@@ -418,7 +418,17 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
                             <img
                               src={entry.avatarUrl || "/blue.svg"}
                               alt={entry.username}
-                              className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 object-cover border-2 border-white/20"
+                              className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 object-cover border-2 border-white/20
+                                ${
+                                  position === 1
+                                    ? "outline-2 outline-amber-400 "
+                                    : position === 2
+                                    ? "outline-1 outline-[#bbe1ff]"
+                                    : position === 3
+                                    ? "outline-1 outline-[#df9856]"
+                                    : ""
+                                }
+                                `}
                               onError={(e) => {
                                 const target = e.target as HTMLImageElement;
                                 if (target.src !== "/blue.svg") {
