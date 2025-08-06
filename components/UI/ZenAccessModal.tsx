@@ -65,20 +65,24 @@ export const ZenAccessModal: React.FC<ZenAccessModalProps> = ({
               <div className="flex items-center gap-3">
                 <span className="text-2xl">🎯</span>
                 <span className="text-white text-base">
-                  <span className="font-bold">+ 115 💠 осколков</span> и{" "}
-                  <span className="font-bold">5 бустеров</span> в
-                  месяц — просто за ежедневный вход
+                  <span className="font-bold">
+                    + 115{" "}
+                    <img
+                      src={"/crystal.svg"}
+                      className="w-4 h-4 inline align-middle"
+                    ></img>{" "}
+                    осколков
+                  </span>{" "}
+                  и <span className="font-bold">5 бустеров</span> в месяц —
+                  просто за ежедневный вход
                 </span>
               </div>
               <div className="flex items-center gap-3">
                 <span className="text-2xl">🧨</span>
                 <span className="text-white text-base">
-                  Бонусом даём:{" "}
-                  <span className="font-bold">«Бомба»</span>,{" "}
+                  Бонусом даём: <span className="font-bold">«Бомба»</span>,{" "}
                   <span className="font-bold">«Вихрь»</span> и{" "}
-                  <span className="font-bold">
-                    «Отмена хода»
-                  </span>
+                  <span className="font-bold">«Отмена хода»</span>
                 </span>
               </div>
               <div className="flex items-center gap-3">
