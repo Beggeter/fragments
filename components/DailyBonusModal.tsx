@@ -12,7 +12,7 @@ import { useUser } from "@/hooks/useUser";
 interface DailyBonusModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onOpenShop?: () => void;
+  onOpenShop?: (initialTab?: string) => void;
 }
 
 export type DailyReward =
@@ -263,16 +263,14 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
           // Для ZEN карточек проверяем подписку
           if (hasZenSubscription) {
             await claimBonus();
-            
-          } else {
-            // Если нет подписки, открываем магазин
-            onClose();
-            onOpenShop?.();
-          }
+                     } else {
+             // Если нет подписки, открываем магазин
+             onClose();
+             onOpenShop?.("zen");
+           }
         } else {
           // Для обычных карточек просто получаем бонус
           await claimBonus();
-          
         }
       }
     };
@@ -352,7 +350,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
                          canClaimToday && !isLoading
                            ? "shimmer-effect"
                            : "opacity-50"
-                       } drop-shadow-[0_0_20px_#40ae54]`}
+                       }`}
         >
           {isLoading ? "Claiming..." : t("bonuses.claim")}
         </button>
@@ -430,10 +428,10 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
                 <div className="relative z-10 ">
                   <div className="text-center mb-1">
                     <div className=" flex flex-row items-center justify-center gap-2">
-                      <h3 className="text-2xl font-bold text-yellow-300 drop-shadow-sm tracking-wide my-2 font-figtree-mulish">
-                        ZEN
+                      <h3 className="text-lg font-bold text-yellow-100 drop-shadow-sm tracking-wide my-2 font-figtree-mulish">
+                        А с ZEN-подпиской ты будешь получать в 2 раза больше
                       </h3>
-                      <CrownIcon className="h-10 w-10" />
+                      {/* <CrownIcon className="h-10 w-10" /> */}
                     </div>
                     {/* <p className="text-md  text-yellow-100 font-figtree-mulish leading-relaxed">
                       Получай{" "}
@@ -450,7 +448,15 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
                   </div>
 
                   <div className="text-center text-sm text-yellow-100 font-figtree-mulish mb-6 leading-relaxed">
-                    {t("bonuses.zen_only_title") + " "}
+                    {"+115 "}
+                    <img
+                      src={"/crystal.svg"}
+                      className="w-4 h-4 inline align-middle"
+                    ></img>{" "}
+                    {"и 5 бустеров в месяц, включая «Бомбу» и «Вихрь» "}
+                    <br />
+                    {"Без рекламы"}
+                    {/* {t("bonuses.zen_only_title") + " "}
                     <span className="text-white font-semibold">
                       Whirlwind
                     </span>,{" "}
@@ -469,18 +475,18 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
                     , {t("bonuses.access_to")}{" "}
                     <span className="text-white font-semibold">
                       {t("bonuses.to_zen_mode")}
-                    </span>
+                    </span> */}
                   </div>
 
                   <div className="relative text-center scale-active  mt-6">
                     <ClickEffect>
-                      <button
-                        onClick={() => {
-                          onClose();
-                          onOpenShop?.();
-                        }}
+                                             <button
+                         onClick={() => {
+                           onClose();
+                           onOpenShop?.("zen");
+                         }}
                         className="rounded-xl orange-gradient mx-auto w-[50%] font-figtree-mulish 
-                      py-2 text-white font-bold text-lg relative z-10 drop-shadow-[0_0_30px_#f76d1f]   "
+                      py-2 text-white font-bold text-lg relative z-10    "
                       >
                         {t("bonuses.zen_subscribe")}
                       </button>
