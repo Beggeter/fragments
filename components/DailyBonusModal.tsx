@@ -321,7 +321,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
           ></img>
         )}
 
-        {reward.status === "locked" && !isZen && (
+        {reward.status === "locked" && isZen && (
           <motion.img
             initial={animateUnlock ? { scale: 1, opacity: 1 } : false}
             animate={animateUnlock ? { scale: 1.8, opacity: 0 } : false}

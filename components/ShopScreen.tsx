@@ -132,46 +132,34 @@ function ZenDescriptionCard({
       </div>
       <div className="flex flex-col gap-4 w-full mt-2">
         <div className="flex items-center gap-4 bg-white/10 rounded-2xl px-4 py-3">
-          <span className="text-2xl">❌</span>
+          <span className="text-2xl">✅</span>
           <div className="flex flex-col">
             <span className="font-bold text-lg text-white">
-              {t("shop.no_ads")}
-            </span>
-            <span className="text-white/80 text-sm">
-              {t("shop.no_ads_desc")}
+              Ежедневные награды: <span className="text-yellow-400">115 💠</span> в месяц
             </span>
           </div>
         </div>
         <div className="flex items-center gap-4 bg-white/10 rounded-2xl px-4 py-3">
-          <span className="text-2xl">💸</span>
+          <span className="text-2xl">🎁</span>
           <div className="flex flex-col">
             <span className="font-bold text-lg text-white">
-              {t("shop.booster_discount")}
-            </span>
-            <span className="text-white/80 text-sm">
-              {t("shop.booster_discount_desc")}
+              Бустеры в подарок: <span className="text-orange-400">«Отмена хода»</span>, <span className="text-red-400">«Бомба»</span>, <span className="text-cyan-400">«Вихрь»</span>
             </span>
           </div>
         </div>
         <div className="flex items-center gap-4 bg-white/10 rounded-2xl px-4 py-3">
-          <span className="text-2xl">🧘</span>
+          <span className="text-2xl">🚫</span>
           <div className="flex flex-col">
             <span className="font-bold text-lg text-white">
-              {t("shop.zen_mode")}
-            </span>
-            <span className="text-white/80 text-sm">
-              {t("shop.zen_mode_desc")}
+              Без рекламы: комфортная игра без отвлечений
             </span>
           </div>
         </div>
         <div className="flex items-center gap-4 bg-white/10 rounded-2xl px-4 py-3">
-          <span className="text-2xl">🏆</span>
+          <span className="text-2xl">💎</span>
           <div className="flex flex-col">
             <span className="font-bold text-lg text-white">
-              {t("shop.prize_draws")}
-            </span>
-            <span className="text-white/80 text-sm">
-              {t("shop.prize_draws_desc")}
+              Бонус при покупке подписки
             </span>
           </div>
         </div>
