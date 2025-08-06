@@ -43,28 +43,12 @@ const isLaunchedInTelegram = (): boolean => {
   // Проверяем наличие Telegram WebApp объекта
   const hasTelegramWebApp = !!(window.Telegram && window.Telegram.WebApp);
 
-  // Проверяем наличие tgWebAppData в URL (самый надежный способ)
+  // Проверяем наличие tgWebAppData в URL
   const urlParams = new URLSearchParams(window.location.search);
   const hasTgWebAppData = urlParams.has("tgWebAppData");
 
-  // Проверяем наличие initData в Telegram WebApp
-  const hasInitData = !!window.Telegram?.WebApp?.initData;
-
-  // Проверяем наличие пользователя в initDataUnsafe
-  const hasUser = !!window.Telegram?.WebApp?.initDataUnsafe?.user;
-
-  // Проверяем, что initData не пустая строка
-  const hasValidInitData = !!(
-    window.Telegram?.WebApp?.initData &&
-    window.Telegram.WebApp.initData.length > 0
-  );
-
-  // Считаем Telegram WebApp только если есть tgWebAppData в URL ИЛИ валидные данные в объекте
-  // Это более строгая проверка, которая исключает ложные срабатывания в браузере
-  const isTelegram =
-    hasTgWebAppData || (hasTelegramWebApp && (hasValidInitData || hasUser));
-
-  return isTelegram;
+  // Упрощенная проверка: если есть Telegram WebApp объект или tgWebAppData в URL
+  return hasTelegramWebApp || hasTgWebAppData;
 };
 
 const HomePage: React.FC = () => {
@@ -184,10 +168,14 @@ const HomePage: React.FC = () => {
       try {
         await init();
       } catch (error) {}
+      
       // Проверяем, что мы на клиенте
       if (typeof window === "undefined") {
         return;
       }
+
+      // Небольшая задержка для iOS для стабильности
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Проверяем, есть ли уже авторизованный пользователь
       const existingSessionToken = localStorage.getItem("sessionToken");
@@ -221,7 +209,6 @@ const HomePage: React.FC = () => {
             shouldEnableFullscreen
           ) {
             tg.requestFullscreen();
-          } else if (!shouldEnableFullscreen) {
           }
 
           const user = tg.initDataUnsafe?.user;
@@ -255,7 +242,6 @@ const HomePage: React.FC = () => {
                   setCurrentScreen("main menu");
                   setIsInitialized(true);
                   return;
-                } else {
                 }
               }
             } catch (error) {}
@@ -651,17 +637,14 @@ const HomePage: React.FC = () => {
         />
       )}
 
-      {/* MainMenu теперь скрывается через CSS, а не размонтируется хззззззз*/}
-      <div
-        style={{ display: currentScreen === "main menu" ? "block" : "none" }}
-      >
+      {currentScreen === "main menu" && (
         <MainMenu
           onStartClassic={hadleStartClassic}
           onStartZen={handleStartZen}
           onOpenShop={handleOpenShop}
           onOpenLeaderboard={handleOpenLeaderboard}
         />
-      </div>
+      )}
 
       {currentScreen === "classic mode" && (
         <GameBoard

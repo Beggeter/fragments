@@ -406,6 +406,11 @@ body {
   filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.4));
   @apply relative min-w-fit px-3 py-2 flex items-center gap-2 min-h-[7vh];
   transition: transform 0.1s ease-in-out;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: pointer;
 }
 
 .menu-button:active {
@@ -699,6 +704,30 @@ body {
   img[src*=".svg"] {
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
+  }
+  
+  /* iOS touch optimizations */
+  button, .menu-button {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+  
+  /* Ensure proper touch handling on iOS */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  /* Optimize animations for iOS */
+  .fade-in-menu, .fade-in-animation-fast {
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
   }
 }
 

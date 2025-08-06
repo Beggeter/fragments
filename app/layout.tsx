@@ -71,158 +71,61 @@ export default function RootLayout({
               if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
                 const tg = window.Telegram.WebApp;
                 
+                // Basic initialization
                 tg.ready();
                 tg.expand();
-                
-                const fullscreenEnabled = localStorage.getItem('fullscreenEnabled');
-                const shouldEnableFullscreen = fullscreenEnabled !== 'false';
-                
-                if (tg.requestFullscreen && shouldEnableFullscreen) {
-                  tg.requestFullscreen();
-                } else if (!shouldEnableFullscreen) {
-                }
-                
                 tg.disableClosingConfirmation();
                 
+                // Set header color if available
                 if (tg.setHeaderColor) {
                   tg.setHeaderColor('#1a1a2e');
                 }
                 
-                if (tg.enableClosingConfirmation) {
-                  tg.enableClosingConfirmation = () => {};
+                // Simple viewport setup
+                const root = document.documentElement;
+                const height = tg.viewportHeight || window.innerHeight;
+                const stableHeight = tg.viewportStableHeight || window.innerHeight;
+                
+                root.style.setProperty('--tg-viewport-height', height + 'px');
+                root.style.setProperty('--tg-viewport-stable-height', stableHeight + 'px');
+                
+                // Handle fullscreen if enabled
+                const fullscreenEnabled = localStorage.getItem('fullscreenEnabled');
+                const shouldEnableFullscreen = fullscreenEnabled !== 'false';
+                
+                if (tg.requestFullscreen && shouldEnableFullscreen && !tg.isFullscreen) {
+                  tg.requestFullscreen();
                 }
                 
-                function updateViewportVars() {
-                  const root = document.documentElement;
-                  const height = tg.viewportHeight || window.innerHeight;
-                  const stableHeight = tg.viewportStableHeight || window.innerHeight;
-                  
-                  root.style.setProperty('--tg-viewport-height', height + 'px');
-                  root.style.setProperty('--tg-viewport-stable-height', stableHeight + 'px');
-                  
-                  if (tg.isFullscreen) {
-                    document.body.classList.add('tg-fullscreen');
-                    
-                    setTimeout(() => {
-                      // Логируем полный объект viewport от Telegram
-                      // console.log('🔍 Telegram WebApp viewport объект:', {
-                      //   viewport: tg.viewport,
-                      //   safeArea: tg.viewport?.safeArea,
-                      //   height: tg.viewport?.height,
-                      //   stableHeight: tg.viewport?.stableHeight,
-                      //   isExpanded: tg.viewport?.isExpanded,
-                      //   // Дополнительная информация о Telegram WebApp
-                      //   telegramVersion: tg.version,
-                      //   platform: tg.platform,
-                      //   isFullscreen: tg.isFullscreen,
-                      //   viewportHeight: tg.viewportHeight,
-                      //   viewportStableHeight: tg.viewportStableHeight
-                      // });
-                      
-                      // Получаем безопасные отступы от Telegram
-                      let safeAreaTop = 0;
-                      try {
-                        safeAreaTop = tg.viewport?.safeArea?.top || 0;
-                        // console.log('✅ Получен safeAreaTop от Telegram:', safeAreaTop);
-                      } catch (error) {
-                        // console.warn('❌ Failed to get safeArea from Telegram:', error);
-                        // Fallback для устройств с notch
-                        const hasNotch = window.innerHeight >= 812 && window.innerWidth >= 375;
-                        safeAreaTop = hasNotch ? 44 : 20;
-                        // console.log('🛡️ Используется fallback safeAreaTop:', safeAreaTop);
-                      }
-                      
-                      // Добавляем небольшой отступ для кнопок управления Telegram
-                      // Можно настроить через localStorage: telegramControlsOffset
-                      let telegramControlsOffset = 8;
-                      try {
-                        const savedOffset = localStorage.getItem('telegramControlsOffset');
-                        if (savedOffset !== null) {
-                          telegramControlsOffset = parseInt(savedOffset) || 8;
-                        }
-                      } catch (error) {
-                        // console.warn('Failed to get controls offset from localStorage:', error);
-                      }
-                      
-                      const totalPaddingTop = safeAreaTop + telegramControlsOffset;
-                      
-                      root.style.setProperty('--content-padding-top', totalPaddingTop + 'px');
-                      root.style.setProperty('--content-available-height', 'calc(' + height + 'px - ' + totalPaddingTop + 'px)');
-                      
-                      // console.log('Fullscreen mode activated:', {
-                      //   height: height,
-                      //   safeAreaTop: safeAreaTop,
-                      //   telegramControlsOffset: telegramControlsOffset,
-                      //   totalPaddingTop: totalPaddingTop,
-                      //   availableHeight: (height - totalPaddingTop) + 'px',
-                      //   viewport: tg.viewport,
-                      //   hasViewportAPI: !!tg.viewport,
-                      //   screenWidth: window.innerWidth,
-                      //   screenHeight: window.innerHeight
-                      // });
-                    }, 0);
-                  } else {
-                    document.body.classList.remove('tg-fullscreen');
-                    
-                    root.style.setProperty('--content-padding-top', '0px');
-                    root.style.setProperty('--content-available-height', height + 'px');
-                    
-                    // console.log('Standard mode activated:', {
-                    //   height: height,
-                    //   availableHeight: height + 'px'
-                    // });
-                  }
-                  
-                  // console.log('Viewport updated:', { 
-                  //   height: height, 
-                  //   stableHeight: stableHeight, 
-                  //   isFullscreen: !!tg.isFullscreen 
-                  // });
-                }
-                
-                updateViewportVars();
-                
-                if (tg.onEvent) {
-                  tg.onEvent('viewportChanged', updateViewportVars);
-                  
-                  tg.onEvent('fullscreenChanged', () => {
-                    // console.log('Fullscreen state changed:', tg.isFullscreen);
-                    updateViewportVars();
-                  });
-                  
-                  tg.onEvent('fullscreenFailed', () => {
-                    // console.log('Fullscreen request failed');
-                  });
-                }
-                
-                window.addEventListener('resize', updateViewportVars);
-                
-                // console.log('Telegram WebApp initialized:', {
-                //   platform: tg.platform,
-                //   version: tg.version,
-                //   viewportHeight: tg.viewportHeight,
-                //   viewportStableHeight: tg.viewportStableHeight,
-                //   isExpanded: tg.isExpanded
-                // });
+                // Update viewport on resize
+                window.addEventListener('resize', () => {
+                  const newHeight = tg.viewportHeight || window.innerHeight;
+                  const newStableHeight = tg.viewportStableHeight || window.innerHeight;
+                  root.style.setProperty('--tg-viewport-height', newHeight + 'px');
+                  root.style.setProperty('--tg-viewport-stable-height', newStableHeight + 'px');
+                });
               } else {
+                // Fallback for non-Telegram environments
                 const root = document.documentElement;
                 root.style.setProperty('--tg-viewport-height', '100vh');
                 root.style.setProperty('--tg-viewport-stable-height', '100vh');
-                // console.log('Regular browser mode');
               }
             }
             
+            // Initialize immediately if available, otherwise wait
             if (window.Telegram?.WebApp) {
               initTelegramWebApp();
             } else {
+              // Wait for Telegram WebApp to load
               let attempts = 0;
+              const maxAttempts = 20; // Increased timeout for iOS
               const checkTelegram = setInterval(() => {
-                if (window.Telegram?.WebApp || attempts > 10) {
+                if (window.Telegram?.WebApp || attempts >= maxAttempts) {
                   clearInterval(checkTelegram);
                   initTelegramWebApp();
                 }
                 attempts++;
-              }, 100);
+              }, 150); // Increased interval for better iOS compatibility
             }
           `}
         </Script>

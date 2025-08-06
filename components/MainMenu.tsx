@@ -60,12 +60,26 @@ const MainMenu: FC<MainMenuProps> = ({
   return (
     <>
       <div
-        className={`min-h-screen  text-white fade-in-animation-fast
+        className={`min-h-screen text-white fade-in-animation-fast
            flex flex-col py-10 relative z-1 overflow-y-hidden
             fade-in-menu ${fadeIn ? "fade-in-menu--visible" : ""}`}
+        style={{
+          WebkitTransform: "translateZ(0)",
+          transform: "translateZ(0)",
+          WebkitBackfaceVisibility: "hidden",
+          backfaceVisibility: "hidden",
+        }}
       >
         <BackgroundAnimation className="overflow-x-hidden absolute inset-0 px-4 -top-15" />
-        <main className="flex flex-col gap-[15vh] items-center">
+        <main 
+          className="flex flex-col gap-[15vh] items-center"
+          style={{
+            WebkitTransform: "translateZ(0)",
+            transform: "translateZ(0)",
+            WebkitBackfaceVisibility: "hidden",
+            backfaceVisibility: "hidden",
+          }}
+        >
           <TopButtons
             onOpenShop={onOpenShop}
             onOpenLeaderboard={onOpenLeaderboard}
