@@ -2,6 +2,7 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import ClickEffect from "../ClickEffect";
 import MenuButton from "../UI/MenuButton";
+import TgStarIcon from "../UI/TgStarIcon";
 
 interface InsufficientShardsModalProps {
   isOpen: boolean;
@@ -77,7 +78,7 @@ const InsufficientShardsModal: React.FC<InsufficientShardsModalProps> = ({
             <span>{t("shop.alternative_price", "Или за звёзды")}:</span>
             <span className="font-bold flex items-center gap-1 text-yellow-400 text-xl">
               {totalCostStars}{" "}
-              <img src="/tgstar.svg" alt="star" className="w-6 h-6" />
+              <TgStarIcon className="w-6 h-6" />
             </span>
           </div>
         </div>
@@ -100,8 +101,7 @@ const InsufficientShardsModal: React.FC<InsufficientShardsModalProps> = ({
           <MenuButton
             onClick={onBuyWithStars}
             disabled={isLoading}
-            leftIcon="/tgstar.svg"
-            imageClasses="w-7 h-7"
+            leftIcon={<TgStarIcon className="w-7 h-7" />}
             text={t("shop.buy_with_stars", "Купить за звёзды")}
             textClasses="text-lg font-bold"
             gradientClass="stars-gradient"

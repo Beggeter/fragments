@@ -81,7 +81,7 @@ export const ResourceLoader: React.FC<ResourceLoaderProps> = ({
         "/3crystals.svg",
         "/4crystals.svg",
         "/9crystals.svg",
-        "/tgstar.svg",
+        // "/tgstar.svg", // Теперь используется как React компонент TgStarIcon
         // Основные UI элементы
         "/logo-frame.svg",
         "/stars.svg",

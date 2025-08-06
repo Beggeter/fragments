@@ -1,4 +1,5 @@
 import React from "react";
+import TgStarIcon from "../UI/TgStarIcon";
 
 interface ZenPurchaseModalProps {
   isOpen: boolean;
@@ -86,7 +87,7 @@ const ZenPurchaseModal: React.FC<ZenPurchaseModalProps> = ({
            
             className="w-full px-6 py-4 text-lg font-bold rounded-2xl transition-all bg-gradient-to-r from-purple-500 to-purple-600 text-white shadow-lg hover:from-purple-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed font-mulish flex items-center justify-center gap-3"
           >
-            <img src="/tgstar.svg" alt="star" className="w-8 h-8" />
+            <TgStarIcon className="w-8 h-8" />
             <span className="text-2xl font-bold font-figtree">
               {subscription.priceStars}
             </span>

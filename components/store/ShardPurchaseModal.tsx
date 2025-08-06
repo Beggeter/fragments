@@ -5,6 +5,7 @@ import {
   createShardsInvoice, 
   showTelegramAlert 
 } from '@/lib/utils/telegramStars';
+import TgStarIcon from "../UI/TgStarIcon";
 
 const ShardPurchaseModal: React.FC<ShardPurchaseModalProps> = ({ isOpen, onClose, pack, userId, onSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -113,7 +114,7 @@ const ShardPurchaseModal: React.FC<ShardPurchaseModalProps> = ({ isOpen, onClose
           <img src={pack.icon} alt="shards" className="w-16 h-16 mb-2" />
           <div className="text-2xl font-extrabold text-white mb-2">Пакет: {pack.amount.toLocaleString()} осколков</div>
           <div className="flex items-center gap-2 text-xl font-bold text-white">
-            <img src="/tgstar.svg" alt="star" className="w-7 h-7" />
+            <TgStarIcon className="w-7 h-7" />
             <span>{pack.price}</span>
           </div>
           {pack.label && (

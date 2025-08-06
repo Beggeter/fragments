@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useUser } from "@/hooks/useUser";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { LoadingScreen } from "./LoadingScreen";
@@ -38,7 +38,14 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
   const [error, setError] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
-  const [showTabChange, setShowTabChange] = useState(false)
+  const [showTabChange, setShowTabChange] = useState(false);
+  
+  // Состояния для липкой позиции
+  const [isUserVisible, setIsUserVisible] = useState(false);
+  const [showStickyUser, setShowStickyUser] = useState(false);
+  const [isUserInitiallyVisible, setIsUserInitiallyVisible] = useState(false);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const userEntryRef = useRef<HTMLDivElement>(null);
 
   const fetchAllLeaderboards = async (showRefreshAnimation = false) => {
     try {
@@ -167,6 +174,120 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
     return user && entry.id === user.id;
   };
 
+  // Компонент липкой карточки пользователя
+  const StickyUserCard = () => {
+    if (!showStickyUser || !user || !userPosition) return null;
+
+    const userRecord = activeTab === "classic" ? user.record : user.zenRecord;
+    const position = userPosition;
+
+    return (
+      <div className="sticky top-0 z-10 bg-gradient-to-r from-orange-500/20 to-red-500/20 backdrop-blur-md border-b border-orange-500/30 shadow-lg">
+        <div className="flex items-center p-3 sm:p-4">
+          {/* Позиция */}
+          <div className="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 text-white font-bold mr-3 sm:mr-4 font-figtree-mulish text-[1.4rem] sm:text-2xl">
+            {position}
+          </div>
+
+          {/* Аватар и имя пользователя */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center bg-black/10 backdrop-blur-md rounded-2xl px-3 py-2 border-black/20">
+              <div className="flex-shrink-0 mr-3">
+                <img
+                  src={user.avatarUrl || "/blue.svg"}
+                  alt={user.username || user.firstName}
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/10 object-cover border-2 border-white/20"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    if (target.src !== "/blue.svg") {
+                      target.src = "/blue.svg";
+                    }
+                  }}
+                />
+              </div>
+              <div className="flex items-center min-w-0 flex-1">
+                <div className="font-bold text-white font-figtree-mulish text-base sm:text-lg truncate">
+                  {user.username || user.firstName || t("leaderboard.you")}
+                  {!user.username && !user.firstName && (
+                    <span className="ml-2 text-orange-400 font-bold flex-shrink-0">
+                      ({t("leaderboard.you")})
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Счёт */}
+          <div className="text-right flex-shrink-0 ml-3">
+            <div className="text-lg sm:text-xl font-bold text-yellow-400 font-figtree-mulish">
+              {userRecord?.toLocaleString() || "0"}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Функция для проверки видимости пользователя в таблице
+  const checkUserVisibility = useCallback(() => {
+    if (!scrollContainerRef.current || !userEntryRef.current || !user) return;
+
+    const container = scrollContainerRef.current;
+    const userEntry = userEntryRef.current;
+    
+    const containerRect = container.getBoundingClientRect();
+    const userEntryRect = userEntry.getBoundingClientRect();
+    
+    // Проверяем, видна ли запись пользователя в контейнере
+    const isVisible = 
+      userEntryRect.top >= containerRect.top && 
+      userEntryRect.bottom <= containerRect.bottom;
+    
+    setIsUserVisible(isVisible);
+    
+    // Определяем, был ли пользователь изначально виден (в начале списка)
+    const isInitiallyVisible = userEntryRect.top >= containerRect.top && userEntryRect.top <= containerRect.top + 100;
+    setIsUserInitiallyVisible(isInitiallyVisible);
+    
+    // Показываем липкую карточку в зависимости от ситуации:
+    // 1. Если пользователь не виден и есть скролл - показываем сверху
+    // 2. Если пользователь был изначально виден, но теперь не виден - показываем сверху
+    const hasScroll = container.scrollHeight > container.clientHeight;
+    const shouldShowSticky = !isVisible && hasScroll && isUserInVisibleTop20;
+    setShowStickyUser(shouldShowSticky);
+  }, [user, isUserInVisibleTop20]);
+
+  // Обработчик скролла
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      checkUserVisibility();
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [checkUserVisibility]);
+
+  // Проверяем видимость при изменении данных
+  useEffect(() => {
+    // Небольшая задержка для корректного рендеринга
+    const timer = setTimeout(() => {
+      checkUserVisibility();
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [leaderboard, checkUserVisibility]);
+
+  // Сбрасываем состояние липкой карточки при смене таба
+  useEffect(() => {
+    setShowStickyUser(false);
+    setIsUserVisible(false);
+    setIsUserInitiallyVisible(false);
+  }, [activeTab]);
+
   if (isLoading) {
     return <LoadingScreen showProgress={true} />;
   }
@@ -286,7 +407,9 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
             </div>
           ) : (
             <div className="bg-white/10 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-xl border border-white/20 overflow-hidden">
-              <div className="leaderboard-scroll max-h-[60dvh] pb-6 overflow-y-auto">
+              {/* Липкая карточка пользователя */}
+              {showStickyUser && <StickyUserCard />}
+              <div className="leaderboard-scroll max-h-[60dvh] pb-6 overflow-y-auto" ref={scrollContainerRef}>
                 {/* Топ-20 */}
                 {leaderboard.map((entry, index) => {
                   const position = index + 1;
@@ -301,6 +424,11 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
                           ? "bg-gradient-to-r from-orange-500/20 to-red-500/20 border-orange-500/30"
                           : "hover:bg-white/10"
                       }`}
+                      ref={(el) => {
+                        if (isCurrentUserEntry) {
+                          userEntryRef.current = el;
+                        }
+                      }}
                     >
                       {/* Позиция/медаль */}
                       <div className="flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 text-white font-bold mr-3 sm:mr-4 font-figtree-mulish text-[1.4rem] sm:text-2xl">

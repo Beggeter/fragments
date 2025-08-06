@@ -6,9 +6,9 @@ import {
   showTelegramAlert,
 } from "@/lib/utils/telegramStars";
 import ClickEffect from "../ClickEffect";
-import { vibrate } from "@/utils/helpers";
 import MenuButton from "../UI/MenuButton";
 import TgStarIcon from "../UI/TgStarIcon";
+import { vibrate } from "@/utils/helpers";
 
 interface BoosterPurchaseModalProps {
   isOpen: boolean;
@@ -256,7 +256,7 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
           <MenuButton
             onClick={handlePayWithStars}
             disabled={isLoadingStars || quantity < 1}
-            leftIcon={'/tgstar.svg'}
+            leftIcon={<TgStarIcon className="w-8 h-8" />}
             imageClasses="w-8 h-8 "
             text={isLoadingStars ? "..." : `${totalCostStars}`}
             textClasses="text-2xl font-bold font-figtree "

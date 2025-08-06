@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import MenuButton from "./UI/MenuButton";
 import ClickEffect from "./ClickEffect";
+import CrownIcon from "./UI/CrownIcon";
 import { Booster, RewardStatus } from "@/types/components";
 import { useUnlockAnimations } from "@/hooks/useUnlockAnimation";
 import { useDailyBonus } from "@/hooks/useDailyBonus";
@@ -432,7 +433,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
                       <h3 className="text-2xl font-bold text-yellow-300 drop-shadow-sm tracking-wide my-2 font-figtree-mulish">
                         ZEN
                       </h3>
-                      <img src={"/crown.svg"} className="h-10 w-10"></img>
+                      <CrownIcon className="h-10 w-10" />
                     </div>
                     {/* <p className="text-md  text-yellow-100 font-figtree-mulish leading-relaxed">
                       Получай{" "}

@@ -8,8 +8,8 @@ import { playClick } from "@/lib/utils/sound";
 
 interface MenuButtonProps {
   text?: string | ReactNode; // Текст или любой React узел для содержимого кнопки
-  leftIcon?: StaticImageData | string; // Иконка слева (Next.js Image StaticImageData or string src)
-  rightIcon?: StaticImageData | string; // Иконка справа
+  leftIcon?: StaticImageData | string | ReactNode; // Иконка слева (Next.js Image StaticImageData, string src, или React элемент)
+  rightIcon?: StaticImageData | string | ReactNode; // Иконка справа
   gradientClass: string; // Класс для градиентного фона (например, 'orange-gradient', 'green-gradient')
   notificationCount?: number; // Необязательное количество уведомлений для отображения
   className?: string; // Дополнительные классы для кнопки
@@ -128,7 +128,11 @@ const MenuButton: FC<MenuButtonProps> = ({
               innerShadows ? "menu-shadow" : ""
             } flex items-center justify-center h-[3rem] min-w-[3rem]`}
           >
-            <ImageComponent icon={leftIcon} alt="left icon" />
+            {React.isValidElement(leftIcon) ? (
+              leftIcon
+            ) : (
+              <ImageComponent icon={leftIcon as StaticImageData | string} alt="left icon" />
+            )}
           </span>
         )}
 
@@ -146,7 +150,11 @@ const MenuButton: FC<MenuButtonProps> = ({
         {/* Правая иконка */}
         {rightIcon && (
           <span className={`${imageClasses} flex items-center justify-center `}>
-            <ImageComponent icon={rightIcon} alt="right icon" />
+            {React.isValidElement(rightIcon) ? (
+              rightIcon
+            ) : (
+              <ImageComponent icon={rightIcon as StaticImageData | string} alt="right icon" />
+            )}
           </span>
         )}
       </span>

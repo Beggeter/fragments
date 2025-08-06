@@ -7,7 +7,7 @@ import cart from "@/public/cart.svg";
 import powers from "@/public/powerups.svg";
 import stars from "@/public/stars.svg";
 import gift from "@/public/gift.svg";
-import crown from "@/public/crown.svg";
+import CrownIcon from "@/components/UI/CrownIcon";
 import record from "@/public/record.png";
 import MenuButton from "@/components/UI/MenuButton";
 import BackgroundAnimation from "@/components/UI/BackgroundAnimation";
@@ -176,7 +176,7 @@ const BottomButtons: FC<BottomButtonsProps> = ({
       {canAccessZen ? (
         <MenuButton
           text="Zen"
-          rightIcon={crown}
+          rightIcon={<CrownIcon className="h-[3rem] min-w-[3rem] drop-shadow-md" />}
           gradientClass="pink-gradient"
           className="rounded-3xl px-6 py-10 max-w-md w-[55vw] sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3"
           textClasses="font-black italic text-[2.3rem] text-lg"
@@ -186,7 +186,7 @@ const BottomButtons: FC<BottomButtonsProps> = ({
       ) : (
         <MenuButton
           text="Zen"
-          rightIcon={crown}
+          rightIcon={<CrownIcon className="h-[3rem] min-w-[3rem] drop-shadow-md" />}
           gradientClass="pink-gradient"
           className="rounded-3xl px-6 py-10 max-w-md w-[55vw] sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3"
           textClasses="font-black italic text-[2.3rem] text-lg"
