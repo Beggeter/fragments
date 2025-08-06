@@ -135,7 +135,8 @@ function ZenDescriptionCard({
           <span className="text-2xl">✅</span>
           <div className="flex flex-col">
             <span className="font-bold text-lg text-white">
-              Ежедневные награды: <span className="text-yellow-400">115 💠</span> в месяц
+              Ежедневные награды: <span className="">+115💠Осколков</span> в
+              месяц
             </span>
           </div>
         </div>
@@ -143,7 +144,9 @@ function ZenDescriptionCard({
           <span className="text-2xl">🎁</span>
           <div className="flex flex-col">
             <span className="font-bold text-lg text-white">
-              Бустеры в подарок: <span className="text-orange-400">«Отмена хода»</span>, <span className="text-red-400">«Бомба»</span>, <span className="text-cyan-400">«Вихрь»</span>
+              Бустеры в подарок: <span className="">«Отмена хода»</span>,{" "}
+              <span className="">«Бомба»</span>,{" "}
+              <span className="">«Вихрь»</span>
             </span>
           </div>
         </div>

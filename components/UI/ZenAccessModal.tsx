@@ -49,11 +49,6 @@ export const ZenAccessModal: React.FC<ZenAccessModalProps> = ({
             </div>
           </div>
 
-          {/* Заголовок */}
-          <h2 className="text-3xl font-bold text-white mb-2 font-figtree-mulish">
-            *Звезды*
-          </h2>
-
           {/* Подзаголовок */}
           <h3 className="text-xl font-bold text-white mb-6 font-figtree-mulish">
             Оформи ZEN и получай больше!
@@ -70,8 +65,8 @@ export const ZenAccessModal: React.FC<ZenAccessModalProps> = ({
               <div className="flex items-center gap-3">
                 <span className="text-2xl">🎯</span>
                 <span className="text-white text-base">
-                  <span className="text-yellow-400 font-bold">115 💠</span> и{" "}
-                  <span className="text-blue-400 font-bold">5 бустеров</span> в
+                  <span className="font-bold">+ 115💠Осколков</span> и{" "}
+                  <span className="font-bold">5 бустеров</span> в
                   месяц — просто за ежедневный вход
                 </span>
               </div>
@@ -79,9 +74,9 @@ export const ZenAccessModal: React.FC<ZenAccessModalProps> = ({
                 <span className="text-2xl">🧨</span>
                 <span className="text-white text-base">
                   Бонусом даём:{" "}
-                  <span className="text-red-400 font-bold">«Бомба»</span>,{" "}
-                  <span className="text-cyan-400 font-bold">«Вихрь»</span> и{" "}
-                  <span className="text-orange-400 font-bold">
+                  <span className="font-bold">«Бомба»</span>,{" "}
+                  <span className="font-bold">«Вихрь»</span> и{" "}
+                  <span className="font-bold">
                     «Отмена хода»
                   </span>
                 </span>
