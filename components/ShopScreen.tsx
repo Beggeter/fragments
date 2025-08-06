@@ -135,7 +135,7 @@ function ZenDescriptionCard({
           <span className="text-2xl">✅</span>
           <div className="flex flex-col">
             <span className="font-bold text-lg text-white">
-              Ежедневные награды: <span className="">+115💠Осколков</span> в
+              Ежедневные награды: <span className="">+115 💠 осколков</span> в
               месяц
             </span>
           </div>

@@ -65,7 +65,7 @@ export const ZenAccessModal: React.FC<ZenAccessModalProps> = ({
               <div className="flex items-center gap-3">
                 <span className="text-2xl">🎯</span>
                 <span className="text-white text-base">
-                  <span className="font-bold">+ 115💠Осколков</span> и{" "}
+                  <span className="font-bold">+ 115 💠 осколков</span> и{" "}
                   <span className="font-bold">5 бустеров</span> в
                   месяц — просто за ежедневный вход
                 </span>
