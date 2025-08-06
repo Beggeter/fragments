@@ -118,8 +118,9 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
   const leaderboard = currentLeaderboard.leaderboard;
   const userPosition = currentLeaderboard.userPosition;
 
-  const isUserInVisibleTop20 =
-    user && leaderboard.some((entry) => entry.id === user.id);
+  const isUserInVisibleTop20 = Boolean(
+    user && leaderboard.some((entry) => entry.id === user.id)
+  );
 
   const shouldShowUserCard =
     user &&
