@@ -251,6 +251,67 @@ async function handleSuccessfulPayment(payment: any, res: NextApiResponse) {
           quantity: paymentData.quantity
         });
         break;
+      case 'subscription': {
+        console.log('📅 Processing subscription purchase (Stars):', {
+          userId: paymentData.userId,
+          subscriptionId: paymentData.itemId,
+          price: paymentData.price
+        });
+
+        // Обрабатываем ZEN подписку
+        const subscriptionPeriod = paymentData.itemId; // 'month', 'year', etc.
+        const price = paymentData.price || 0;
+
+        // Вычисляем дату окончания подписки
+        const now = new Date();
+        let endDate: Date;
+        
+        if (subscriptionPeriod === 'month') {
+          endDate = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+        } else if (subscriptionPeriod === 'year') {
+          endDate = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
+        } else {
+          // По умолчанию месяц
+          endDate = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
+        }
+
+        // Если у пользователя уже есть активная подписка, добавляем дни к существующей
+        if (user.hasZenSubscription && user.zenSubscriptionEndDate) {
+          const currentEndDate = new Date(user.zenSubscriptionEndDate);
+          
+          // Если текущая подписка еще активна, добавляем к ней
+          if (currentEndDate > now) {
+            const additionalDays = subscriptionPeriod === 'month' ? 30 : 365;
+            endDate = new Date(currentEndDate.getTime() + (additionalDays * 24 * 60 * 60 * 1000));
+            
+            console.log('📅 Extending existing subscription:', {
+              currentEndDate: currentEndDate,
+              additionalDays: additionalDays,
+              newEndDate: endDate
+            });
+          }
+        }
+
+        // Обновляем статус подписки пользователя
+        try {
+          await UserService.updateUser(paymentData.userId, {
+            hasZenSubscription: true,
+            zenSubscriptionEndDate: endDate
+          });
+          
+          console.log('✅ ZEN subscription activated successfully (Stars):', {
+            userId: paymentData.userId,
+            subscriptionPeriod: subscriptionPeriod,
+            endDate: endDate,
+            price: price,
+            wasExtended: user.hasZenSubscription && user.zenSubscriptionEndDate && new Date(user.zenSubscriptionEndDate) > now
+          });
+        } catch (subscriptionError) {
+          console.error('❌ Failed to activate ZEN subscription (Stars):', subscriptionError);
+          return res.status(500).json({ error: 'Failed to activate subscription' });
+        }
+        break;
+      }
       default:
         console.warn('⚠️ Unsupported payment type:', paymentData.itemType);
     }
