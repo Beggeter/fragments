@@ -276,6 +276,40 @@ const HomePage: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    // Frontend error logger (no devtools in TMA)
+    const onError = (event: ErrorEvent) => {
+      // minimal payload to avoid PII
+      // @ts-ignore
+      const src = event.filename?.toString?.() || '';
+      // @ts-ignore
+      const ln = event.lineno || 0;
+      // @ts-ignore
+      const col = event.colno || 0;
+      // @ts-ignore
+      const msg = event.message || 'unknown';
+      fetch('/api/debug', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event: 'window_error', msg, src, ln, col, ts: Date.now() })
+      }).catch(() => {});
+    };
+    const onRejection = (event: PromiseRejectionEvent) => {
+      const msg = (event.reason && (event.reason.message || event.reason.toString())) || 'unhandledrejection';
+      fetch('/api/debug', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event: 'unhandledrejection', msg, ts: Date.now() })
+      }).catch(() => {});
+    };
+    window.addEventListener('error', onError);
+    window.addEventListener('unhandledrejection', onRejection as any);
+    return () => {
+      window.removeEventListener('error', onError);
+      window.removeEventListener('unhandledrejection', onRejection as any);
+    };
+  }, []);
+
+  useEffect(() => {
     if (showSpinnerAnimation) {
       document.body.classList.add("screen-shake");
       const shakeTimeout = setTimeout(() => {

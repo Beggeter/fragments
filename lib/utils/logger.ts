@@ -40,6 +40,16 @@ class GameLogger {
     public getLogs(): string {
         return localStorage.getItem(this.LOG_KEY) || '';
     }
+
+    public async sendClientLog(event: string, data?: any) {
+        try {
+            await fetch('/api/debug', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ event, data, ts: Date.now() })
+            });
+        } catch {}
+    }
 }
 
 export const gameLogger = GameLogger.getInstance(); 
