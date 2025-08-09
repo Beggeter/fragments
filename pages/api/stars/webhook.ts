@@ -242,15 +242,46 @@ async function handleSuccessfulPayment(payment: any, res: NextApiResponse) {
           amount: paymentData.amount
         });
         break;
-      case 'booster':
-        await BoosterService.addUserBooster(user.id, parseInt(paymentData.itemId), paymentData.quantity || 1);
+      case 'booster': {
+        // Robust parsing of booster identifier: allow numeric ID or string name
+        const rawItemId = paymentData.itemId;
+        let boosterTypeId: number | null = null;
+
+        if (typeof rawItemId === 'number') {
+          boosterTypeId = rawItemId;
+        } else if (typeof rawItemId === 'string') {
+          const n = Number(rawItemId);
+          if (Number.isFinite(n)) {
+            boosterTypeId = n;
+          } else {
+            // Try resolve by name
+            const byName = await BoosterService.getBoosterTypeByName(rawItemId);
+            if (byName) boosterTypeId = byName.id;
+          }
+        }
+
+        if (!Number.isFinite(boosterTypeId as number)) {
+          console.error('❌ Invalid booster itemId in Stars payload:', {
+            rawItemId,
+            paymentData
+          });
+          // Do not fail webhook; acknowledge to avoid repeated retries
+          return res.status(200).json({ ok: true });
+        }
+
+        const qty = Number.isFinite(paymentData.quantity) && paymentData.quantity > 0
+          ? paymentData.quantity
+          : 1;
+
+        await BoosterService.addUserBooster(user.id, boosterTypeId as number, qty);
         console.log('✅ Booster payment processed:', {
           userId: user.id,
           telegramId: user.telegramId,
-          boosterId: paymentData.itemId,
-          quantity: paymentData.quantity
+          boosterId: boosterTypeId,
+          quantity: qty
         });
         break;
+      }
       case 'subscription': {
         console.log('📅 Processing subscription purchase (Stars):', {
           userId: paymentData.userId,

@@ -59,6 +59,12 @@ export class BoosterService {
 
   // Добавление бустера пользователю
   static async addUserBooster(userId: number, boosterTypeId: number, quantity: number = 1): Promise<UserBooster> {
+    if (!Number.isFinite(userId) || !Number.isFinite(boosterTypeId)) {
+      throw new Error(`Invalid arguments for addUserBooster: userId=${userId}, boosterTypeId=${boosterTypeId}`);
+    }
+    if (!Number.isFinite(quantity) || quantity <= 0) {
+      quantity = 1;
+    }
     const existingBooster = await this.getUserBooster(userId, boosterTypeId);
     
     if (existingBooster) {
@@ -85,6 +91,9 @@ export class BoosterService {
 
   // Использование бустера
   static async useBooster(userId: number, boosterTypeId: number, quantity: number = 1): Promise<boolean> {
+    if (!Number.isFinite(userId) || !Number.isFinite(boosterTypeId) || !Number.isFinite(quantity)) {
+      return false;
+    }
     const userBooster = await this.getUserBooster(userId, boosterTypeId);
     
     if (!userBooster || userBooster.quantity < quantity) {
