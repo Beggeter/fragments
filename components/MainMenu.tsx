@@ -61,7 +61,7 @@ const MainMenu: FC<MainMenuProps> = ({
     <>
       <div
         className={`min-h-screen text-white fade-in-animation-fast
-           flex flex-col py-10 relative z-1 overflow-y-hidden
+           flex flex-col py-10 relative z-[1] overflow-y-hidden
             fade-in-menu ${fadeIn ? "fade-in-menu--visible" : ""}`}
         style={{
           WebkitTransform: "translateZ(0)",
@@ -88,7 +88,7 @@ const MainMenu: FC<MainMenuProps> = ({
           <img
             src={logo.src}
             alt="FRAGMENTS"
-            className="px-3 sm:px-10 max-w-[90vw] md:max-w-[30%] z-100"
+            className="px-3 sm:px-10 max-w-[90vw] md:max-w-[30%] z-[100]"
             style={{
               WebkitTransform: "translateZ(0)",
               transform: "translateZ(0)",
@@ -135,7 +135,7 @@ const TopButtons: FC<{
 }> = ({ onOpenShop, onOpenLeaderboard, onOpenBonusModal }) => {
   return (
     <div
-      className="flex flex-row justify-between items-start w-full z-100"
+      className="flex flex-row justify-between items-start w-full z-[100]"
       style={{ paddingTop: "var(--tg-content-safe-area-inset-top, 0px)" }}
     >
       {/* Left side - Store */}

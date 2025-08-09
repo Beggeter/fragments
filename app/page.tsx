@@ -290,6 +290,18 @@ const HomePage: React.FC = () => {
     }
   }, [showSpinnerAnimation]);
 
+  // Защитный хук: следим, чтобы никакие оверлеи не удерживали pointer-events
+  useEffect(() => {
+    const fixOverlays = () => {
+      // снимаем pointer-events с фоновых анимаций/оверлеев на случай гонок
+      document.querySelectorAll('[data-bg-overlay]')
+        .forEach(el => (el as HTMLElement).style.pointerEvents = 'none');
+    };
+    fixOverlays();
+    const id = setInterval(fixOverlays, 1500);
+    return () => clearInterval(id);
+  }, []);
+
   // useEffect для управления экраном на основе статуса авторизации
   useEffect(() => {
     // Проверяем, что мы на клиенте

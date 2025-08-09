@@ -115,6 +115,7 @@ const MenuButton: FC<MenuButtonProps> = ({
       tabIndex={disabled ? -1 : 0}
       aria-disabled={disabled}
       type="button"
+      style={{ touchAction: 'manipulation' }}
     >
       <span
         className={`${

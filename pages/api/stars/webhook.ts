@@ -290,38 +290,17 @@ async function handleSuccessfulPayment(payment: any, res: NextApiResponse) {
         });
 
         // Обрабатываем ZEN подписку
-        const subscriptionPeriod = paymentData.itemId; // 'month', 'year', etc.
-        const price = paymentData.price || 0;
+        const rawPeriod = String(paymentData.itemId || '').toLowerCase(); // 'month' | 'year'
+        const price = Number(paymentData.price) || 0;
 
-        // Вычисляем дату окончания подписки
+        // Нормализуем длительность в днях, чтобы избежать переполнения дат (например, 31 -> февраль)
+        const periodDays = rawPeriod === 'year' ? 365 : 30;
         const now = new Date();
-        let endDate: Date;
-        
-        if (subscriptionPeriod === 'month') {
-          endDate = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
-        } else if (subscriptionPeriod === 'year') {
-          endDate = new Date(now.getFullYear() + 1, now.getMonth(), now.getDate());
-        } else {
-          // По умолчанию месяц
-          endDate = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
-        }
-
-        // Если у пользователя уже есть активная подписка, добавляем дни к существующей
-        if (user.hasZenSubscription && user.zenSubscriptionEndDate) {
-          const currentEndDate = new Date(user.zenSubscriptionEndDate);
-          
-          // Если текущая подписка еще активна, добавляем к ней
-          if (currentEndDate > now) {
-            const additionalDays = subscriptionPeriod === 'month' ? 30 : 365;
-            endDate = new Date(currentEndDate.getTime() + (additionalDays * 24 * 60 * 60 * 1000));
-            
-            console.log('📅 Extending existing subscription:', {
-              currentEndDate: currentEndDate,
-              additionalDays: additionalDays,
-              newEndDate: endDate
-            });
-          }
-        }
+        const currentEnd = user.hasZenSubscription && user.zenSubscriptionEndDate
+          ? new Date(user.zenSubscriptionEndDate)
+          : null;
+        const base = currentEnd && currentEnd > now ? currentEnd : now;
+        const endDate = new Date(base.getTime() + periodDays * 24 * 60 * 60 * 1000);
 
         // Обновляем статус подписки пользователя
         try {
@@ -329,13 +308,13 @@ async function handleSuccessfulPayment(payment: any, res: NextApiResponse) {
             hasZenSubscription: true,
             zenSubscriptionEndDate: endDate
           });
-          
+
           console.log('✅ ZEN subscription activated successfully (Stars):', {
             userId: paymentData.userId,
-            subscriptionPeriod: subscriptionPeriod,
-            endDate: endDate,
-            price: price,
-            wasExtended: user.hasZenSubscription && user.zenSubscriptionEndDate && new Date(user.zenSubscriptionEndDate) > now
+            subscriptionPeriod: rawPeriod || 'month',
+            endDate,
+            price,
+            wasExtended: Boolean(currentEnd && currentEnd > now)
           });
         } catch (subscriptionError) {
           console.error('❌ Failed to activate ZEN subscription (Stars):', subscriptionError);
