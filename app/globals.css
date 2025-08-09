@@ -36,7 +36,8 @@ body {
   padding: 0;
   overflow: hidden;
   overscroll-behavior: none;
-  touch-action: none;
+  /* Allow taps/clicks to be handled reliably; restrict finer gestures locally where needed */
+  touch-action: manipulation;
 }
 
 body {

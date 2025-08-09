@@ -43,7 +43,7 @@ const BackgroundAnimation: FC<BackgroundAnimationProps> = ({ className }) => {
   }, []);
 
   return (
-    <div className={className}>
+    <div className={className} style={{ pointerEvents: 'none' }}>
       {animatedElements.map((element) =>
         element.id % 2 === 0 ? (
           <div

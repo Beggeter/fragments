@@ -112,20 +112,25 @@ export default function RootLayout({
               }
             }
             
-            // Initialize immediately if available, otherwise wait
+            // Initialize immediately if available, otherwise wait with backoff
             if (window.Telegram?.WebApp) {
               initTelegramWebApp();
             } else {
-              // Wait for Telegram WebApp to load
               let attempts = 0;
-              const maxAttempts = 20; // Increased timeout for iOS
+              const maxAttempts = 40; // ~6s total
               const checkTelegram = setInterval(() => {
-                if (window.Telegram?.WebApp || attempts >= maxAttempts) {
+                if (window.Telegram?.WebApp) {
                   clearInterval(checkTelegram);
                   initTelegramWebApp();
+                } else if (attempts >= maxAttempts) {
+                  clearInterval(checkTelegram);
+                  // Fallback to non-Telegram sizing so UI is interactive
+                  const root = document.documentElement;
+                  root.style.setProperty('--tg-viewport-height', '100vh');
+                  root.style.setProperty('--tg-viewport-stable-height', '100vh');
                 }
                 attempts++;
-              }, 150); // Increased interval for better iOS compatibility
+              }, 150);
             }
           `}
         </Script>
