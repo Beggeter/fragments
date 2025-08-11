@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { UserService } from '@/lib/db/services';
-import { getRedis, leaderboardKey, userPositionKey } from '@/lib/utils/redis';
+import { getRedis, leaderboardKey, userPositionKey, redisGetWithTimeout, redisSetWithTimeout } from '@/lib/utils/redis';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -17,19 +17,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
     
     const mode = (gameMode as 'classic' | 'zen');
-    const redis = await getRedis();
     const lbKey = leaderboardKey(mode);
     let leaderboard: Array<{ id: number; username: string; record: number; avatarUrl?: string }>|null = null;
 
     // Пытаемся отдать из кэша
-    if (redis) {
-      try {
-        const cached = await redis.get(lbKey);
-        if (cached) {
-          leaderboard = JSON.parse(cached);
-        }
-      } catch {}
-    }
+    leaderboard = await redisGetWithTimeout(lbKey, 100);
 
     if (!leaderboard) {
       // Получаем пользователей отсортированных по рекорду
@@ -46,11 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         };
       });
       // Кладём в кэш на 60 сек
-      if (redis) {
-        try {
-          await redis.set(lbKey, JSON.stringify(leaderboard), { EX: 60 });
-        } catch {}
-      }
+      await redisSetWithTimeout(lbKey, leaderboard, 60, 100);
     }
 
     // Если запрашивается позиция конкретного пользователя
@@ -58,21 +46,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (userId) {
       const uid = Number(userId);
       // сначала пробуем кэш позиции на 60 сек
-      if (redis) {
-        try {
-          const cachedPos = await redis.get(userPositionKey(uid, mode));
-          if (cachedPos) {
-            userPosition = Number(cachedPos);
-          }
-        } catch {}
-      }
+      const cachedPos = await redisGetWithTimeout<string>(userPositionKey(uid, mode), 80);
+      if (cachedPos) userPosition = Number(cachedPos);
       if (!userPosition) {
         userPosition = await UserService.getUserPosition(uid, mode);
-        if (redis && userPosition) {
-          try {
-            await redis.set(userPositionKey(uid, mode), String(userPosition), { EX: 60 });
-          } catch {}
-        }
+        if (userPosition) await redisSetWithTimeout(userPositionKey(uid, mode), String(userPosition), 60, 80);
       }
     }
 

@@ -7,6 +7,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Разрешаем preflight/OPTIONS без авторизации
+  if (request.method === 'OPTIONS') {
+    return NextResponse.next();
+  }
+
   // Защищенные API endpoints
   const protectedPaths = [
     '/api/users',
@@ -38,6 +43,10 @@ export function middleware(request: NextRequest) {
 
   // Применяем защиту только если путь защищен И НЕ является исключением
   if (isProtectedPath && !isExcludedPath) {
+    // Публичный GET для лидерборда без авторизации
+    if (request.method === 'GET' && request.nextUrl.pathname.startsWith('/api/leaderboard')) {
+      return NextResponse.next();
+    }
     const authHeader = request.headers.get('authorization');
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {

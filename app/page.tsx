@@ -276,30 +276,29 @@ const HomePage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Frontend error logger (no devtools in TMA)
-    const onError = (event: ErrorEvent) => {
-      // minimal payload to avoid PII
-      // @ts-ignore
-      const src = event.filename?.toString?.() || '';
-      // @ts-ignore
-      const ln = event.lineno || 0;
-      // @ts-ignore
-      const col = event.colno || 0;
-      // @ts-ignore
-      const msg = event.message || 'unknown';
+    // Frontend error logger (no devtools in TMA) — сэмплирование и дебаунс
+    let lastSent = 0;
+    const minIntervalMs = 5000;
+    const send = (payload: any) => {
+      const now = Date.now();
+      if (now - lastSent < minIntervalMs) return;
+      lastSent = now;
       fetch('/api/debug', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ event: 'window_error', msg, src, ln, col, ts: Date.now() })
+        body: JSON.stringify(payload)
       }).catch(() => {});
     };
+    const onError = (event: ErrorEvent) => {
+      const src = (event as any).filename?.toString?.() || '';
+      const ln = (event as any).lineno || 0;
+      const col = (event as any).colno || 0;
+      const msg = event.message || 'unknown';
+      send({ event: 'window_error', msg, src, ln, col, ts: Date.now() });
+    };
     const onRejection = (event: PromiseRejectionEvent) => {
-      const msg = (event.reason && (event.reason.message || event.reason.toString())) || 'unhandledrejection';
-      fetch('/api/debug', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ event: 'unhandledrejection', msg, ts: Date.now() })
-      }).catch(() => {});
+      const msg = (event as any).reason && ((event as any).reason.message || (event as any).reason.toString()) || 'unhandledrejection';
+      send({ event: 'unhandledrejection', msg, ts: Date.now() });
     };
     window.addEventListener('error', onError);
     window.addEventListener('unhandledrejection', onRejection as any);

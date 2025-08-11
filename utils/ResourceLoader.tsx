@@ -95,7 +95,7 @@ export const ResourceLoader: React.FC<ResourceLoaderProps> = ({
         "/file.svg",
         "/lh.svg",
         "/romn.svg",
-        "/record.png",
+         "/record.png",
         "/replay.svg",
         "/vibrateon.svg",
         "/vibrateoff.svg",
@@ -110,8 +110,7 @@ export const ResourceLoader: React.FC<ResourceLoaderProps> = ({
         "/favicon.ico",
         "/icon0.svg",
         "/icon1.png",
-        // Telegram Web App ресурсы
-        "https://telegram.org/js/telegram-web-app.js",
+         // Telegram Web App ресурсы — не блокируем загрузку приложений
       ];
 
       setProgress({

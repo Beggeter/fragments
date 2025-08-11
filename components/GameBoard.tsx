@@ -1500,11 +1500,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       setExplodingCells(null);
       // --- Списываем бустер только после успешного применения ---
       await useBooster("bomb");
-      // Сохраняем игру после использования бомбы
-      try {
-        await saveAfterAction();
-      } catch (error) {
-      }
+    // Сохраняем игру после использования бомбы (неблокирующе)
+    void saveAfterAction();
     }, 300);
     setBombMode(false);
     setBombCenter(null);
@@ -2001,8 +1998,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
       }
     }
-    // Сохраняем игру после использования бустера
-    forceSave();
+    // Сохраняем игру после использования бустера (неблокирующе)
+    void saveAfterAction();
   };
 
   // --- iOS viewport width fix ---
