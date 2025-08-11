@@ -368,7 +368,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
             <div className="text-center py-12 text-gray-400 font-figtree-mulish text-lg">
               {t("leaderboard.no_data")}
               {/* Покажем карточку пользователя даже если таблица пуста */}
-              {(userPosition && (activeTab === "classic" ? user?.record > 0 : user?.zenRecord > 0)) && (
+              {(user && userPosition && (activeTab === "classic" ? user.record > 0 : user.zenRecord > 0)) && (
                 <div className="mt-6">
                   <StickyUserCard />
                 </div>
