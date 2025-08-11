@@ -168,7 +168,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
 
   // Компонент липкой карточки пользователя
   const StickyUserCard = () => {
-    if (!showStickyUser || !user || !userPosition) return null;
+    if (!user || !userPosition) return null;
 
     const userRecord = activeTab === "classic" ? user.record : user.zenRecord;
     const position = userPosition;
@@ -367,6 +367,12 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
           ) : leaderboard.length === 0 ? (
             <div className="text-center py-12 text-gray-400 font-figtree-mulish text-lg">
               {t("leaderboard.no_data")}
+              {/* Покажем карточку пользователя даже если таблица пуста */}
+              {(userPosition && (activeTab === "classic" ? user?.record > 0 : user?.zenRecord > 0)) && (
+                <div className="mt-6">
+                  <StickyUserCard />
+                </div>
+              )}
             </div>
           ) : (
             <div className="bg-white/10 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-xl border border-white/20 overflow-hidden h-[60dvh] flex flex-col">
@@ -479,8 +485,12 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
                   </div>
                 )}
               </div>
-              {/* Липкая карточка пользователя внизу */}
-              {showStickyUser && <StickyUserCard />}
+              {/* Липкая карточка пользователя внизу:
+                 - показываем, если пользователь находится в топ-20, но его запись не видна (скролл)
+                 - или если пользователя нет в топ-20, но у него есть рекорд и вычисленная позиция */}
+              {(showStickyUser || (user && userPosition && !isUserInVisibleTop20 && (activeTab === "classic" ? user.record > 0 : user.zenRecord > 0))) && (
+                <StickyUserCard />
+              )}
             </div>
           )}
         </div>
