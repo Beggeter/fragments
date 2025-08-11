@@ -23,3 +23,5 @@ export const isProtectedPath = (url: string): boolean => {
   const protectedPaths = ['/api/users', '/api/games', '/api/currency', '/api/boosters', '/api/leaderboard'];
   return protectedPaths.some(path => url.includes(path));
 }; 
+
+// Simple Redis client wrapper (lazy). The actual server-side usage will import a server-side module.

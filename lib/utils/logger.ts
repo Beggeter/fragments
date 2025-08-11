@@ -19,7 +19,7 @@ class GameLogger {
         try {
             localStorage.setItem(this.LOG_KEY, '');
         } catch (error) {
-            console.error('Error clearing logs:', error);
+      // swallow
         }
     }
 
@@ -33,7 +33,7 @@ class GameLogger {
             const currentLogs = localStorage.getItem(this.LOG_KEY) || '';
             localStorage.setItem(this.LOG_KEY, currentLogs + logEntry);
         } catch (error) {
-            console.error('Error writing to logs:', error);
+      // swallow
         }
     }
 
@@ -41,15 +41,7 @@ class GameLogger {
         return localStorage.getItem(this.LOG_KEY) || '';
     }
 
-    public async sendClientLog(event: string, data?: any) {
-        try {
-            await fetch('/api/debug', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ event, data, ts: Date.now() })
-            });
-        } catch {}
-    }
+  public async sendClientLog(_event: string, _data?: any) { /* disabled */ }
 }
 
 export const gameLogger = GameLogger.getInstance(); 

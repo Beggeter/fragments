@@ -22,6 +22,7 @@
     "stars:test-webhook": "node scripts/test-stars-webhook.js"
   },
   "dependencies": {
+    "redis": "^4.6.14",
     "@telegram-apps/sdk": "^3.11.4",
     "@tsparticles/engine": "^3.8.1",
     "@tsparticles/react": "^3.0.0",

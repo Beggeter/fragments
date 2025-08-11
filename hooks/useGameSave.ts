@@ -30,6 +30,7 @@ interface ServerGameState {
 }
 
 const GAME_SAVE_VERSION = '2.1.0'; // Обновляем версию для поддержки Zen режима
+const MIN_SERVER_SAVE_INTERVAL_MS = 2000; // Троттлинг сетевых сохранений (кроме рекорда)
 const LOCAL_STORAGE_KEY_CLASSIC = 'fragments_game_state';
 const LOCAL_STORAGE_KEY_ZEN = 'fragments_zen_game_state';
 
@@ -139,10 +140,19 @@ export const useGameSave = (gameMode: 'classic' | 'zen' = 'classic') => {
     try {
       const storageKey = getStorageKey();
       const stateWithMode = { ...gameState, gameMode };
-      localStorage.setItem(storageKey, JSON.stringify(stateWithMode));
-      // console.log(`${gameMode} game saved to localStorage`);
+      const save = () => {
+        try {
+          localStorage.setItem(storageKey, JSON.stringify(stateWithMode));
+        } catch (_) {}
+      };
+      if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+        // @ts-ignore - типизировано не во всех TSDOM
+        window.requestIdleCallback(save, { timeout: 200 });
+      } else {
+        setTimeout(save, 0);
+      }
     } catch (error) {
-      // console.error(`Failed to save ${gameMode} game to localStorage:`, error);
+      // noop
     }
   }, [getStorageKey, gameMode]);
 
@@ -250,9 +260,12 @@ export const useGameSave = (gameMode: 'classic' | 'zen' = 'classic') => {
     // Проверяем, нужно ли сохранить на сервер (новый рекорд или каждые 10 ходов)
     const currentScore = gameStore.score;
     const userRecord = gameMode === 'zen' ? (user?.zenRecord || 0) : (user?.record || 0);
-    const shouldSaveToServer = 
-      currentScore > userRecord || // Новый рекорд - сразу сохраняем
-      gameStore.piecesPlaced % 10 === 0; // Или каждые 10 ходов
+    // Решаем, сохранять ли на сервер
+    const now = Date.now();
+    const isNewRecord = currentScore > userRecord;
+    const isPeriodicSave = gameStore.piecesPlaced % 10 === 0;
+    const throttled = !isNewRecord && (now - lastServerSyncRef.current) < MIN_SERVER_SAVE_INTERVAL_MS;
+    const shouldSaveToServer = isNewRecord || (isPeriodicSave && !throttled);
 
     if (shouldSaveToServer && isAuthenticated) {
       // console.log('💾 Triggering server save:', {
@@ -262,7 +275,9 @@ export const useGameSave = (gameMode: 'classic' | 'zen' = 'classic') => {
       //   piecesPlaced: gameStore.piecesPlaced,
       //   gameMode: gameMode
       // });
-      await saveToServer(gameState);
+      // Делаем сетевое сохранение неблокирующим для UI пути
+      // Не ждём завершения, чтобы не задерживать следующий кадр
+      void saveToServer(gameState);
     }
   }, [saveToLocalStorage, saveToServer, user?.record, user?.zenRecord, isAuthenticated, gameMode]);
 

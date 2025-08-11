@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { UserService } from '@/lib/db/services';
+import { getRedis, leaderboardKey, userPositionKey } from '@/lib/utils/redis';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
@@ -15,36 +16,69 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'Invalid gameMode. Must be "classic" or "zen"' });
     }
     
-    // Получаем пользователей отсортированных по рекорду для указанного режима
-    const users = await UserService.getTopUsers(Number(limit), gameMode as 'classic' | 'zen');
-    console.log(`Users from DB for ${gameMode} mode:`, users);
-    
-    // Формируем простой список с именами, рекордами и аватарками
-    const leaderboard = users.map(user => {
-      const username = user.firstName || `User${user.id}`;
-      const record = gameMode === 'zen' ? user.zenRecord : user.record;
-      
-      return {
-        id: user.id,
-        username,
-        record,
-        avatarUrl: user.avatarUrl || "/blue.svg"
-      };
-    });
+    const mode = (gameMode as 'classic' | 'zen');
+    const redis = await getRedis();
+    const lbKey = leaderboardKey(mode);
+    let leaderboard: Array<{ id: number; username: string; record: number; avatarUrl?: string }>|null = null;
+
+    // Пытаемся отдать из кэша
+    if (redis) {
+      try {
+        const cached = await redis.get(lbKey);
+        if (cached) {
+          leaderboard = JSON.parse(cached);
+        }
+      } catch {}
+    }
+
+    if (!leaderboard) {
+      // Получаем пользователей отсортированных по рекорду
+      const users = await UserService.getTopUsers(Number(limit), mode);
+      // Формируем простой список с именами, рекордами и аватарками
+      leaderboard = users.map(user => {
+        const username = user.firstName || `User${user.id}`;
+        const record = mode === 'zen' ? user.zenRecord : user.record;
+        return {
+          id: user.id,
+          username,
+          record,
+          avatarUrl: user.avatarUrl || "/blue.svg"
+        };
+      });
+      // Кладём в кэш на 60 сек
+      if (redis) {
+        try {
+          await redis.set(lbKey, JSON.stringify(leaderboard), { EX: 60 });
+        } catch {}
+      }
+    }
 
     // Если запрашивается позиция конкретного пользователя
     let userPosition = null;
-    console.log('Requested userId:', userId, 'gameMode:', gameMode);
     if (userId) {
-      console.log('Getting position for userId:', userId, 'in', gameMode, 'mode');
-      // Быстрый способ получить позицию пользователя для указанного режима
-      userPosition = await UserService.getUserPosition(Number(userId), gameMode as 'classic' | 'zen');
-      console.log('Calculated userPosition:', userPosition);
+      const uid = Number(userId);
+      // сначала пробуем кэш позиции на 60 сек
+      if (redis) {
+        try {
+          const cachedPos = await redis.get(userPositionKey(uid, mode));
+          if (cachedPos) {
+            userPosition = Number(cachedPos);
+          }
+        } catch {}
+      }
+      if (!userPosition) {
+        userPosition = await UserService.getUserPosition(uid, mode);
+        if (redis && userPosition) {
+          try {
+            await redis.set(userPositionKey(uid, mode), String(userPosition), { EX: 60 });
+          } catch {}
+        }
+      }
     }
 
-    console.log(`Final ${gameMode} leaderboard:`, leaderboard);
-    console.log('User position:', userPosition);
-    
+    // Edge CDN cache headers (если за CDN)
+    res.setHeader('Cache-Control', 's-maxage=60, stale-while-revalidate=120');
+
     return res.status(200).json({
       leaderboard,
       userPosition,
