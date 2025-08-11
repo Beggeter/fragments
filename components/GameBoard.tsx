@@ -359,6 +359,44 @@ const edgesToPathMemo = (() => {
   };
 })();
 
+  // Overlay component that uses worker to build paths, then scales to pixels
+  const ContoursOverlay: React.FC<{ matrix: any[][]; board: any[][]; color: string; boardRef: any; workerRef: any }>
+    = ({ matrix, board, color, boardRef, workerRef }) => {
+      const [paths, setPaths] = useState<string[]>([]);
+      useEffect(() => {
+        const w = workerRef.current;
+        if (!w) {
+          // Fallback to sync path building
+          const areas = findConnectedAreasMemo(matrix as any);
+          const ds = areas.map((area) => edgesToPathMemo(getCellEdgesMemo(area as any, matrix as any)));
+          setPaths(ds);
+          return;
+        }
+        const onMsg = (e: MessageEvent) => {
+          if (e.data?.type === 'paths') setPaths(e.data.d || []);
+        };
+        w.addEventListener('message', onMsg);
+        try { w.postMessage({ type: 'buildPaths', matrix }); } catch {}
+        return () => w.removeEventListener('message', onMsg);
+      }, [matrix]);
+
+      if (!boardRef.current) return null as any;
+      const boardW = boardRef.current.offsetWidth;
+      const boardH = boardRef.current.offsetHeight;
+      const scaled = paths.map((d) => scalePath(d, boardW, boardH, board[0].length, board.length));
+
+      return (
+        <>
+          {scaled.map((dPx, idx) => (
+            <div key={idx} style={{ position: 'absolute', left: 0, top: 0, width: boardW, height: boardH, pointerEvents: 'none', zIndex: 1001 }}>
+              <NeonGlowOutline d={dPx} color={color} glowRadius={10} strokeWidth={12} opacity={0.5} style={{ width: '100%', height: '100%' }} />
+              <NeonGlowParticles d={dPx} color={color} visible={true} />
+            </div>
+          ))}
+        </>
+      );
+    };
+
 export const GameBoard: React.FC<GameBoardProps> = ({
   width = 8,
   height = 8,
@@ -417,12 +455,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       scorePotential: number;
     }>
   >([]);
-  const [pieceEvaluations, setPieceEvaluations] = useState<
-    Array<{
-      difficulty: number;
-      scorePotential: number;
-    }>
-  >([]);
+  const [pieceEvaluations, setPieceEvaluations] = useState<Array<{ difficulty: number; scorePotential: number }>>([]);
+  const contoursWorkerRef = useRef<Worker | null>(null);
+  const evaluatorWorkerRef = useRef<Worker | null>(null);
   // const [potentialClearHighlight, setPotentialClearHighlight] = useState<
   //   boolean[][]
   // >([]);
@@ -808,14 +843,39 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     handleRestartComplete,
   ]);
 
+  // Init workers once
   useEffect(() => {
-    if (currentPieces.length > 0) {
-      // Оцениваем каждую текущую фигуру
-      const evaluations = currentPieces.map((piece) =>
-        difficultyEvaluator.evaluateBlock(piece, board)
-      );
-      setPieceEvaluations(evaluations);
+    if (typeof window === 'undefined') return;
+    try {
+      contoursWorkerRef.current = new Worker(new URL('../lib/workers/contours.worker.ts', import.meta.url));
+    } catch {}
+    try {
+      evaluatorWorkerRef.current = new Worker(new URL('../lib/workers/evaluator.worker.ts', import.meta.url));
+    } catch {}
+    return () => {
+      contoursWorkerRef.current?.terminate?.();
+      evaluatorWorkerRef.current?.terminate?.();
+    };
+  }, []);
+
+  // Evaluate pieces in worker
+  useEffect(() => {
+    if (!currentPieces.length) {
+      setPieceEvaluations([]);
+      return;
     }
+    const w = evaluatorWorkerRef.current;
+    if (!w) {
+      const evaluations = currentPieces.map((piece) => difficultyEvaluator.evaluateBlock(piece, board));
+      setPieceEvaluations(evaluations);
+      return;
+    }
+    const onMsg = (e: MessageEvent) => {
+      if (e.data?.type === 'evaluated') setPieceEvaluations(e.data.evaluations || []);
+    };
+    w.addEventListener('message', onMsg);
+    try { w.postMessage({ type: 'evaluate', blocks: currentPieces, board }); } catch {}
+    return () => w.removeEventListener('message', onMsg);
   }, [currentPieces, board]);
 
   const generateNewBlocks = useCallback(() => {
@@ -2221,62 +2281,15 @@ export const GameBoard: React.FC<GameBoardProps> = ({
               />
               {/* Анимация возвращения фигуры для undo теперь в app/page.tsx */}
               {/* Неоновый контур потенциально очищаемых областей */}
-              {potentialClearHighlight &&
-                potentialClearHighlight.length > 0 &&
-                draggedPiece &&
-                boardRef.current &&
-                (() => {
-                  // Получаем размеры доски в px
-                  const boardW = boardRef.current.offsetWidth;
-                  const boardH = boardRef.current.offsetHeight;
-                  // Переводим path из относительных координат (0-8) в пиксели
-                  return findConnectedAreasMemo(potentialClearHighlight).map(
-                    (area, idx) => {
-                      const edges = getCellEdgesMemo(
-                        area as [number, number][],
-                        potentialClearHighlight
-                      );
-                      if (edges.length === 0) return null;
-                      const d = edgesToPathMemo(edges);
-                      const dPx = scalePath(
-                        d,
-                        boardW,
-                        boardH,
-                        board[0].length,
-                        board.length
-                      );
-                      const color = COLOR_HEX[draggedPiece.color] || "#fff";
-                      return (
-                        <div
-                          key={idx}
-                          style={{
-                            position: "absolute",
-                            left: 0,
-                            top: 0,
-                            width: boardW,
-                            height: boardH,
-                            pointerEvents: "none",
-                            zIndex: 1001,
-                          }}
-                        >
-                          <NeonGlowOutline
-                            d={dPx}
-                            color={color}
-                            glowRadius={10}
-                            strokeWidth={12}
-                            opacity={0.5}
-                            style={{ width: "100%", height: "100%" }}
-                          />
-                          <NeonGlowParticles
-                            d={dPx}
-                            color={color}
-                            visible={true}
-                          />
-                        </div>
-                      );
-                    }
-                  );
-                })()}
+              {potentialClearHighlight && potentialClearHighlight.length > 0 && draggedPiece && boardRef.current && (
+                <ContoursOverlay
+                  matrix={potentialClearHighlight}
+                  board={board}
+                  color={COLOR_HEX[draggedPiece.color] || '#fff'}
+                  boardRef={boardRef}
+                  workerRef={contoursWorkerRef}
+                />
+              )}
               {/* Glow-оверлеи для потенциальных линий */}
               {potentialRows.map((y) => (
                 <div
