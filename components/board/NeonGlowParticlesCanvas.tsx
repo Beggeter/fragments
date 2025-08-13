@@ -71,7 +71,7 @@ export const NeonGlowParticlesCanvas: React.FC<NeonGlowParticlesCanvasProps> = (
   d, color, visible, cellSize = 50, className = ""
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | undefined>(undefined);
   const particlesRef = useRef<Particle[]>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastSpawnTime = useRef(0);
