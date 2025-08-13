@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { safeLocalStorage } from '@/utils/helpers';
 
 interface User {
   id: number;
@@ -79,7 +80,7 @@ export const useUser = () => {
     // console.log("Checking user session...");
 
     // --- Admin mode (dev only) ---
-    const adminMode = localStorage.getItem('adminMode');
+    const adminMode = safeLocalStorage.getItem('adminMode');
     // console.log("Admin mode:", adminMode, "NODE_ENV:", process.env.NODE_ENV);
     if (adminMode === 'true' && process.env.NODE_ENV === 'development') {
       // console.log("Using admin mode, fetching user 610936383");
@@ -103,8 +104,8 @@ export const useUser = () => {
     }
 
     try {
-      const sessionToken = localStorage.getItem('sessionToken');
-      const userData = localStorage.getItem('userData');
+      const sessionToken = safeLocalStorage.getItem('sessionToken');
+      const userData = safeLocalStorage.getItem('userData');
       
       // console.log("Session token:", sessionToken ? "exists" : "missing");
       // console.log("User data:", userData ? "exists" : "missing");
@@ -153,7 +154,7 @@ export const useUser = () => {
         
         // Обновляем localStorage БЕЗ currency - баланс всегда с сервера
         const { currency, ...userDataForStorage } = freshUser;
-        localStorage.setItem('userData', JSON.stringify(userDataForStorage));
+        safeLocalStorage.setItem('userData', JSON.stringify(userDataForStorage));
         
         setUserState({
           user: freshUser,
@@ -173,10 +174,10 @@ export const useUser = () => {
 
   const loginUser = (user: User, sessionToken: string) => {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('sessionToken', sessionToken);
+      safeLocalStorage.setItem('sessionToken', sessionToken);
       // Сохраняем данные пользователя БЕЗ баланса
       const { currency, ...userDataForStorage } = user;
-      localStorage.setItem('userData', JSON.stringify(userDataForStorage));
+      safeLocalStorage.setItem('userData', JSON.stringify(userDataForStorage));
     }
     
     setUserState({
@@ -189,8 +190,8 @@ export const useUser = () => {
 
   const logout = () => {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('sessionToken');
-      localStorage.removeItem('userData');
+      safeLocalStorage.removeItem('sessionToken');
+      safeLocalStorage.removeItem('userData');
     }
     
     setUserState({
@@ -208,7 +209,7 @@ export const useUser = () => {
       // Обновляем localStorage БЕЗ currency
       if (typeof window !== 'undefined') {
         const { currency, ...userDataForStorage } = updatedUser;
-        localStorage.setItem('userData', JSON.stringify(userDataForStorage));
+        safeLocalStorage.setItem('userData', JSON.stringify(userDataForStorage));
       }
       
       setUserState(prev => ({

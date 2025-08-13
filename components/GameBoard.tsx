@@ -11,6 +11,7 @@ import React, {
 import { useGameStore } from "../lib/state/store";
 import { Block, BlockColor, Matrix, Position } from "../lib/data/types";
 import { getEventCoordinates } from "@/utils/events";
+import { throttle } from "@/utils/helpers";
 import { ScoreDisplay } from "./board/ScoreDisplay";
 import { BlockGenerator } from "../lib/core/blockGenerator";
 import { DifficultyEvaluator } from "../lib/core/difficulty";
@@ -37,7 +38,7 @@ import { LoadingNumberAnimation } from "./LoadingNumberAnimation";
 import { motion } from "framer-motion";
 import { Piece } from "./pieces/Piece";
 import NeonGlowOutline from "./NeonGlowOutline";
-import { NeonGlowParticles } from "./board/NeonGlowParticles";
+import { NeonGlowParticlesCanvas } from "./board/NeonGlowParticlesCanvas";
 import BoardClearAnimationsOverlay from "./board/BoardClearAnimationsOverlay";
 import BoardRestoreAnimationsOverlay, {
   RestoreAnimationCell,
@@ -390,7 +391,7 @@ const edgesToPathMemo = (() => {
           {scaled.map((dPx, idx) => (
             <div key={idx} style={{ position: 'absolute', left: 0, top: 0, width: boardW, height: boardH, pointerEvents: 'none', zIndex: 1001 }}>
               <NeonGlowOutline d={dPx} color={color} glowRadius={10} strokeWidth={12} opacity={0.5} style={{ width: '100%', height: '100%' }} />
-              <NeonGlowParticles d={dPx} color={color} visible={true} />
+              <NeonGlowParticlesCanvas d={dPx} color={color} visible={true} />
             </div>
           ))}
         </>
@@ -906,7 +907,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
   // Выносим обработчики событий за пределы useEffect
   const handleMove = useCallback(
-    (e: MouseEvent | TouchEvent) => {
+    throttle((e: MouseEvent | TouchEvent) => {
       if (!draggedPiece || !boardRef.current) return;
 
       if (e instanceof TouchEvent) {
@@ -932,7 +933,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       }
 
       setHoverCell(nearestPosition || null);
-    },
+    }, 16), // ~60fps throttling
     [
       draggedPiece,
       updateDrag,

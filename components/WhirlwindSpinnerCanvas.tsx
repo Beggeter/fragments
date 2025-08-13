@@ -151,10 +151,6 @@ const WhirlwindSpinnerCanvas: React.FC<WhirlwindSpinnerCanvasProps> = ({
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, logicalWidth, logicalHeight);
-    // DEBUG: рисуем красный квадрат и логируем кадры
-    ctx.fillStyle = "rgba(255,0,0,0.2)";
-    ctx.fillRect(0, 0, 100, 100);
-    console.log('animate frame', now);
 
     let allFinished = true;
     for (let lineIdx = 0; lineIdx < BOARD_SIZE; lineIdx++) {

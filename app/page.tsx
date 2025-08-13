@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { init } from "@telegram-apps/sdk";
+import { safeLocalStorage } from "@/utils/helpers";
 import GameBoard from "../components/GameBoard";
 import { ZenGameBoard } from "../components/ZenGameBoard";
 import MainMenu from "@/components/MainMenu";
@@ -164,10 +165,15 @@ const HomePage: React.FC = () => {
   // Инициализация: определяем контекст и показываем соответствующий экран
   useEffect(() => {
     const initializeApp = async () => {
-      // Инициализируем TMA SDK
+      // Инициализируем TMA SDK с timeout
       try {
-        await init();
-      } catch (error) {}
+        await Promise.race([
+          init(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('TMA init timeout')), 3000))
+        ]);
+      } catch (error) {
+        console.warn('TMA SDK init failed, continuing without it:', error);
+      }
       
       // Проверяем, что мы на клиенте
       if (typeof window === "undefined") {
@@ -178,8 +184,8 @@ const HomePage: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 100));
 
       // Проверяем, есть ли уже авторизованный пользователь
-      const existingSessionToken = localStorage.getItem("sessionToken");
-      const existingAdminToken = localStorage.getItem("adminToken");
+      const existingSessionToken = safeLocalStorage.getItem("sessionToken");
+      const existingAdminToken = safeLocalStorage.getItem("adminToken");
 
       if (existingSessionToken || existingAdminToken) {
         setIsInitialized(true);
@@ -200,7 +206,7 @@ const HomePage: React.FC = () => {
 
           // Пытаемся активировать immersive fullscreen
           // Проверяем настройку пользователя
-          const fullscreenEnabled = localStorage.getItem("fullscreenEnabled");
+          const fullscreenEnabled = safeLocalStorage.getItem("fullscreenEnabled");
           const shouldEnableFullscreen = fullscreenEnabled !== "false"; // По умолчанию включен
 
           if (
@@ -235,8 +241,8 @@ const HomePage: React.FC = () => {
 
                 const data = await response.json();
                 if (response.ok) {
-                  localStorage.setItem("sessionToken", data.sessionToken);
-                  localStorage.setItem("userData", JSON.stringify(data.user));
+                  safeLocalStorage.setItem("sessionToken", data.sessionToken);
+                  safeLocalStorage.setItem("userData", JSON.stringify(data.user));
                   loginUser(data.user, data.sessionToken);
                   setAutoAuthCompleted(true);
                   setCurrentScreen("main menu");
@@ -244,7 +250,9 @@ const HomePage: React.FC = () => {
                   return;
                 }
               }
-            } catch (error) {}
+            } catch (error) {
+              console.warn('Telegram auto-auth failed:', error);
+            }
           }
         }
 
@@ -258,7 +266,12 @@ const HomePage: React.FC = () => {
       setIsInitialized(true);
     };
 
-    initializeApp();
+    initializeApp().catch(error => {
+      console.error('App initialization failed:', error);
+      // Fallback: показываем базовый интерфейс даже при ошибке
+      setIsInitialized(true);
+      setCurrentScreen("admin login");
+    });
   }, []); // Запускаем только один раз при монтировании
 
   useEffect(() => {

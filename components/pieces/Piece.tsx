@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { BlockColor } from "@/lib/data/types";
 
 interface PieceProps {
@@ -22,18 +22,12 @@ const colorGradients: Record<BlockColor, string> = {
   cyan: "linear-gradient(135deg, #00BCD4 0%, #0097A7 100%)",
 };
 
-export const Piece: React.FC<PieceProps> = ({ color, size = 32, isClearing, isPreview = false }) => {
+export const Piece: React.FC<PieceProps> = React.memo(({ color, size = 32, isClearing, isPreview = false }) => {
   const [imageError, setImageError] = useState(false);
 
-  // console.log('🔍 Piece render:', {
-  //   color,
-  //   size,
-  //   isClearing,
-  //   isPreview,
-  //   imageError,
-  //   imageSrc: `/${color}.svg`
-  // });
-
+  // Мемоизируем src для стабильного кэширования
+  const imageSrc = useMemo(() => `/${color}.svg?v=1`, [color]);
+  
   const opacity = isPreview ? 0.4 : 1;
 
   // Если изображение не загрузилось, используем CSS градиент
@@ -56,7 +50,7 @@ export const Piece: React.FC<PieceProps> = ({ color, size = 32, isClearing, isPr
   return (
     <div className="relative no-select piece-container" style={{ width: size, height: size }}>
       <img
-        src={`/${color}.svg`}
+        src={imageSrc}
         alt={`${color} piece`}
         className={isClearing ? "clearing-piece" : ""}
         style={{
@@ -68,11 +62,13 @@ export const Piece: React.FC<PieceProps> = ({ color, size = 32, isClearing, isPr
           backfaceVisibility: 'hidden',
           opacity,
         }}
+        loading="eager"
+        decoding="async"
         onError={() => {
-          // console.log('❌ Image failed to load:', `/${color}.svg`);
+          console.warn('Image failed to load:', imageSrc);
           setImageError(true);
         }}
       />
     </div>
   );
-};
+});

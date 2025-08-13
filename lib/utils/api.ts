@@ -1,6 +1,8 @@
+import { safeLocalStorage } from '@/utils/helpers';
+
 // Вспомогательная функция для авторизованных API запросов
 export const authorizedFetch = async (url: string, options: RequestInit = {}) => {
-  const sessionToken = typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : null;
+  const sessionToken = typeof window !== 'undefined' ? safeLocalStorage.getItem('sessionToken') : null;
   
   if (!sessionToken) {
     throw new Error('No session token available');
