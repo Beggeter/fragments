@@ -514,11 +514,11 @@ const HomePage: React.FC = () => {
       } else {
         setShopReturnTo("main menu");
       }
-      setCurrentScreen("shop");
-      // Если передан initialTab, сохраняем его для ShopScreen
+      // Если передан initialTab, сохраняем его для ShopScreen ДО маунта магазина
       if (initialTab === "zen") {
         setShopReturnTo("zen");
       }
+      setCurrentScreen("shop");
     },
     [currentScreen]
   );
