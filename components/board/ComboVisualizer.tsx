@@ -208,41 +208,50 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
     };
   }, []);
 
-  // Handle combo level changes
+  // Handle combo level changes с исправленной очисткой ресурсов
   useEffect(() => {
+    let checkSizeTimer: NodeJS.Timeout | null = null;
+    let fallbackTimer: NodeJS.Timeout | null = null;
+    let explodeTimer: NodeJS.Timeout | null = null;
+    let textTimer: NodeJS.Timeout | null = null;
+    let particlesTimer: NodeJS.Timeout | null = null;
+
     if (lastScore?.comboLevel !== undefined) {
       if (lastScore.comboLevel > 0) {
         setIsExploding(true);
         if (typeof onExplodeChange === "function") onExplodeChange(true);
+        
         // Only show combo text if container size is available
         if (containerSize.width > 0 && containerSize.height > 0) {
           setShowComboText(true);
         } else {
           // Delay showing combo text until container size is available
-          const checkSizeTimer = setInterval(() => {
+          checkSizeTimer = setInterval(() => {
             if (containerSize.width > 0 && containerSize.height > 0) {
               setShowComboText(true);
-              clearInterval(checkSizeTimer);
+              if (checkSizeTimer) clearInterval(checkSizeTimer);
+              checkSizeTimer = null;
             }
           }, 50);
-          setTimeout(() => clearInterval(checkSizeTimer), 500); // Fallback timeout
+          
+          // Fallback timeout
+          fallbackTimer = setTimeout(() => {
+            if (checkSizeTimer) clearInterval(checkSizeTimer);
+            checkSizeTimer = null;
+          }, 500);
         }
+        
         setShowParticles(true);
         setShowClearText(false);
         handleVibrate();
 
-        const explodeTimer = setTimeout(() => {
+        explodeTimer = setTimeout(() => {
           setIsExploding(false);
           if (typeof onExplodeChange === "function") onExplodeChange(false);
         }, 400);
-        const textTimer = setTimeout(() => setShowComboText(false), 800);
-        const particlesTimer = setTimeout(() => setShowParticles(false), 1000);
-
-        return () => {
-          clearTimeout(explodeTimer);
-          clearTimeout(textTimer);
-          clearTimeout(particlesTimer);
-        };
+        
+        textTimer = setTimeout(() => setShowComboText(false), 800);
+        particlesTimer = setTimeout(() => setShowParticles(false), 1000);
       } else {
         // При сбросе комбо до 0 скрываем текст
         setShowComboText(false);
@@ -250,6 +259,15 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
         setShowParticles(false);
       }
     }
+
+    return () => {
+      // Очищаем все таймеры при размонтировании или изменении зависимостей
+      if (checkSizeTimer) clearInterval(checkSizeTimer);
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      if (explodeTimer) clearTimeout(explodeTimer);
+      if (textTimer) clearTimeout(textTimer);
+      if (particlesTimer) clearTimeout(particlesTimer);
+    };
   }, [lastScore?.comboLevel, containerSize]);
 
   // Показываем clearText после ComboText (если был) или сразу, если нет

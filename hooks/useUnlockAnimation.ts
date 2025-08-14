@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { DailyReward } from "@/components/DailyBonusModal"; // путь подкорректируй, если надо
 import { RewardStatus } from "@/types/components";
+import { safeLocalStorage } from '@/utils/helpers';
 
 const LOCAL_KEY = "daily-bonus-statuses";
 
@@ -27,7 +28,7 @@ export function useUnlockAnimations(currentWeekRewards: DailyReward[]): boolean[
 
     const today = new Date().toISOString().slice(0, 10);
 
-    const raw = localStorage.getItem(LOCAL_KEY);
+    const raw = safeLocalStorage.getItem(LOCAL_KEY);
     let previousStatuses: RewardStatus[] | undefined;
 
     if (raw) {
@@ -57,7 +58,7 @@ export function useUnlockAnimations(currentWeekRewards: DailyReward[]): boolean[
       date: today,
       statuses: newStatuses,
     };
-    localStorage.setItem(LOCAL_KEY, JSON.stringify(stored));
+    safeLocalStorage.setItem(LOCAL_KEY, JSON.stringify(stored));
   }, [rewardsKey]); // Используем стабильную зависимость
 
   return unlockAnimations;

@@ -11,7 +11,7 @@ import React, {
 import { useGameStore } from "../lib/state/store";
 import { Block, BlockColor, Matrix, Position } from "../lib/data/types";
 import { getEventCoordinates } from "@/utils/events";
-import { throttle } from "@/utils/helpers";
+import { throttle, safeLocalStorage } from "@/utils/helpers";
 import { ScoreDisplay } from "./board/ScoreDisplay";
 import { BlockGenerator } from "../lib/core/blockGenerator";
 import { DifficultyEvaluator } from "../lib/core/difficulty";
@@ -642,31 +642,42 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
   }, [onRestartComplete]);
 
-  // Обработчики для LoadingSpinner
+  // Обработчики для LoadingSpinner с правильной очисткой таймеров
+  const timeoutsRef = useRef<Set<NodeJS.Timeout>>(new Set());
+  
+  // Функция для очистки всех таймеров
+  const clearAllTimeouts = useCallback(() => {
+    timeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+    timeoutsRef.current.clear();
+  }, []);
+
   const handleLineBreakpoint = useCallback(
     (lineIdx: number, rowIdx: number) => {
       setClearedLines((prev) => new Set([...prev, rowIdx]));
 
-      // Добавляем небольшую задержку чтобы избежать конфликтов при быстрых обновлениях
-      setTimeout(() => {
+      // Создаем таймеры с отслеживанием для очистки
+      const timeout1 = setTimeout(() => {
         // Очищаем конкретную линию когда анимация проходит через неё
-        // Используем функциональный апдейт для избежания конфликтов состояния
         useGameStore.setState((state) => ({
           board: state.board.map((row, y) =>
             y === rowIdx ? row.map(() => ({ value: 0 })) : row
           ),
         }));
-      }, lineIdx * 50); // Задержка в зависимости от номера линии
+        timeoutsRef.current.delete(timeout1);
+      }, lineIdx * 50);
 
-      setTimeout(
-        () =>
-          setClearedLines((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(rowIdx);
-            return newSet;
-          }),
-        100
-      );
+      const timeout2 = setTimeout(() => {
+        setClearedLines((prev) => {
+          const newSet = new Set(prev);
+          newSet.delete(rowIdx);
+          return newSet;
+        });
+        timeoutsRef.current.delete(timeout2);
+      }, 100);
+
+      // Отслеживаем таймеры для возможной очистки
+      timeoutsRef.current.add(timeout1);
+      timeoutsRef.current.add(timeout2);
     },
     []
   );
@@ -716,7 +727,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
     const sessionToken =
       typeof window !== "undefined"
-        ? localStorage.getItem("sessionToken")
+        ? safeLocalStorage.getItem("sessionToken")
         : null;
     const headers: HeadersInit = {};
     if (sessionToken) {
@@ -1425,7 +1436,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     const sessionToken =
       typeof window !== "undefined"
-        ? localStorage.getItem("sessionToken")
+        ? safeLocalStorage.getItem("sessionToken")
         : null;
     const headers: HeadersInit = { "Content-Type": "application/json" };
     if (sessionToken) {
@@ -2062,6 +2073,13 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     // Сохраняем игру после использования бустера (неблокирующе)
     void saveAfterAction();
   };
+
+  // Cleanup всех таймеров при размонтировании
+  useEffect(() => {
+    return () => {
+      clearAllTimeouts();
+    };
+  }, [clearAllTimeouts]);
 
   // --- iOS viewport width fix ---
   useEffect(() => {
