@@ -97,25 +97,36 @@ export function isLaunchedInTelegram(): boolean {
   return hasTelegramWebApp || hasTgWebAppData;
 }
 
-// Ожидание загрузки Telegram WebApp API
-function waitForTelegramWebApp(maxAttempts = 60, interval = 150): Promise<boolean> {
+// Ожидание загрузки Telegram WebApp API - оптимизировано для мобильных сетей
+function waitForTelegramWebApp(maxAttempts = 40, interval = 250): Promise<boolean> {
   return new Promise((resolve) => {
     let attempts = 0;
     
     const checkTelegram = () => {
+      // Сначала быстрая проверка
       if (window.Telegram?.WebApp) {
+        console.log('✅ Telegram WebApp API found!');
         resolve(true);
         return;
       }
       
       attempts++;
+      
+      // Увеличиваем интервал для мобильных сетей после 10 попыток
+      const currentInterval = attempts > 10 ? interval * 2 : interval;
+      
       if (attempts >= maxAttempts) {
-        console.warn('Telegram WebApp API not loaded after maximum attempts');
+        console.warn(`❌ Telegram WebApp API not loaded after ${maxAttempts} attempts`);
         resolve(false);
         return;
       }
       
-      setTimeout(checkTelegram, interval);
+      // Логируем каждые 5 попыток для отладки мобильных сетей
+      if (attempts % 5 === 0) {
+        console.log(`🔄 Still waiting for Telegram API... (${attempts}/${maxAttempts})`);
+      }
+      
+      setTimeout(checkTelegram, currentInterval);
     };
     
     checkTelegram();
@@ -178,8 +189,14 @@ async function performInitialization(): Promise<boolean> {
       return false;
     }
     
-    // Небольшая задержка для iOS стабильности
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // Задержка для стабильности (увеличена для мобильных сетей)
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Дополнительная проверка сети
+    const connectionType = (navigator as any)?.connection?.effectiveType;
+    if (connectionType) {
+      console.log('📶 Network type detected:', connectionType);
+    }
     
     // Если не в Telegram, настраиваем fallback
     if (!isLaunchedInTelegram()) {
@@ -187,6 +204,8 @@ async function performInitialization(): Promise<boolean> {
       setupFallbackViewport();
       return true; // Считаем успешной инициализацию для браузера
     }
+    
+    console.log('📱 In Telegram environment, waiting for API...');
     
     // Ждем загрузки Telegram WebApp API
     const isLoaded = await waitForTelegramWebApp();

@@ -159,9 +159,26 @@ const HomePage: React.FC = () => {
         console.warn('Failed to initialize @telegram-apps/sdk:', error);
       }
       
-      // Инициализируем Telegram WebApp
-      const telegramSuccess = await initializeTelegramWebApp();
-      console.log('📱 Telegram WebApp initialization:', telegramSuccess ? 'success' : 'failed');
+      // Инициализируем Telegram WebApp с таймаутом для мобильных сетей
+      console.log('🔄 Starting Telegram WebApp initialization...');
+      let telegramSuccess = false;
+      
+      try {
+        // Увеличенный таймаут для мобильных сетей
+        const initPromise = initializeTelegramWebApp();
+        const timeoutPromise = new Promise<boolean>(resolve => 
+          setTimeout(() => {
+            console.warn('⏰ Telegram initialization timeout (mobile network), continuing with fallback');
+            resolve(false);
+          }, 8000) // 8 секунд для мобильных сетей
+        );
+        
+        telegramSuccess = await Promise.race([initPromise, timeoutPromise]);
+        console.log('📱 Telegram WebApp initialization:', telegramSuccess ? 'success' : 'failed/timeout');
+      } catch (error) {
+        console.error('❌ Error during Telegram initialization:', error);
+        telegramSuccess = false;
+      }
       
       // Проверяем, что мы на клиенте
       if (typeof window === "undefined") {
