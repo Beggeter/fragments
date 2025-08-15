@@ -1,4 +1,5 @@
 import React, { useMemo } from "react";
+import { useSettingsStore } from "@/lib/state/settings";
 
 interface PerimeterParticlesProps {
   width: number;
@@ -29,10 +30,11 @@ const CONFETTI_COLORS = [
   "#40FF80", // ярко-зелено-голубой
   "#8040FF", // ярко-фиолетовый
 ];
-const N = 14;
-const M = 14;
+// Уменьшено для лучшей производительности на мобильных
+const N = 8; // было 14
+const M = 8; // было 14  
 const MIN_PARTICLE_SIZE = 2;
-const ANIMATION_DURATION = 1000;
+const ANIMATION_DURATION = 800; // Немного быстрее
 
 type Particle = {
   x: number;
@@ -49,6 +51,11 @@ type Particle = {
 
 export const PerimeterParticles: React.FC<PerimeterParticlesProps> = React.memo(
   ({ width, height, visible, color = "#fff", className = "" }) => {
+    const { animationsEnabled, performanceMode } = useSettingsStore();
+    
+    // Ранний возврат если анимации отключены
+    if (!visible || !animationsEnabled) return null;
+    
     // Проверяем и корректируем размеры для production сборки
     const validWidth = Math.max(width, 200); // минимальный размер 200px
     const validHeight = Math.max(height, 200);
@@ -163,7 +170,7 @@ export const PerimeterParticles: React.FC<PerimeterParticlesProps> = React.memo(
           randomColor
         };
       });
-    }, [validWidth, validHeight]);
+    }, [validWidth, validHeight, performanceMode]);
 
     if (!visible) return null;
 

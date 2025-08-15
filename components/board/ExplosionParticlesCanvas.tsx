@@ -1,4 +1,5 @@
 import React, { useRef, useEffect } from "react";
+import { useSettingsStore } from "@/lib/state/settings";
 
 export interface ExplosionParticlesCanvasProps {
   centerX: number;
@@ -63,10 +64,22 @@ const ExplosionParticlesCanvas: React.FC<ExplosionParticlesCanvasProps> = ({
   mode = "explode",
   gatherTargets = [],
 }) => {
+  const { animationsEnabled, performanceMode } = useSettingsStore();
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  
+  // Ранний возврат если анимации отключены
+  if (!isActive || !animationsEnabled) {
+    if (onComplete) onComplete();
+    return null;
+  }
   const particlesRef = useRef<Particle[]>([]);
   const animationRef = useRef<number | null>(null);
   const finishedRef = useRef(false);
+  
+  // Оптимизация для мобильных устройств
+  const lastFrameTimeRef = useRef(0);
+  const TARGET_FPS = 30; // Ограничиваем до 30 FPS для частиц на мобильных
+  const FRAME_TIME = 1000 / TARGET_FPS;
   
   const padding = 300; // px
   // Управление размером частиц
@@ -123,7 +136,14 @@ const ExplosionParticlesCanvas: React.FC<ExplosionParticlesCanvasProps> = ({
       });
     } else {
       PARTICLE_TYPES.forEach((type, typeIndex) => {
-        const count = type === "fire" ? 15 : type === "spark" ? 10 : type === "smoke" ? 8 : 6;
+        // Адаптивное количество частиц в зависимости от настроек производительности
+        let baseCount = type === "fire" ? 15 : type === "spark" ? 10 : type === "smoke" ? 8 : 6;
+        if (performanceMode === 'low') {
+          baseCount = Math.ceil(baseCount * 0.3); // 30% частиц
+        } else if (performanceMode === 'medium') {
+          baseCount = Math.ceil(baseCount * 0.6); // 60% частиц
+        }
+        const count = baseCount;
         for (let i = 0; i < count; i++) {
           const angle = (Math.PI * 2 * i) / count + (typeIndex * Math.PI / 6);
           const distance = 120 + Math.random() * 180;
@@ -174,13 +194,22 @@ const ExplosionParticlesCanvas: React.FC<ExplosionParticlesCanvasProps> = ({
     // eslint-disable-next-line
   }, [isActive, centerX, centerY, boardWidth, boardHeight, cellSize, gap, mode, JSON.stringify(gatherTargets)]);
 
-  // Основная анимация
+  // Основная анимация с throttling для мобильных
   function animate(startTime: number) {
+    const now = performance.now();
+    
+    // Throttling для лучшей производительности на мобильных
+    if (now - lastFrameTimeRef.current < FRAME_TIME) {
+      animationRef.current = requestAnimationFrame(() => animate(startTime));
+      return;
+    }
+    lastFrameTimeRef.current = now;
+    
     const ctx = canvasRef.current?.getContext("2d");
     const dpr = window.devicePixelRatio || 1;
     ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (!ctx) return;
-    const now = performance.now();
+    
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     let alive = 0;
     for (const p of particlesRef.current) {
@@ -197,25 +226,10 @@ const ExplosionParticlesCanvas: React.FC<ExplosionParticlesCanvasProps> = ({
       ctx.globalAlpha = opacity;
       ctx.translate(x, y);
       ctx.rotate((p.rotation * Math.PI) / 180);
-      // Blur/тени для некоторых типов
-      if (p.type === "fire") {
+      // Упрощенные тени только для важных эффектов (лучше производительность на мобильных)
+      if (p.type === "fire" || p.type === "star") {
         ctx.shadowColor = p.color;
-        ctx.shadowBlur = 8;
-      } else if (p.type === "spark") {
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 6;
-      } else if (p.type === "star") {
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 10;
-      } else if (p.type === "glitter") {
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 6;
-      } else if (p.type === "debris") {
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 2;
-      } else if (p.type === "smoke") {
-        ctx.shadowColor = p.color;
-        ctx.shadowBlur = 12;
+        ctx.shadowBlur = 4; // Уменьшили blur для производительности
       }
       // Рисуем форму
       if (p.type === "star") {

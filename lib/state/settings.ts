@@ -10,6 +10,11 @@ interface SettingsState {
   fullscreenEnabled: boolean;
   setFullscreenEnabled: (enabled: boolean) => void;
   setLanguage: (lang: string) => void;
+  // Настройки производительности
+  performanceMode: 'high' | 'medium' | 'low';
+  setPerformanceMode: (mode: 'high' | 'medium' | 'low') => void;
+  animationsEnabled: boolean;
+  setAnimationsEnabled: (enabled: boolean) => void;
 }
 
 export const useSettingsStore = create<SettingsState>((set) => {
@@ -18,6 +23,35 @@ export const useSettingsStore = create<SettingsState>((set) => {
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("fullscreenEnabled");
       return saved !== null ? saved === "true" : true; // По умолчанию включен
+    }
+    return true;
+  };
+
+  const getInitialPerformanceMode = (): 'high' | 'medium' | 'low' => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("performanceMode") as 'high' | 'medium' | 'low';
+      if (saved) return saved;
+      
+      // Автоопределение на основе устройства
+      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isLowEnd = navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2;
+      
+      if (isMobile && isLowEnd) return 'low';
+      if (isMobile) return 'medium';
+      return 'high';
+    }
+    return 'medium';
+  };
+
+  const getInitialAnimationsEnabled = () => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("animationsEnabled");
+      if (saved !== null) return saved === "true";
+      
+      // Отключаем анимации на слабых устройствах
+      const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const isLowEnd = navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 2;
+      return !(isMobile && isLowEnd);
     }
     return true;
   };
@@ -55,6 +89,26 @@ export const useSettingsStore = create<SettingsState>((set) => {
         localStorage.setItem("language", lang);
       }
       set({}); // если надо, можешь и состояние хранить, но можно и без
+    },
+    // Настройки производительности
+    performanceMode: getInitialPerformanceMode(),
+    setPerformanceMode: (mode) => {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("performanceMode", mode);
+      }
+      // Автоматически настраиваем анимации в зависимости от режима
+      const animationsEnabled = mode !== 'low';
+      if (typeof window !== "undefined") {
+        localStorage.setItem("animationsEnabled", animationsEnabled.toString());
+      }
+      set({ performanceMode: mode, animationsEnabled });
+    },
+    animationsEnabled: getInitialAnimationsEnabled(),
+    setAnimationsEnabled: (enabled) => {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("animationsEnabled", enabled.toString());
+      }
+      set({ animationsEnabled: enabled });
     },
   };
 });

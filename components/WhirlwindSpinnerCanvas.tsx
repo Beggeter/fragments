@@ -79,6 +79,12 @@ const WhirlwindSpinnerCanvas: React.FC<WhirlwindSpinnerCanvasProps> = ({
       return { bounce1, bounce2, finalY };
     })
   );
+  
+  // Кэшируем DPR и размеры для производительности
+  const dprRef = useRef(window.devicePixelRatio || 1);
+  const lastFrameTimeRef = useRef(0);
+  const TARGET_FPS = 60; // Максимум 60 FPS
+  const FRAME_TIME = 1000 / TARGET_FPS;
   const lineTimingsRef = useRef<LineTiming[]>([]);
   const startTimeRef = useRef<number | null>(null);
   const finishedLinesRef = useRef<boolean[]>(Array(BOARD_SIZE).fill(false));
@@ -130,14 +136,22 @@ const WhirlwindSpinnerCanvas: React.FC<WhirlwindSpinnerCanvasProps> = ({
     // eslint-disable-next-line
   }, [width, height]);
 
-  // Основная функция анимации
+  // Основная функция анимации с throttling для мобильных устройств
   function animate(now: number) {
+    // Throttling для лучшей производительности на мобильных
+    if (now - lastFrameTimeRef.current < FRAME_TIME) {
+      animationRef.current = requestAnimationFrame(animate);
+      return;
+    }
+    lastFrameTimeRef.current = now;
+    
     if (!startTimeRef.current) startTimeRef.current = now;
     const globalStart = startTimeRef.current;
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx) return;
-    // devicePixelRatio для четкости
-    const dpr = window.devicePixelRatio || 1;
+    
+    // Используем кэшированный DPR
+    const dpr = dprRef.current;
     const canvas = canvasRef.current;
     const logicalWidth = width;
     const logicalHeight = height + EXTRA;
@@ -151,10 +165,6 @@ const WhirlwindSpinnerCanvas: React.FC<WhirlwindSpinnerCanvasProps> = ({
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, logicalWidth, logicalHeight);
-    // DEBUG: рисуем красный квадрат и логируем кадры
-    ctx.fillStyle = "rgba(255,0,0,0.2)";
-    ctx.fillRect(0, 0, 100, 100);
-    console.log('animate frame', now);
 
     let allFinished = true;
     for (let lineIdx = 0; lineIdx < BOARD_SIZE; lineIdx++) {
