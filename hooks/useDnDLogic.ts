@@ -82,14 +82,33 @@ export const useDnDLogic = () => {
   const { boardRef, cellRef, boardRect, dynamicCellSize } =
     useBoardAndCellSizes();
 
+  // Кэшируем window размеры для производительности
+  const windowSizeRef = useRef({ width: 0, height: 0 });
+  
+  useEffect(() => {
+    const updateWindowSize = () => {
+      if (typeof window !== "undefined") {
+        windowSizeRef.current = {
+          width: window.innerWidth,
+          height: window.innerHeight
+        };
+      }
+    };
+    
+    updateWindowSize();
+    window.addEventListener('resize', updateWindowSize);
+    return () => window.removeEventListener('resize', updateWindowSize);
+  }, []);
+
   const calculateDynamicOffset = useCallback(
     (cursorX: number, cursorY: number): Position => {
       if (typeof window === "undefined") {
         return { x: 1, y: 2 };
       }
 
-      const referenceHeight = window.innerHeight;
-      const referenceWidth = window.innerWidth;
+      // ✅ Используем кэшированные размеры вместо DOM доступа!
+      const referenceHeight = windowSizeRef.current.height || window.innerHeight;
+      const referenceWidth = windowSizeRef.current.width || window.innerWidth;
       const referenceCenter = referenceWidth / 2;
 
       const normalizedCursorY = Math.max(

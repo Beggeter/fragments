@@ -222,7 +222,14 @@ export const useGameStore = create<
       const validPositions = calculateValidPositions(board, block);
       set({ draggedPiece: block, validPositions });
     },
-    updateDrag: (position) => set({ dragPosition: position }),
+    updateDrag: (position) => {
+      const currentPosition = get().dragPosition;
+      // ✅ Избегаем лишних ререндеров если позиция не изменилась
+      if (currentPosition?.x === position.x && currentPosition?.y === position.y) {
+        return;
+      }
+      set({ dragPosition: position });
+    },
     endDrag: () => set({ draggedPiece: null, dragPosition: null }),
 
     board: Array(8)
