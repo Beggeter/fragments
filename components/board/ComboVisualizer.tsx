@@ -67,7 +67,7 @@ const ComboCounter: React.FC<{ value: number }> = React.memo(({ value }) => {
       const timer = setTimeout(() => {
         setDisplayValue(value);
         setIsAnimating(false);
-      }, 200); // ✅ Уменьшили время анимации для мобильных
+      }, 400); // ✅ Увеличили время для более заметной анимации
 
       return () => clearTimeout(timer);
     }
@@ -75,6 +75,24 @@ const ComboCounter: React.FC<{ value: number }> = React.memo(({ value }) => {
 
   return (
     <g>
+      {/* ✅ CSS keyframes для плавной анимации */}
+      <style>{`
+        @keyframes combo-slide-up {
+          0% {
+            transform: translateY(25px) scale(0.8);
+            opacity: 0.2;
+          }
+          50% {
+            transform: translateY(12px) scale(0.9);
+            opacity: 0.8;
+          }
+          100% {
+            transform: translateY(0px) scale(1);
+            opacity: 1;
+          }
+        }
+      `}</style>
+      
       {/* ✅ Заменили Framer Motion на CSS анимации для лучшей производительности */}
       <text
         key={`combo-${displayValue}`}
@@ -83,10 +101,10 @@ const ComboCounter: React.FC<{ value: number }> = React.memo(({ value }) => {
         {...numberStyle}
         style={{
           ...numberStyle,
-          // ✅ CSS анимация вместо JS
-          transition: isAnimating ? 'transform 0.2s ease-out, opacity 0.2s ease-out' : 'none',
-          transform: isAnimating ? 'translateY(-10px)' : 'translateY(0px)',
-          opacity: isAnimating ? 0.7 : 1,
+          // ✅ Более заметная CSS анимация
+          transition: isAnimating ? 'transform 0.4s ease-in-out, opacity 0.4s ease-in-out' : 'none',
+          transform: isAnimating ? 'translateY(-20px) scale(1.1)' : 'translateY(0px) scale(1)',
+          opacity: isAnimating ? 0.3 : 1,
         }}
       >
         {displayValue}
@@ -101,9 +119,11 @@ const ComboCounter: React.FC<{ value: number }> = React.memo(({ value }) => {
           {...numberStyle}
           style={{
             ...numberStyle,
-            transform: 'translateY(10px)',
-            opacity: 0.3,
-            transition: 'transform 0.2s ease-out, opacity 0.2s ease-out',
+            // ✅ Новое число появляется снизу с увеличением
+            transform: 'translateY(25px) scale(0.8)',
+            opacity: 0.6,
+            transition: 'transform 0.4s ease-in-out, opacity 0.4s ease-in-out',
+            animation: 'combo-slide-up 0.4s ease-in-out forwards',
           }}
         >
           {value}
