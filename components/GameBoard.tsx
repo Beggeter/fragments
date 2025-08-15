@@ -923,7 +923,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
       // Отменяем предыдущий RAF если есть
       if (rafThrottleRef.current) {
-        return; // Игнорируем событие если уже ждем RAF
+        cancelAnimationFrame(rafThrottleRef.current);
       }
 
       rafThrottleRef.current = requestAnimationFrame(() => {

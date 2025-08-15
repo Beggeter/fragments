@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { BlockColor } from "@/lib/data/types";
 
 interface PieceProps {
@@ -22,8 +22,42 @@ const colorGradients: Record<BlockColor, string> = {
   cyan: "linear-gradient(135deg, #00BCD4 0%, #0097A7 100%)",
 };
 
+// Preload всех SVG файлов один раз
+const preloadedImages = new Map<BlockColor, HTMLImageElement>();
+const isPreloading = new Set<BlockColor>();
+let isPreloadingAll = false;
+
+const preloadImage = (color: BlockColor) => {
+  if (preloadedImages.has(color) || isPreloading.has(color)) return;
+  
+  isPreloading.add(color);
+  const img = new Image();
+  img.onload = () => {
+    preloadedImages.set(color, img);
+    isPreloading.delete(color);
+  };
+  img.onerror = () => {
+    isPreloading.delete(color);
+  };
+  img.src = `/${color}.svg`;
+};
+
+// Preload всех цветов сразу для максимальной производительности
+const preloadAllImages = () => {
+  if (isPreloadingAll) return;
+  isPreloadingAll = true;
+  
+  const allColors: BlockColor[] = ['blue', 'red', 'green', 'yellow', 'purple', 'orange', 'pink', 'cyan'];
+  allColors.forEach(preloadImage);
+};
+
 export const Piece: React.FC<PieceProps> = ({ color, size = 32, isClearing, isPreview = false }) => {
   const [imageError, setImageError] = useState(false);
+  
+  // Preload всех изображений при первом рендере любой фигуры
+  useEffect(() => {
+    preloadAllImages();
+  }, []);
 
   // console.log('🔍 Piece render:', {
   //   color,
@@ -48,6 +82,28 @@ export const Piece: React.FC<PieceProps> = ({ color, size = 32, isClearing, isPr
           borderRadius: '5px',
           boxShadow: 'inset 0 1px 1px rgba(255, 255, 255, 0.3)',
           opacity,
+        }}
+      />
+    );
+  }
+
+  // Если preloaded изображение доступно, используем его через background-image для лучшей производительности
+  const preloadedImg = preloadedImages.get(color);
+  if (preloadedImg) {
+    return (
+      <div 
+        className={`relative no-select piece-container ${isClearing ? "clearing-piece" : ""}`}
+        style={{ 
+          width: size, 
+          height: size,
+          backgroundImage: `url(${preloadedImg.src})`,
+          backgroundSize: '100% 100%',
+          backgroundRepeat: 'no-repeat',
+          opacity,
+          WebkitTransform: 'translateZ(0)',
+          transform: 'translateZ(0)',
+          WebkitBackfaceVisibility: 'hidden',
+          backfaceVisibility: 'hidden',
         }}
       />
     );
