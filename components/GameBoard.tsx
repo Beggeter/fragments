@@ -31,7 +31,6 @@ import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useGameSave } from "@/hooks/useGameSave";
 import trophyImg from "@/public/record.png";
 import Particles from "@tsparticles/react";
-import { getThemeByScore } from "./UI/colorThemes";
 import { useGameOver } from "@/hooks/useGameOver";
 import { LoadingNumberAnimation } from "./LoadingNumberAnimation";
 import { motion } from "framer-motion";
@@ -42,15 +41,12 @@ import BoardClearAnimationsOverlay from "./board/BoardClearAnimationsOverlay";
 import BoardRestoreAnimationsOverlay, {
   RestoreAnimationCell,
 } from "./board/BoardRestoreAnimationsOverlay";
-import PieceReturnAnimation from "./board/PieceReturnAnimation";
 import ExplosionWave from "./board/ExplosionWave";
-import ExplosionParticles from "./board/ExplosionParticles";
 import ExplosionParticlesCanvas from "./board/ExplosionParticlesCanvas";
 import ExplosionFlash from "./board/ExplosionFlash";
 import { v4 as uuidv4 } from "uuid";
 import ClickEffect from "./ClickEffect";
 import LoadingSpinner from "./LoadingSpinner";
-import WhirlwindSpinnerCanvas from "./WhirlwindSpinnerCanvas";
 import { useTranslation } from "react-i18next";
 import { vibrate } from "@/utils/helpers";
 import PseudoAdBanner from "./PseudoAdBanner";

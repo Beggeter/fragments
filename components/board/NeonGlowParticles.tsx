@@ -33,10 +33,10 @@ const CONFETTI_COLORS = [
 
 const MIN_PARTICLE_SIZE = 2;
 const MAX_PARTICLE_SIZE = 6;
-const ANIMATION_DURATION = 4000; // 12 секунд для очень медленного полета
-const FLIGHT_DISTANCE = 0.2; // 0.5 длины клетки
-const SPAWN_INTERVAL = 200; // Новые звезды каждые 200ms (уменьшили частоту)
-const MAX_PARTICLES = 8; // Максимальное количество частиц одновременно
+const ANIMATION_DURATION = 4000; // 4 секунды для плавного полета
+const FLIGHT_DISTANCE = 0.2; // 0.2 длины клетки
+const SPAWN_INTERVAL = 300; // Новые звезды каждые 300ms (уменьшили частоту)
+const MAX_PARTICLES = 6; // Максимальное количество частиц одновременно (уменьшили)
 
 type Particle = {
   id: string;
@@ -53,7 +53,7 @@ type Particle = {
   startX: number;
   startY: number;
   side: 'top' | 'right' | 'bottom' | 'left';
-  progress: number; // 0-1 для анимации
+  animationKey: string; // Ключ для CSS анимации
 };
 
 // Функция для парсинга SVG path и извлечения точек
@@ -159,7 +159,6 @@ export const NeonGlowParticles: React.FC<NeonGlowParticlesProps> = React.memo(
     const [particles, setParticles] = useState<Particle[]>([]);
     const [nextId, setNextId] = useState(0);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
-    const animationRef = useRef<number | null>(null);
     const timeoutRefs = useRef<Set<NodeJS.Timeout>>(new Set()); // Отслеживаем все setTimeout
     
     // Кэшируем Math.cos и Math.sin значения
@@ -267,7 +266,7 @@ export const NeonGlowParticles: React.FC<NeonGlowParticlesProps> = React.memo(
         startX: startPoint.x,
         startY: startPoint.y,
         side,
-        progress: 0
+        animationKey: `${id}-${Date.now()}`
       };
       
       setParticles(prev => [...prev, newParticle]);
@@ -304,30 +303,7 @@ export const NeonGlowParticles: React.FC<NeonGlowParticlesProps> = React.memo(
       }
     }, [visible, pathPoints, createParticle]);
     
-    // Анимация частиц
-    useEffect(() => {
-      if (!visible || particles.length === 0) return;
-      
-      const animate = () => {
-        setParticles(prev => 
-          prev.map(particle => ({
-            ...particle,
-            progress: Math.min(1, particle.progress + 0.004) // ~60fps, но очень медленно
-          }))
-        );
-        
-        animationRef.current = requestAnimationFrame(animate);
-      };
-      
-      animationRef.current = requestAnimationFrame(animate);
-      
-      return () => {
-        if (animationRef.current) {
-          cancelAnimationFrame(animationRef.current);
-          animationRef.current = null;
-        }
-      };
-    }, [visible, particles.length]);
+    // ✅ Убрали RAF анимацию - теперь используем CSS transitions для лучшей производительности
     
     // Очищаем частицы при скрытии
     useEffect(() => {
@@ -352,11 +328,31 @@ export const NeonGlowParticles: React.FC<NeonGlowParticlesProps> = React.memo(
           opacity: 1,
         }}
       >
+        {/* ✅ Добавляем CSS keyframes для каждой частицы */}
+        <style>
+          {particles.map(pt => `
+            @keyframes particle-fly-${pt.animationKey} {
+              0% {
+                transform: translate3d(0px, 0px, 0) rotate(${pt.randomRotation}deg) scale(0.3);
+                opacity: 0;
+              }
+              10% {
+                opacity: 1;
+                transform: translate3d(${pt.transformTo * 0.1}px, ${pt.transformToY * 0.1}px, 0) rotate(${pt.randomRotation + 360 * 0.1}deg) scale(1);
+              }
+              80% {
+                opacity: 1;
+                transform: translate3d(${pt.transformTo * 0.8}px, ${pt.transformToY * 0.8}px, 0) rotate(${pt.randomRotation + 360 * 0.8}deg) scale(1);
+              }
+              100% {
+                opacity: 0;
+                transform: translate3d(${pt.transformTo}px, ${pt.transformToY}px, 0) rotate(${pt.randomRotation + 360}deg) scale(0.8);
+              }
+            }
+          `).join('')}
+        </style>
         {particles.map((pt) => {
-          const progress = Math.max(0, Math.min(1, pt.progress));
-          const opacity = progress < 0.1 ? progress * 10 : progress > 0.8 ? (1 - progress) * 5 : 1;
-          const scale = progress < 0.1 ? 0.3 + progress * 7 : progress > 0.8 ? 1 - (progress - 0.8) * 2.5 : 1;
-          
+          // ✅ Убрали сложные расчеты opacity и scale из рендера
           return (
             <svg
               key={pt.id}
@@ -371,9 +367,8 @@ export const NeonGlowParticles: React.FC<NeonGlowParticlesProps> = React.memo(
                 top: pt.startY,
                 pointerEvents: "none",
                 zIndex: 1,
-                transform: `translate3d(${pt.transformTo * progress}px, ${pt.transformToY * progress}px, 0) rotate(${pt.randomRotation}deg) scale(${scale})`,
-                opacity,
-                willChange: "transform, opacity",
+                // ✅ Используем CSS animation вместо JS математики
+                animation: `particle-fly-${pt.animationKey} ${pt.randomDuration}ms ease-out forwards`,
                 backfaceVisibility: "hidden",
                 WebkitBackfaceVisibility: "hidden"
               }}
