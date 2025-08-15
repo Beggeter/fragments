@@ -162,116 +162,161 @@ const HomePage: React.FC = () => {
     sessionToken,
   } = useUser();
 
-  // Инициализация: определяем контекст и показываем соответствующий экран
+  // ✅ ИСПРАВЛЕНИЕ: Улучшенная инициализация с защитой от медленного интернета
   useEffect(() => {
     const initializeApp = async () => {
-      // Инициализируем TMA SDK с timeout
-      try {
-        await Promise.race([
-          init(),
-          new Promise((_, reject) => setTimeout(() => reject(new Error('TMA init timeout')), 3000))
-        ]);
-      } catch (error) {
-        console.warn('TMA SDK init failed, continuing without it:', error);
-      }
+      let initializationCompleted = false;
       
-      // Проверяем, что мы на клиенте
-      if (typeof window === "undefined") {
-        return;
-      }
+      // ✅ ИСПРАВЛЕНИЕ: Глобальный timeout для всей инициализации
+      const initTimeout = setTimeout(() => {
+        if (!initializationCompleted) {
+          console.warn('App initialization timeout, using fallback');
+          setIsInitialized(true);
+          setCurrentScreen("admin login");
+        }
+      }, 12000); // 12 секунд максимум для всей инициализации
 
-      // Небольшая задержка для iOS для стабильности
-      await new Promise(resolve => setTimeout(resolve, 100));
+      try {
+        // ✅ ИСПРАВЛЕНИЕ: Инициализируем TMA SDK с меньшим timeout
+        try {
+          await Promise.race([
+            init(),
+            new Promise((_, reject) => 
+              setTimeout(() => reject(new Error('TMA init timeout')), 2000)
+            )
+          ]);
+        } catch (error) {
+          console.warn('TMA SDK init failed, continuing without it:', error);
+        }
+        
+        if (typeof window === "undefined") return;
 
-      // Проверяем, есть ли уже авторизованный пользователь
-      const existingSessionToken = safeLocalStorage.getItem("sessionToken");
-      const existingAdminToken = safeLocalStorage.getItem("adminToken");
+        // ✅ ИСПРАВЛЕНИЕ: Увеличиваем задержку для медленных соединений
+        await new Promise(resolve => setTimeout(resolve, 300));
 
-      if (existingSessionToken || existingAdminToken) {
-        setIsInitialized(true);
-        return;
-      }
+        const existingSessionToken = safeLocalStorage.getItem("sessionToken");
+        const existingAdminToken = safeLocalStorage.getItem("adminToken");
 
-      // Определяем контекст: Telegram WebApp или браузер
-      const isInTelegram = isLaunchedInTelegram();
+        if (existingSessionToken || existingAdminToken) {
+          initializationCompleted = true;
+          clearTimeout(initTimeout);
+          setIsInitialized(true);
+          return;
+        }
 
-      if (isInTelegram) {
-        // В Telegram: пытаемся автоматическую авторизацию
-        setIsTelegramAutoAuth(true);
+        const isInTelegram = isLaunchedInTelegram();
 
-        const tg = window.Telegram?.WebApp;
-        if (tg) {
-          // Убеждаемся что приложение в полноэкранном режиме
-          tg.expand();
+        if (isInTelegram) {
+          setIsTelegramAutoAuth(true);
 
-          // Пытаемся активировать immersive fullscreen
-          // Проверяем настройку пользователя
-          const fullscreenEnabled = safeLocalStorage.getItem("fullscreenEnabled");
-          const shouldEnableFullscreen = fullscreenEnabled !== "false"; // По умолчанию включен
+          // ✅ ИСПРАВЛЕНИЕ: Более надежное ожидание Telegram с экспоненциальной задержкой
+          const waitForTelegramApp = async (): Promise<{ available: boolean; tg?: any }> => {
+            return new Promise((resolve) => {
+              let attempts = 0;
+              const maxAttempts = 18; // Уменьшено для медленного интернета
+              let delay = 150;
 
-          if (
-            tg.requestFullscreen &&
-            !tg.isFullscreen &&
-            shouldEnableFullscreen
-          ) {
-            tg.requestFullscreen();
-          }
+              const check = () => {
+                const tg = window.Telegram?.WebApp;
+                if (tg && (tg.initDataUnsafe || tg.initData)) {
+                  resolve({ available: true, tg });
+                } else if (attempts >= maxAttempts) {
+                  console.warn('Telegram WebApp check timeout');
+                  resolve({ available: false });
+                } else {
+                  attempts++;
+                  delay = Math.min(delay * 1.3, 800); // Постепенно увеличиваем задержку
+                  setTimeout(check, delay);
+                }
+              };
 
-          const user = tg.initDataUnsafe?.user;
-          if (user) {
+              check();
+            });
+          };
+
+          const { available: telegramAvailable, tg } = await waitForTelegramApp();
+          
+          if (telegramAvailable && tg) {
+            // ✅ ИСПРАВЛЕНИЕ: Безопасная инициализация Telegram
             try {
-              const initData = tg.initData || "";
-              const urlParams = new URLSearchParams(initData);
-              const hash = urlParams.get("hash");
-              const authDate = urlParams.get("auth_date");
+              tg.expand();
 
-              if (hash) {
-                const authData = {
-                  ...user,
-                  hash: hash,
-                  auth_date: authDate ? parseInt(authDate) : undefined,
-                  initData: initData,
-                };
+              const fullscreenEnabled = safeLocalStorage.getItem("fullscreenEnabled");
+              if (fullscreenEnabled !== "false" && tg.requestFullscreen && !tg.isFullscreen) {
+                tg.requestFullscreen();
+              }
 
-                const response = await fetch("/api/auth/telegram", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(authData),
-                });
+              const user = tg.initDataUnsafe?.user;
+              if (user) {
+                try {
+                  const initData = tg.initData || "";
+                  const urlParams = new URLSearchParams(initData);
+                  const hash = urlParams.get("hash");
+                  const authDate = urlParams.get("auth_date");
 
-                const data = await response.json();
-                if (response.ok) {
-                  safeLocalStorage.setItem("sessionToken", data.sessionToken);
-                  safeLocalStorage.setItem("userData", JSON.stringify(data.user));
-                  loginUser(data.user, data.sessionToken);
-                  setAutoAuthCompleted(true);
-                  setCurrentScreen("main menu");
-                  setIsInitialized(true);
-                  return;
+                  if (hash) {
+                    const authData = {
+                      ...user,
+                      hash: hash,
+                      auth_date: authDate ? parseInt(authDate) : undefined,
+                      initData: initData,
+                    };
+
+                    // ✅ ИСПРАВЛЕНИЕ: Запрос авторизации с timeout
+                    const authResponse = await Promise.race([
+                      fetch("/api/auth/telegram", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(authData),
+                      }),
+                      new Promise<Response>((_, reject) => 
+                        setTimeout(() => reject(new Error('Auth timeout')), 5000)
+                      )
+                    ]);
+
+                    if (authResponse.ok) {
+                      const data = await authResponse.json();
+                      safeLocalStorage.setItem("sessionToken", data.sessionToken);
+                      safeLocalStorage.setItem("userData", JSON.stringify(data.user));
+                      loginUser(data.user, data.sessionToken);
+                      setAutoAuthCompleted(true);
+                      setCurrentScreen("main menu");
+                      
+                      initializationCompleted = true;
+                      clearTimeout(initTimeout);
+                      setIsInitialized(true);
+                      return;
+                    }
+                  }
+                } catch (error) {
+                  console.warn('Telegram auto-auth failed:', error);
                 }
               }
             } catch (error) {
-              console.warn('Telegram auto-auth failed:', error);
+              console.warn('Telegram WebApp setup failed:', error);
             }
           }
+
+          // Если автоматическая авторизация не удалась, показываем Telegram login
+          setCurrentScreen("telegram login");
+        } else {
+          // В браузере: сразу показываем админ-логин
+          setCurrentScreen("admin login");
         }
 
-        // Если автоматическая авторизация не удалась, показываем Telegram login
-        setCurrentScreen("telegram login");
-      } else {
-        // В браузере: сразу показываем админ-логин
+        initializationCompleted = true;
+        clearTimeout(initTimeout);
+        setIsInitialized(true);
+      } catch (error) {
+        console.error('App initialization failed:', error);
+        initializationCompleted = true;
+        clearTimeout(initTimeout);
+        setIsInitialized(true);
         setCurrentScreen("admin login");
       }
-
-      setIsInitialized(true);
     };
 
-    initializeApp().catch(error => {
-      console.error('App initialization failed:', error);
-      // Fallback: показываем базовый интерфейс даже при ошибке
-      setIsInitialized(true);
-      setCurrentScreen("admin login");
-    });
+    initializeApp();
   }, []); // Запускаем только один раз при монтировании
 
   useEffect(() => {

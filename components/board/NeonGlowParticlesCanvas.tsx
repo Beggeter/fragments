@@ -205,10 +205,15 @@ export const NeonGlowParticlesCanvas: React.FC<NeonGlowParticlesCanvasProps> = (
     };
 
     updateCanvasSize();
-    window.addEventListener('resize', updateCanvasSize);
+    // ✅ ИСПРАВЛЕНИЕ: Используем AbortController для resize события
+    const resizeController = new AbortController();
+    window.addEventListener('resize', updateCanvasSize, { 
+      signal: resizeController.signal,
+      passive: true 
+    });
     
     return () => {
-      window.removeEventListener('resize', updateCanvasSize);
+      resizeController.abort();
     };
   }, []);
 

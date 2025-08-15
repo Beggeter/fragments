@@ -65,61 +65,59 @@ export const ResourceLoader: React.FC<ResourceLoaderProps> = ({
   useEffect(() => {
     const loadResources = async () => {
       const startTime = Date.now();
-      const MIN_LOADING_TIME = 1000; // Минимальное время показа загрузки
+      const MIN_LOADING_TIME = 1000;
+      // ✅ ИСПРАВЛЕНИЕ: Максимальное время ожидания при медленном интернете
+      const MAX_LOADING_TIME = 10000; // 10 секунд максимум
 
-      // Список всех ресурсов для загрузки
-      const resources = [
-        // SVG блоки
+      // ✅ ИСПРАВЛЕНИЕ: Только критические ресурсы для первоначальной загрузки
+      const criticalResources = [
         ...colors.map((color) => `/${color}.svg`),
-        // Бустеры
+        "/logo-frame.svg",
+        "/infinity.svg",
+        "/stars.svg",
+        "/cart.svg",
+        "/gift.svg",
+        "/record.png",
+      ];
+
+      // Некритические ресурсы загружаются в фоне
+      const nonCriticalResources = [
         "/boosters/back.png",
         "/boosters/bomb.svg",
         "/boosters/whirlwind.svg",
-        // Магазин
         "/crystal.svg",
         "/2crystals.svg",
         "/3crystals.svg",
         "/4crystals.svg",
         "/9crystals.svg",
-        // "/tgstar.svg", // Теперь используется как React компонент TgStarIcon
-        // Основные UI элементы
-        "/logo-frame.svg",
-        "/stars.svg",
         "/powerups.svg",
         "/settings.svg",
-        "/cart.svg",
         "/bullseye.svg",
-        "/infinity.svg",
         "/globe.svg",
         "/window.svg",
         "/file.svg",
         "/lh.svg",
         "/romn.svg",
-         "/record.png",
         "/replay.svg",
         "/vibrateon.svg",
         "/vibrateoff.svg",
         "/soundon.svg",
         "/soundoff.svg",
-        // PWA иконки
         "/web-app-manifest-192x192.png",
         "/web-app-manifest-512x512.png",
         "/icon-192x192.png",
-        // Дополнительные иконки
         "/apple-icon.png",
         "/favicon.ico",
         "/icon0.svg",
         "/icon1.png",
-         // Telegram Web App ресурсы — не блокируем загрузку приложений
       ];
 
       setProgress({
         loaded: 0,
-        total: resources.length,
+        total: criticalResources.length,
         percentage: 0,
       });
 
-      // Функция для обновления прогресса
       const updateProgress = (success: boolean = true) => {
         setProgress((prev) => {
           const newLoaded = Math.min(prev.loaded + 1, prev.total);
@@ -135,67 +133,86 @@ export const ResourceLoader: React.FC<ResourceLoaderProps> = ({
         });
       };
 
-      const loadPromises = resources.map((src) => {
-        return new Promise<void>((resolve) => {
-          // Определяем тип ресурса
-          const isImage = /\.(png|jpg|jpeg|gif|webp|svg|ico)$/i.test(src);
-          const isScript = /\.js$/i.test(src) || src.includes('telegram.org');
-          
-          if (isImage) {
-            const img = new Image();
+      // ✅ ИСПРАВЛЕНИЕ: Загружаем ресурсы с timeout
+      const loadWithTimeout = (src: string, timeout: number = 5000) => {
+        return Promise.race([
+          new Promise<void>((resolve, reject) => {
+            const isImage = /\.(png|jpg|jpeg|gif|webp|svg|ico)$/i.test(src);
             
-            img.onload = () => {
-              updateProgress(true);
-              resolve();
-            };
-            
-            img.onerror = () => {
-              console.warn(`Failed to load image: ${src}`);
-              updateProgress(false);
-              resolve();
-            };
-            
-            img.src = src;
-          } else if (isScript) {
-            // Для скриптов просто считаем как загруженные
-            updateProgress(true);
-            resolve();
-          } else {
-            // Для остальных ресурсов используем fetch
-            fetch(src)
-              .then(() => {
-                updateProgress(true);
-                resolve();
-              })
-              .catch(() => {
-                console.warn(`Failed to load resource: ${src}`);
-                updateProgress(false);
-                resolve();
-              });
-          }
-        });
-      });
+            if (isImage) {
+              const img = new Image();
+              img.onload = () => resolve();
+              img.onerror = () => reject(new Error(`Failed to load: ${src}`));
+              img.src = src;
+            } else {
+              fetch(src)
+                .then(() => resolve())
+                .catch(reject);
+            }
+          }),
+          new Promise<void>((_, reject) => 
+            setTimeout(() => reject(new Error('Timeout')), timeout)
+          )
+        ]);
+      };
 
       try {
-        await Promise.all(loadPromises);
+        // ✅ ИСПРАВЛЕНИЕ: Загружаем критические ресурсы с коротким timeout
+        const criticalPromises = criticalResources.map(async (src) => {
+          try {
+            await loadWithTimeout(src, 3000); // 3 секунды на каждый критический ресурс
+            updateProgress(true);
+          } catch (error) {
+            console.warn(`Failed to load critical resource: ${src}`, error);
+            updateProgress(false); // Продолжаем даже при ошибках
+          }
+        });
 
-        // После загрузки картинок и прочего, создаём аудиопул
-        createAudioPool();
+        // ✅ ИСПРАВЛЕНИЕ: Используем Promise.allSettled вместо Promise.all
+        await Promise.allSettled(criticalPromises);
 
-        // --- Web Audio API: загружаем и декодируем звуки ---
-        const buffers: Record<string, AudioBuffer> = {};
-        for (const src of AUDIO_FILES) {
-          const buf = await loadAndDecodeAudio(src);
-          if (buf) buffers[src] = buf;
+        // ✅ ИСПРАВЛЕНИЕ: Создаём аудиопул только если есть поддержка
+        try {
+          createAudioPool();
+        } catch (error) {
+          console.warn('Failed to create audio pool:', error);
         }
-        // @ts-ignore
-        window.__audioBuffers = buffers;
 
-        // Ждем минимальное время показа загрузки
+        // ✅ ИСПРАВЛЕНИЕ: Загружаем аудио асинхронно, не блокируя UI
+        setTimeout(async () => {
+          try {
+            const buffers: Record<string, AudioBuffer> = {};
+            for (const src of AUDIO_FILES) {
+              try {
+                const buf = await loadAndDecodeAudio(src);
+                if (buf) buffers[src] = buf;
+              } catch (error) {
+                console.warn(`Failed to load audio: ${src}`, error);
+              }
+            }
+            // @ts-ignore
+            window.__audioBuffers = buffers;
+          } catch (error) {
+            console.warn('Failed to load audio resources:', error);
+          }
+        }, 100);
+
+        // ✅ ИСПРАВЛЕНИЕ: Загружаем некритические ресурсы в фоне после показа UI
+        setTimeout(() => {
+          nonCriticalResources.forEach(async (src) => {
+            try {
+              await loadWithTimeout(src, 8000); // Больше времени для некритических
+            } catch (error) {
+              console.warn(`Failed to load non-critical resource: ${src}`, error);
+            }
+          });
+        }, 500);
+
+        // ✅ ИСПРАВЛЕНИЕ: Ждем минимальное время, но не превышаем максимальное
         const elapsedTime = Date.now() - startTime;
-        if (elapsedTime < MIN_LOADING_TIME) {
+        if (elapsedTime < MIN_LOADING_TIME && elapsedTime < MAX_LOADING_TIME) {
           await new Promise((resolve) =>
-            setTimeout(resolve, MIN_LOADING_TIME - elapsedTime)
+            setTimeout(resolve, Math.min(MIN_LOADING_TIME - elapsedTime, MAX_LOADING_TIME - elapsedTime))
           );
         }
 
@@ -203,7 +220,7 @@ export const ResourceLoader: React.FC<ResourceLoaderProps> = ({
         onLoadingComplete();
       } catch (error) {
         console.error("Error loading resources:", error);
-        // Даже при ошибках продолжаем игру
+        // ✅ ИСПРАВЛЕНИЕ: Всегда продолжаем работу приложения
         setIsLoading(false);
         onLoadingComplete();
       }

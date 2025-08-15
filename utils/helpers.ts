@@ -27,6 +27,19 @@ export const throttle = (func: Function, limit: number) => {
   };
 };
 
+// ✅ НОВОЕ: rAF throttle для игровых событий
+export const throttleAnimationFrame = (func: Function) => {
+  let rafId: number | null = null;
+  return function (this: any, ...args: any[]) {
+    if (rafId === null) {
+      rafId = requestAnimationFrame(() => {
+        func.apply(this, args);
+        rafId = null;
+      });
+    }
+  };
+};
+
 export const debounce = (func: Function, delay: number) => {
   let timeoutId: NodeJS.Timeout;
   return function (this: any, ...args: any[]) {

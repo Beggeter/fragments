@@ -67,43 +67,72 @@ export default function RootLayout({
         {/* Telegram WebApp Initialization */}
         <Script id="telegram-webapp-init" strategy="afterInteractive">
           {`
+            // ✅ ИСПРАВЛЕНИЕ: Предотвращаем множественную инициализацию
+            let telegramInitialized = false;
+            let resizeController = null;
+            
             function initTelegramWebApp() {
+              if (telegramInitialized) return;
+              telegramInitialized = true;
+              
               if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
                 const tg = window.Telegram.WebApp;
                 
-                // Basic initialization
-                tg.ready();
-                tg.expand();
-                tg.disableClosingConfirmation();
-                
-                // Set header color if available
-                if (tg.setHeaderColor) {
-                  tg.setHeaderColor('#1a1a2e');
+                try {
+                  // Basic initialization
+                  tg.ready();
+                  tg.expand();
+                  tg.disableClosingConfirmation();
+                  
+                  // Set header color if available
+                  if (tg.setHeaderColor) {
+                    tg.setHeaderColor('#1a1a2e');
+                  }
+                  
+                  // Viewport setup с защитой от ошибок
+                  const root = document.documentElement;
+                  const height = tg.viewportHeight || window.innerHeight;
+                  const stableHeight = tg.viewportStableHeight || window.innerHeight;
+                  
+                  root.style.setProperty('--tg-viewport-height', height + 'px');
+                  root.style.setProperty('--tg-viewport-stable-height', stableHeight + 'px');
+                  
+                  // ✅ ИСПРАВЛЕНИЕ: Защищенное добавление resize listener с debounce
+                  let resizeTimeout;
+                  const handleResize = () => {
+                    if (resizeTimeout) clearTimeout(resizeTimeout);
+                    resizeTimeout = setTimeout(() => {
+                      try {
+                        const newHeight = tg.viewportHeight || window.innerHeight;
+                        const newStableHeight = tg.viewportStableHeight || window.innerHeight;
+                        root.style.setProperty('--tg-viewport-height', newHeight + 'px');
+                        root.style.setProperty('--tg-viewport-stable-height', newStableHeight + 'px');
+                      } catch (e) {
+                        console.warn('Failed to update viewport:', e);
+                      }
+                    }, 100);
+                  };
+                  
+                  // ✅ ИСПРАВЛЕНИЕ: Используем AbortController для безопасной очистки
+                  resizeController = new AbortController();
+                  window.addEventListener('resize', handleResize, { 
+                    signal: resizeController.signal,
+                    passive: true 
+                  });
+                  
+                  // Очистка при выгрузке страницы
+                  window.addEventListener('beforeunload', () => {
+                    if (resizeController) resizeController.abort();
+                  }, { once: true });
+                  
+                  // Handle fullscreen
+                  const fullscreenEnabled = localStorage.getItem('fullscreenEnabled');
+                  if (fullscreenEnabled !== 'false' && tg.requestFullscreen && !tg.isFullscreen) {
+                    tg.requestFullscreen();
+                  }
+                } catch (error) {
+                  console.warn('Telegram WebApp initialization error:', error);
                 }
-                
-                // Simple viewport setup
-                const root = document.documentElement;
-                const height = tg.viewportHeight || window.innerHeight;
-                const stableHeight = tg.viewportStableHeight || window.innerHeight;
-                
-                root.style.setProperty('--tg-viewport-height', height + 'px');
-                root.style.setProperty('--tg-viewport-stable-height', stableHeight + 'px');
-                
-                // Handle fullscreen if enabled
-                const fullscreenEnabled = localStorage.getItem('fullscreenEnabled');
-                const shouldEnableFullscreen = fullscreenEnabled !== 'false';
-                
-                if (tg.requestFullscreen && shouldEnableFullscreen && !tg.isFullscreen) {
-                  tg.requestFullscreen();
-                }
-                
-                // Update viewport on resize
-                window.addEventListener('resize', () => {
-                  const newHeight = tg.viewportHeight || window.innerHeight;
-                  const newStableHeight = tg.viewportStableHeight || window.innerHeight;
-                  root.style.setProperty('--tg-viewport-height', newHeight + 'px');
-                  root.style.setProperty('--tg-viewport-stable-height', newStableHeight + 'px');
-                });
               } else {
                 // Fallback for non-Telegram environments
                 const root = document.documentElement;
@@ -112,26 +141,47 @@ export default function RootLayout({
               }
             }
             
-            // Initialize immediately if available, otherwise wait with backoff
-            if (window.Telegram?.WebApp) {
-              initTelegramWebApp();
-            } else {
-              let attempts = 0;
-              const maxAttempts = 40; // ~6s total
-              const checkTelegram = setInterval(() => {
+            // ✅ ИСПРАВЛЕНИЕ: Promise-based ожидание с экспоненциальной задержкой
+            async function waitForTelegram() {
+              return new Promise((resolve) => {
                 if (window.Telegram?.WebApp) {
-                  clearInterval(checkTelegram);
-                  initTelegramWebApp();
-                } else if (attempts >= maxAttempts) {
-                  clearInterval(checkTelegram);
-                  // Fallback to non-Telegram sizing so UI is interactive
-                  const root = document.documentElement;
-                  root.style.setProperty('--tg-viewport-height', '100vh');
-                  root.style.setProperty('--tg-viewport-stable-height', '100vh');
+                  resolve(true);
+                  return;
                 }
-                attempts++;
-              }, 150);
+                
+                let attempts = 0;
+                const maxAttempts = 25; // Уменьшено для медленного интернета
+                let delay = 100;
+                
+                const check = () => {
+                  if (window.Telegram?.WebApp) {
+                    resolve(true);
+                  } else if (attempts >= maxAttempts) {
+                    console.warn('Telegram WebApp not available after timeout');
+                    resolve(false);
+                  } else {
+                    attempts++;
+                    delay = Math.min(delay * 1.4, 1000); // Экспоненциальная задержка
+                    setTimeout(check, delay);
+                  }
+                };
+                
+                setTimeout(check, delay);
+              });
             }
+            
+            // ✅ ИСПРАВЛЕНИЕ: Инициализация с защитой от медленного интернета
+            waitForTelegram().then((available) => {
+              if (available) {
+                // Дополнительная задержка для стабильности при медленном интернете
+                setTimeout(initTelegramWebApp, 200);
+              } else {
+                // Fallback setup
+                const root = document.documentElement;
+                root.style.setProperty('--tg-viewport-height', '100vh');
+                root.style.setProperty('--tg-viewport-stable-height', '100vh');
+              }
+            });
           `}
         </Script>
         <link

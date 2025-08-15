@@ -11,7 +11,7 @@ import React, {
 import { useGameStore } from "../lib/state/store";
 import { Block, BlockColor, Matrix, Position } from "../lib/data/types";
 import { getEventCoordinates } from "@/utils/events";
-import { throttle, safeLocalStorage } from "@/utils/helpers";
+import { throttle, safeLocalStorage, throttleAnimationFrame } from "@/utils/helpers";
 import { ScoreDisplay } from "./board/ScoreDisplay";
 import { BlockGenerator } from "../lib/core/blockGenerator";
 import { DifficultyEvaluator } from "../lib/core/difficulty";
@@ -806,11 +806,16 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     // Подождать один кадр, чтобы Telegram успел отрисовать всё
     const frame = requestAnimationFrame(updateCoords);
 
-    window.addEventListener("resize", updateCoords);
+    // ✅ ИСПРАВЛЕНИЕ: Используем AbortController для resize события
+    const resizeController = new AbortController();
+    window.addEventListener("resize", updateCoords, { 
+      signal: resizeController.signal,
+      passive: true 
+    });
 
     return () => {
       cancelAnimationFrame(frame);
-      window.removeEventListener("resize", updateCoords);
+      resizeController.abort();
     };
   }, []);
 
@@ -917,8 +922,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   );
 
   // Выносим обработчики событий за пределы useEffect
+  // ✅ ИСПРАВЛЕНИЕ: Заменяем простой throttle на rAF throttle для лучшей производительности
   const handleMove = useCallback(
-    throttle((e: MouseEvent | TouchEvent) => {
+    throttleAnimationFrame((e: MouseEvent | TouchEvent) => {
       if (!draggedPiece || !boardRef.current) return;
 
       if (e instanceof TouchEvent) {
@@ -944,7 +950,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       }
 
       setHoverCell(nearestPosition || null);
-    }, 16), // ~60fps throttling
+    }), // rAF throttling
     [
       draggedPiece,
       updateDrag,
@@ -1123,22 +1129,27 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     ]
   );
 
+  // ✅ ИСПРАВЛЕНИЕ: Используем AbortController для безопасной очистки event listeners
   useEffect(() => {
     if (typeof window !== "undefined") {
-      window.addEventListener("touchstart", handleStart, { passive: false });
-      window.addEventListener("mousemove", handleMove);
-      window.addEventListener("touchmove", handleMove, { passive: false });
-      window.addEventListener("mouseup", handleEnd);
-      window.addEventListener("touchend", handleEnd);
-      window.addEventListener("touchcancel", handleEnd);
+      const abortController = new AbortController();
+      const signal = abortController.signal;
+      
+      window.addEventListener("touchstart", handleStart, { 
+        passive: false, 
+        signal 
+      });
+      window.addEventListener("mousemove", handleMove, { signal });
+      window.addEventListener("touchmove", handleMove, { 
+        passive: false, 
+        signal 
+      });
+      window.addEventListener("mouseup", handleEnd, { signal });
+      window.addEventListener("touchend", handleEnd, { signal });
+      window.addEventListener("touchcancel", handleEnd, { signal });
 
       return () => {
-        window.removeEventListener("touchstart", handleStart);
-        window.removeEventListener("mousemove", handleMove);
-        window.removeEventListener("touchmove", handleMove);
-        window.removeEventListener("mouseup", handleEnd);
-        window.removeEventListener("touchend", handleEnd);
-        window.removeEventListener("touchcancel", handleEnd);
+        abortController.abort();
       };
     }
 
@@ -2112,9 +2123,14 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     // Добавляем задержку для production сборки
     const timeoutId = setTimeout(setVw, 50);
 
-    window.addEventListener("resize", setVw);
+    // ✅ ИСПРАВЛЕНИЕ: Используем AbortController для resize события
+    const resizeController = new AbortController();
+    window.addEventListener("resize", setVw, { 
+      signal: resizeController.signal,
+      passive: true 
+    });
     return () => {
-      window.removeEventListener("resize", setVw);
+      resizeController.abort();
       clearTimeout(timeoutId);
     };
   }, []);

@@ -201,9 +201,14 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
     // Добавляем задержку для production сборки
     const timeoutId = setTimeout(updateContainerSize, 100);
 
-    window.addEventListener("resize", updateContainerSize);
+    // ✅ ИСПРАВЛЕНИЕ: Используем AbortController для resize события
+    const resizeController = new AbortController();
+    window.addEventListener("resize", updateContainerSize, { 
+      signal: resizeController.signal,
+      passive: true 
+    });
     return () => {
-      window.removeEventListener("resize", updateContainerSize);
+      resizeController.abort();
       clearTimeout(timeoutId);
     };
   }, []);
@@ -577,8 +582,13 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
       setContainerSize(newSize);
     }
     updateSize();
-    window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
+    // ✅ ИСПРАВЛЕНИЕ: Используем AbortController для resize события
+    const resizeController = new AbortController();
+    window.addEventListener("resize", updateSize, { 
+      signal: resizeController.signal,
+      passive: true 
+    });
+    return () => resizeController.abort();
   }, []);
 
   // Отладка: включить/выключить визуализацию позиций по нажатию D
@@ -588,8 +598,13 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
         setDebugMode((prev) => !prev);
       }
     };
-    window.addEventListener("keydown", handleKeyPress);
-    return () => window.removeEventListener("keydown", handleKeyPress);
+    // ✅ ИСПРАВЛЕНИЕ: Используем AbortController для keydown события
+    const keyController = new AbortController();
+    window.addEventListener("keydown", handleKeyPress, { 
+      signal: keyController.signal,
+      passive: true 
+    });
+    return () => keyController.abort();
   }, []);
 
   return (
