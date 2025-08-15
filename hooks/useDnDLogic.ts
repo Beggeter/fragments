@@ -30,15 +30,21 @@ const useBoardAndCellSizes = () => {
       }
     };
 
-    const debouncedUpdateSizes = debounce(updateSizes, 100);
+    const debouncedUpdateSizes = debounce(updateSizes, 150); // Увеличили до 150ms для мобильных
 
     // Update sizes initially
     updateSizes();
 
-    // Add resize observer to boardRef for more accurate updates
+    // Add resize observer to boardRef for more accurate updates with RAF throttling
+    let resizeRafId: number | null = null;
     const resizeObserver = new ResizeObserver((entries) => {
       if (entries.some((entry) => entry.target === boardRef.current)) {
-        debouncedUpdateSizes();
+        // RAF throttling для ResizeObserver
+        if (resizeRafId) return;
+        resizeRafId = requestAnimationFrame(() => {
+          resizeRafId = null;
+          debouncedUpdateSizes();
+        });
       }
     });
 
@@ -52,12 +58,18 @@ const useBoardAndCellSizes = () => {
 
       return () => {
         resizeObserver.disconnect();
+        if (resizeRafId) {
+          cancelAnimationFrame(resizeRafId);
+        }
         window.removeEventListener("resize", debouncedUpdateSizes);
       };
     }
 
     return () => {
       resizeObserver.disconnect();
+      if (resizeRafId) {
+        cancelAnimationFrame(resizeRafId);
+      }
     };
   }, [boardRef, cellRef]);
 
@@ -100,8 +112,9 @@ export const useDnDLogic = () => {
     []
   );
 
-  // Кэш для результатов calculateGridPosition
+  // Кэш для результатов calculateGridPosition (без JSON.stringify!)
   const gridPositionCache = useRef(new Map<string, Position | null>());
+  const lastComputedResult = useRef<{key: string, result: Position | null}>({ key: '', result: null });
 
   // Очищаем кэш при изменении важных параметров
   useEffect(() => {
@@ -126,20 +139,13 @@ export const useDnDLogic = () => {
       const { draggedPiece } = useGameStore.getState();
       if (!draggedPiece) return null;
 
-      // Создаем ключ кэша на основе входных параметров
-      const cacheKey = JSON.stringify({
-        clientX: Math.round(clientX),
-        clientY: Math.round(clientY),
-        currentDragPosition,
-        lastHighlightedPosition,
-        draggedPieceId: draggedPiece.uniqueId,
-        boardRect: {
-          left: Math.round(rect.left),
-          top: Math.round(rect.top)
-        },
-        dynamicCellSize: Math.round(dynamicCellSize * 100) / 100, // Округляем для стабильности
-        validPositionsLength: validPositions.length
-      });
+      // Создаем простой строковый ключ БЕЗ JSON.stringify!
+      const cacheKey = `${Math.round(clientX)}_${Math.round(clientY)}_${currentDragPosition.x}_${currentDragPosition.y}_${draggedPiece.uniqueId}_${Math.round(rect.left)}_${Math.round(rect.top)}_${Math.round(dynamicCellSize * 100)}_${validPositions.length}`;
+      
+      // Быстрая проверка последнего результата
+      if (lastComputedResult.current.key === cacheKey) {
+        return lastComputedResult.current.result;
+      }
 
       // Проверяем кэш
       if (gridPositionCache.current.has(cacheKey)) {
@@ -177,9 +183,10 @@ export const useDnDLogic = () => {
 
       // Сохраняем результат в кэш
       gridPositionCache.current.set(cacheKey, nearestPosition);
+      lastComputedResult.current = { key: cacheKey, result: nearestPosition };
 
-      // Ограничиваем размер кэша (максимум 1000 записей)
-      if (gridPositionCache.current.size > 1000) {
+      // Ограничиваем размер кэша (максимум 500 записей для лучшей производительности)
+      if (gridPositionCache.current.size > 500) {
         const firstKey = gridPositionCache.current.keys().next().value;
         if (firstKey) {
           gridPositionCache.current.delete(firstKey);

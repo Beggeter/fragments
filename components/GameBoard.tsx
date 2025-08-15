@@ -905,6 +905,10 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     [startDrag, updateDrag, boardRef]
   );
 
+  // Throttling для handleMove с requestAnimationFrame
+  const rafThrottleRef = useRef<number | null>(null);
+  const lastEventRef = useRef<MouseEvent | TouchEvent | null>(null);
+
   // Выносим обработчики событий за пределы useEffect
   const handleMove = useCallback(
     (e: MouseEvent | TouchEvent) => {
@@ -914,25 +918,40 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         e.preventDefault();
       }
 
-      const { clientX, clientY } = getEventCoordinates(e);
-      const currentDragPosition = { x: clientX, y: clientY };
-      updateDrag(currentDragPosition);
+      // Сохраняем последнее событие
+      lastEventRef.current = e;
 
-      const nearestPosition = calculateGridPosition(
-        e,
-        currentDragPosition,
-        lastHighlightedPosition
-      );
-
-      // Обновляем последнюю подсвеченную позицию только если есть новая позиция
-      if (nearestPosition) {
-        setLastHighlightedPosition(nearestPosition);
-      } else {
-        // Сбрасываем lastHighlightedPosition когда хайлайт исчезает
-        setLastHighlightedPosition(null);
+      // Отменяем предыдущий RAF если есть
+      if (rafThrottleRef.current) {
+        return; // Игнорируем событие если уже ждем RAF
       }
 
-      setHoverCell(nearestPosition || null);
+      rafThrottleRef.current = requestAnimationFrame(() => {
+        rafThrottleRef.current = null;
+        
+        const event = lastEventRef.current;
+        if (!event || !draggedPiece) return;
+
+        const { clientX, clientY } = getEventCoordinates(event);
+        const currentDragPosition = { x: clientX, y: clientY };
+        updateDrag(currentDragPosition);
+
+        const nearestPosition = calculateGridPosition(
+          event,
+          currentDragPosition,
+          lastHighlightedPosition
+        );
+
+        // Обновляем последнюю подсвеченную позицию только если есть новая позиция
+        if (nearestPosition) {
+          setLastHighlightedPosition(nearestPosition);
+        } else {
+          // Сбрасываем lastHighlightedPosition когда хайлайт исчезает
+          setLastHighlightedPosition(null);
+        }
+
+        setHoverCell(nearestPosition || null);
+      });
     },
     [
       draggedPiece,
@@ -1128,6 +1147,12 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         window.removeEventListener("mouseup", handleEnd);
         window.removeEventListener("touchend", handleEnd);
         window.removeEventListener("touchcancel", handleEnd);
+        
+        // Очищаем RAF throttle при размонтировании
+        if (rafThrottleRef.current) {
+          cancelAnimationFrame(rafThrottleRef.current);
+          rafThrottleRef.current = null;
+        }
       };
     }
 
