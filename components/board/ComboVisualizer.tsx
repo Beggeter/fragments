@@ -42,31 +42,13 @@ const getBlur = (
   if (moves >= 3) return [1, 8];
   return [0.5, 0.5];
 };
-// Компонент анимации барабана для счетчика комбо
-const ComboCounter: React.FC<{ value: number }> = ({ value }) => {
+// ✅ Оптимизированный компонент анимации барабана для счетчика комбо
+const ComboCounter: React.FC<{ value: number }> = React.memo(({ value }) => {
   const [displayValue, setDisplayValue] = useState(value);
   const [isAnimating, setIsAnimating] = useState(false);
 
-  useEffect(() => {
-    if (value !== displayValue) {
-      // Небольшая задержка для более заметной анимации
-      const delayTimer = setTimeout(() => {
-        setIsAnimating(true);
-
-        // Запускаем анимацию
-        const timer = setTimeout(() => {
-          setDisplayValue(value);
-          setIsAnimating(false);
-        }, 300); // Время анимации
-
-        return () => clearTimeout(timer);
-      }, 50); // Задержка перед началом анимации
-
-      return () => clearTimeout(delayTimer);
-    }
-  }, [value, displayValue]);
-
-  const numberStyle = {
+  // ✅ Мемоизируем стили чтобы не пересоздавать их
+  const numberStyle = useMemo(() => ({
     fontFamily: "'Montserrat', Arial, sans-serif",
     fontWeight: 900,
     fontSize: 54,
@@ -75,42 +57,63 @@ const ComboCounter: React.FC<{ value: number }> = ({ value }) => {
     fill: "#FFD600",
     paintOrder: "stroke" as const,
     letterSpacing: 2,
-  };
+  }), []);
+
+  useEffect(() => {
+    if (value !== displayValue) {
+      // ✅ Убрали двойной setTimeout - используем один
+      setIsAnimating(true);
+      
+      const timer = setTimeout(() => {
+        setDisplayValue(value);
+        setIsAnimating(false);
+      }, 200); // ✅ Уменьшили время анимации для мобильных
+
+      return () => clearTimeout(timer);
+    }
+  }, [value, displayValue]);
 
   return (
     <g>
-      <AnimatePresence initial={false}>
-        {/* Текущее число */}
-        <motion.text
-          key={`current-${displayValue}`}
+      {/* ✅ Заменили Framer Motion на CSS анимации для лучшей производительности */}
+      <text
+        key={`combo-${displayValue}`}
+        x={0}
+        y={0}
+        {...numberStyle}
+        style={{
+          ...numberStyle,
+          // ✅ CSS анимация вместо JS
+          transition: isAnimating ? 'transform 0.2s ease-out, opacity 0.2s ease-out' : 'none',
+          transform: isAnimating ? 'translateY(-10px)' : 'translateY(0px)',
+          opacity: isAnimating ? 0.7 : 1,
+        }}
+      >
+        {displayValue}
+      </text>
+      
+      {/* ✅ Показываем новое число только если оно отличается */}
+      {isAnimating && value !== displayValue && (
+        <text
+          key={`combo-new-${value}`}
           x={0}
           y={0}
           {...numberStyle}
-          initial={{ y: 0, opacity: 1 }}
-          animate={isAnimating ? { y: -54, opacity: 0 } : { y: 0, opacity: 1 }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
+          style={{
+            ...numberStyle,
+            transform: 'translateY(10px)',
+            opacity: 0.3,
+            transition: 'transform 0.2s ease-out, opacity 0.2s ease-out',
+          }}
         >
-          {displayValue}
-        </motion.text>
-
-        {/* Новое число (появляется снизу при анимации) */}
-        {isAnimating && (
-          <motion.text
-            key={`new-${value}`}
-            x={0}
-            y={0}
-            {...numberStyle}
-            initial={{ y: 54, opacity: 1 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.3, ease: "easeInOut" }}
-          >
-            {value}
-          </motion.text>
-        )}
-      </AnimatePresence>
+          {value}
+        </text>
+      )}
     </g>
   );
-};
+});
+
+ComboCounter.displayName = "ComboCounter";
 
 /**
  * ComboVisualizer component displays a visual representation of combo levels
@@ -321,9 +324,18 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
 
   useLayoutEffect(() => {
     if (comboRef.current) {
-      const bbox = comboRef.current.getBBox();
-      setComboWidth(bbox.width);
-      setComboHeight(bbox.height + 20); // запас
+      try {
+        const bbox = comboRef.current.getBBox();
+        // ✅ Исправляем проблему с отступом - добавляем fallback
+        const width = bbox.width > 0 ? bbox.width : 120; // Fallback для первого рендера
+        const height = bbox.height > 0 ? bbox.height + 20 : 70; // Fallback
+        setComboWidth(width);
+        setComboHeight(height);
+      } catch (error) {
+        // ✅ Безопасный fallback если getBBox() недоступен
+        setComboWidth(120); // Примерная ширина "Combo"
+        setComboHeight(70);
+      }
     }
   }, [lastScore?.comboLevel, showComboText]);
 
@@ -547,18 +559,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
     );
   };
 
-  useEffect(() => {
-    if (!containerRef.current) return;
-    function updateSize() {
-      const rect = containerRef.current?.getBoundingClientRect();
-      const newSize = { width: rect?.width || 0, height: rect?.height || 0 };
-      setSize(newSize);
-      setContainerSize(newSize);
-    }
-    updateSize();
-    window.addEventListener("resize", updateSize);
-    return () => window.removeEventListener("resize", updateSize);
-  }, []);
+  // ✅ Убрали дублированный resize обработчик - он уже есть в useLayoutEffect
 
   // Отладка: включить/выключить визуализацию позиций по нажатию D
   useEffect(() => {
