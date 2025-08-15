@@ -21,6 +21,7 @@ import PieceReturnAnimation from "../components/board/PieceReturnAnimation";
 import TestStarsPayment from "../components/TestStarsPayment";
 import TestInvoiceSystem from "../components/TestInvoiceSystem";
 import InvoiceSupportInfo from "../components/InvoiceSupportInfo";
+import { initializeTelegramWebApp, isLaunchedInTelegram, safeLocalStorage } from "@/lib/utils/telegramSDK";
 
 type Screen =
   | "admin login"
@@ -34,22 +35,7 @@ type Screen =
   | "leaderboard"
   | "zen";
 
-// Функция для надежного определения Telegram WebApp
-const isLaunchedInTelegram = (): boolean => {
-  if (typeof window === "undefined") {
-    return false;
-  }
-
-  // Проверяем наличие Telegram WebApp объекта
-  const hasTelegramWebApp = !!(window.Telegram && window.Telegram.WebApp);
-
-  // Проверяем наличие tgWebAppData в URL
-  const urlParams = new URLSearchParams(window.location.search);
-  const hasTgWebAppData = urlParams.has("tgWebAppData");
-
-  // Упрощенная проверка: если есть Telegram WebApp объект или tgWebAppData в URL
-  return hasTelegramWebApp || hasTgWebAppData;
-};
+// Функция isLaunchedInTelegram теперь импортируется из telegramSDK
 
 const HomePage: React.FC = () => {
   // --- все хуки должны быть до любых return! ---
@@ -164,22 +150,27 @@ const HomePage: React.FC = () => {
   // Инициализация: определяем контекст и показываем соответствующий экран
   useEffect(() => {
     const initializeApp = async () => {
-      // Инициализируем TMA SDK
+      console.log('🚀 Starting app initialization...');
+      
       try {
+        // Инициализируем TMA SDK (новый @telegram-apps/sdk)
         await init();
-      } catch (error) {}
+      } catch (error) {
+        console.warn('Failed to initialize @telegram-apps/sdk:', error);
+      }
+      
+      // Инициализируем Telegram WebApp
+      const telegramSuccess = await initializeTelegramWebApp();
+      console.log('📱 Telegram WebApp initialization:', telegramSuccess ? 'success' : 'failed');
       
       // Проверяем, что мы на клиенте
       if (typeof window === "undefined") {
         return;
       }
 
-      // Небольшая задержка для iOS для стабильности
-      await new Promise(resolve => setTimeout(resolve, 100));
-
       // Проверяем, есть ли уже авторизованный пользователь
-      const existingSessionToken = localStorage.getItem("sessionToken");
-      const existingAdminToken = localStorage.getItem("adminToken");
+      const existingSessionToken = safeLocalStorage.getItem("sessionToken");
+      const existingAdminToken = safeLocalStorage.getItem("adminToken");
 
       if (existingSessionToken || existingAdminToken) {
         setIsInitialized(true);
@@ -195,22 +186,7 @@ const HomePage: React.FC = () => {
 
         const tg = window.Telegram?.WebApp;
         if (tg) {
-          // Убеждаемся что приложение в полноэкранном режиме
-          tg.expand();
-
-          // Пытаемся активировать immersive fullscreen
-          // Проверяем настройку пользователя
-          const fullscreenEnabled = localStorage.getItem("fullscreenEnabled");
-          const shouldEnableFullscreen = fullscreenEnabled !== "false"; // По умолчанию включен
-
-          if (
-            tg.requestFullscreen &&
-            !tg.isFullscreen &&
-            shouldEnableFullscreen
-          ) {
-            tg.requestFullscreen();
-          }
-
+          // Telegram WebApp уже инициализирован в initializeTelegramWebApp
           const user = tg.initDataUnsafe?.user;
           if (user) {
             try {
@@ -235,8 +211,8 @@ const HomePage: React.FC = () => {
 
                 const data = await response.json();
                 if (response.ok) {
-                  localStorage.setItem("sessionToken", data.sessionToken);
-                  localStorage.setItem("userData", JSON.stringify(data.user));
+                  safeLocalStorage.setItem("sessionToken", data.sessionToken);
+                  safeLocalStorage.setItem("userData", JSON.stringify(data.user));
                   loginUser(data.user, data.sessionToken);
                   setAutoAuthCompleted(true);
                   setCurrentScreen("main menu");
@@ -244,7 +220,9 @@ const HomePage: React.FC = () => {
                   return;
                 }
               }
-            } catch (error) {}
+            } catch (error) {
+              console.error('Auto-auth failed:', error);
+            }
           }
         }
 

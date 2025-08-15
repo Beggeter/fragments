@@ -5,6 +5,7 @@ import { LoadingScreen } from "./LoadingScreen";
 import ComingSoonModal from "./UI/ComingSoonModal";
 import ClickEffect from "./ClickEffect";
 import { useTranslation } from "react-i18next";
+import { safeLocalStorage } from "@/lib/utils/telegramSDK";
 
 interface LeaderboardEntry {
   id: number;
@@ -54,7 +55,7 @@ const LeaderboardScreen: React.FC<LeaderboardScreenProps> = ({ onBack }) => {
       const userIdParam = user ? `&userId=${user.id}` : "";
       const sessionToken =
         typeof window !== "undefined"
-          ? localStorage.getItem("sessionToken")
+          ? safeLocalStorage.getItem("sessionToken")
           : null;
       const headers: HeadersInit = {};
       if (sessionToken) {

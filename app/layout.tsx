@@ -64,76 +64,7 @@ export default function RootLayout({
           src="https://telegram.org/js/telegram-web-app.js"
           strategy="beforeInteractive"
         />
-        {/* Telegram WebApp Initialization */}
-        <Script id="telegram-webapp-init" strategy="afterInteractive">
-          {`
-            function initTelegramWebApp() {
-              if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-                const tg = window.Telegram.WebApp;
-                
-                // Basic initialization
-                tg.ready();
-                tg.expand();
-                tg.disableClosingConfirmation();
-                
-                // Set header color if available
-                if (tg.setHeaderColor) {
-                  tg.setHeaderColor('#1a1a2e');
-                }
-                
-                // Simple viewport setup
-                const root = document.documentElement;
-                const height = tg.viewportHeight || window.innerHeight;
-                const stableHeight = tg.viewportStableHeight || window.innerHeight;
-                
-                root.style.setProperty('--tg-viewport-height', height + 'px');
-                root.style.setProperty('--tg-viewport-stable-height', stableHeight + 'px');
-                
-                // Handle fullscreen if enabled
-                const fullscreenEnabled = localStorage.getItem('fullscreenEnabled');
-                const shouldEnableFullscreen = fullscreenEnabled !== 'false';
-                
-                if (tg.requestFullscreen && shouldEnableFullscreen && !tg.isFullscreen) {
-                  tg.requestFullscreen();
-                }
-                
-                // Update viewport on resize
-                window.addEventListener('resize', () => {
-                  const newHeight = tg.viewportHeight || window.innerHeight;
-                  const newStableHeight = tg.viewportStableHeight || window.innerHeight;
-                  root.style.setProperty('--tg-viewport-height', newHeight + 'px');
-                  root.style.setProperty('--tg-viewport-stable-height', newStableHeight + 'px');
-                });
-              } else {
-                // Fallback for non-Telegram environments
-                const root = document.documentElement;
-                root.style.setProperty('--tg-viewport-height', '100vh');
-                root.style.setProperty('--tg-viewport-stable-height', '100vh');
-              }
-            }
-            
-            // Initialize immediately if available, otherwise wait with backoff
-            if (window.Telegram?.WebApp) {
-              initTelegramWebApp();
-            } else {
-              let attempts = 0;
-              const maxAttempts = 40; // ~6s total
-              const checkTelegram = setInterval(() => {
-                if (window.Telegram?.WebApp) {
-                  clearInterval(checkTelegram);
-                  initTelegramWebApp();
-                } else if (attempts >= maxAttempts) {
-                  clearInterval(checkTelegram);
-                  // Fallback to non-Telegram sizing so UI is interactive
-                  const root = document.documentElement;
-                  root.style.setProperty('--tg-viewport-height', '100vh');
-                  root.style.setProperty('--tg-viewport-stable-height', '100vh');
-                }
-                attempts++;
-              }, 150);
-            }
-          `}
-        </Script>
+                {/* Telegram WebApp initialization now handled in React components */}
         <link
           href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&family=Fredoka:wght@700&display=swap"
           rel="stylesheet"

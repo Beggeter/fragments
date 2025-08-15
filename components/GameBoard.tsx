@@ -54,6 +54,7 @@ import WhirlwindSpinnerCanvas from "./WhirlwindSpinnerCanvas";
 import { useTranslation } from "react-i18next";
 import { vibrate } from "@/utils/helpers";
 import PseudoAdBanner from "./PseudoAdBanner";
+import { safeLocalStorage } from "@/lib/utils/telegramSDK";
 
 const DEFAULT_CELL_SIZE = 43.75;
 const GAP_SIZE_PX = 2; // Исходя из gap-0.5 в TailwindCSS (0.125rem * 16px)
@@ -715,7 +716,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     }
     const sessionToken =
       typeof window !== "undefined"
-        ? localStorage.getItem("sessionToken")
+        ? safeLocalStorage.getItem("sessionToken")
         : null;
     const headers: HeadersInit = {};
     if (sessionToken) {
@@ -1424,7 +1425,7 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
     const sessionToken =
       typeof window !== "undefined"
-        ? localStorage.getItem("sessionToken")
+        ? safeLocalStorage.getItem("sessionToken")
         : null;
     const headers: HeadersInit = { "Content-Type": "application/json" };
     if (sessionToken) {

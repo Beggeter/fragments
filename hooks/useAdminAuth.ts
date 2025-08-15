@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { safeLocalStorage } from '@/lib/utils/telegramSDK';
 
 interface AdminAuthState {
   isAdmin: boolean;
@@ -34,8 +35,8 @@ export const useAdminAuth = () => {
     }
 
     try {
-      const adminToken = localStorage.getItem('adminToken');
-      const expiresAt = localStorage.getItem('adminExpiresAt');
+      const adminToken = safeLocalStorage.getItem('adminToken');
+      const expiresAt = safeLocalStorage.getItem('adminExpiresAt');
 
       if (!adminToken || !expiresAt) {
         setAuthState({
@@ -53,8 +54,8 @@ export const useAdminAuth = () => {
 
       if (now > expirationDate) {
         // Срок действия истек, очищаем данные
-        localStorage.removeItem('adminToken');
-        localStorage.removeItem('adminExpiresAt');
+        safeLocalStorage.removeItem('adminToken');
+        safeLocalStorage.removeItem('adminExpiresAt');
         
         setAuthState({
           isAdmin: false,
@@ -84,10 +85,8 @@ export const useAdminAuth = () => {
   };
 
   const loginAsAdmin = (adminToken: string, expiresAt: string) => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('adminToken', adminToken);
-      localStorage.setItem('adminExpiresAt', expiresAt);
-    }
+    safeLocalStorage.setItem('adminToken', adminToken);
+    safeLocalStorage.setItem('adminExpiresAt', expiresAt);
     
     setAuthState({
       isAdmin: true,
@@ -98,10 +97,8 @@ export const useAdminAuth = () => {
   };
 
   const logoutAdmin = () => {
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('adminToken');
-      localStorage.removeItem('adminExpiresAt');
-    }
+    safeLocalStorage.removeItem('adminToken');
+    safeLocalStorage.removeItem('adminExpiresAt');
     
     setAuthState({
       isAdmin: false,

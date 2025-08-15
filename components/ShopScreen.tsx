@@ -3,6 +3,7 @@ import { useUser } from "@/hooks/useUser";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import BoosterPurchaseModal from "./store/BoosterPurchaseModal";
 import ZenPurchaseModal from "./store/ZenPurchaseModal";
+import { safeLocalStorage } from "@/lib/utils/telegramSDK";
 import InsufficientShardsModal from "./store/InsufficientShardsModal";
 import { LoadingNumberAnimation } from "./LoadingNumberAnimation";
 import { BOOSTERS, SHARD_PACKS, ZEN_SUBS } from "./store/storeItems";
@@ -421,7 +422,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
     try {
       const sessionToken =
         typeof window !== "undefined"
-          ? localStorage.getItem("sessionToken")
+          ? safeLocalStorage.getItem("sessionToken")
           : null;
       const headers: HeadersInit = { "Content-Type": "application/json" };
       if (sessionToken) {
