@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { useSettingsStore } from "@/lib/state/settings";
 
 interface ExplosionParticlesProps {
   centerX: number;
@@ -44,7 +43,6 @@ const ExplosionParticles: React.FC<ExplosionParticlesProps> = ({
   gatherTargets = [],
 }) => {
   const [particles, setParticles] = useState<Particle[]>([]);
-  const { animationsEnabled, performanceMode } = useSettingsStore();
 
   useEffect(() => {
     if (isActive) {
@@ -89,17 +87,7 @@ const ExplosionParticles: React.FC<ExplosionParticlesProps> = ({
         const particleTypes: ParticleType[] = ["fire", "spark", "debris", "star", "smoke", "glitter"];
         
         particleTypes.forEach((type, typeIndex) => {
-          // Адаптивное количество частиц в зависимости от настроек производительности
-          let baseCount = type === "fire" ? 8 : type === "spark" ? 6 : type === "smoke" ? 4 : 3;
-          
-          // Еще больше уменьшаем на слабых устройствах
-          if (performanceMode === 'low') {
-            baseCount = Math.ceil(baseCount * 0.3); // Только 30% частиц
-          } else if (performanceMode === 'medium') {
-            baseCount = Math.ceil(baseCount * 0.6); // 60% частиц
-          }
-          
-          const count = animationsEnabled ? baseCount : 0;
+          const count = type === "fire" ? 15 : type === "spark" ? 10 : type === "smoke" ? 8 : 6;
           
           for (let i = 0; i < count; i++) {
             const angle = (Math.PI * 2 * i) / count + (typeIndex * Math.PI / 6);
@@ -142,11 +130,11 @@ const ExplosionParticles: React.FC<ExplosionParticlesProps> = ({
       }, mode === "gather" ? 250 : 600);
       return () => clearTimeout(timer);
     }
-    // Не включаем onComplete и gatherTargets напрямую, чтобы избежать бесконечного цикла
-  }, [isActive, centerX, centerY, boardWidth, boardHeight, cellSize, gap, mode, JSON.stringify(gatherTargets)]);
+    // Не включаем onComplete в зависимости, чтобы избежать бесконечного цикла
+    // gatherTargets тоже не включаем напрямую - слишком дорого для JSON.stringify
+  }, [isActive, centerX, centerY, boardWidth, boardHeight, cellSize, gap, mode]);
 
-  // Ранний возврат если анимации отключены или нет частиц
-  if (!isActive || particles.length === 0 || !animationsEnabled) return null;
+  if (!isActive || particles.length === 0) return null;
 
   const getParticleStyle = (particle: Particle) => {
     const baseStyle: React.CSSProperties = {
@@ -172,18 +160,20 @@ const ExplosionParticles: React.FC<ExplosionParticlesProps> = ({
     if (particle.type === "star") {
       baseStyle.clipPath = "polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)";
     } else if (particle.type === "smoke") {
-      // Убрали blur для производительности
-      baseStyle.opacity = 0.6;
+      baseStyle.filter = "blur(3px)";
+      baseStyle.opacity = 0.8;
       baseStyle.borderRadius = "50%";
-    } else if (particle.type === "debris") {
-      baseStyle.borderRadius = "20%";
-      baseStyle.transform = `translate(-50%, -50%) rotate(${particle.rotation}deg) scale(${0.8 + Math.random() * 0.2})`;
-    } else if (particle.type === "fire") {
+          } else if (particle.type === "debris") {
+        baseStyle.borderRadius = "20%";
+        // Используем id частицы для постоянного scale вместо Math.random()
+        const hashScale = (parseInt(particle.id.split('-')[1] || '0') % 41) / 100; // 0.00-0.40
+        baseStyle.transform = `translate(-50%, -50%) rotate(${particle.rotation}deg) scale(${0.6 + hashScale})`;
+      } else if (particle.type === "fire") {
       baseStyle.borderRadius = "50%";
-      // Убрали blur для производительности
+      baseStyle.filter = "blur(1px)";
     } else if (particle.type === "spark") {
       baseStyle.borderRadius = "50%";
-      // Убрали blur для производительности
+      baseStyle.filter = "blur(0.5px)";
     }
 
     return baseStyle;

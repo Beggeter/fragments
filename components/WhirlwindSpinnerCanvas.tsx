@@ -79,18 +79,17 @@ const WhirlwindSpinnerCanvas: React.FC<WhirlwindSpinnerCanvasProps> = ({
       return { bounce1, bounce2, finalY };
     })
   );
-  
-  // Кэшируем DPR и размеры для производительности
-  const dprRef = useRef(window.devicePixelRatio || 1);
-  const lastFrameTimeRef = useRef(0);
-  const TARGET_FPS = 60; // Максимум 60 FPS
-  const FRAME_TIME = 1000 / TARGET_FPS;
   const lineTimingsRef = useRef<LineTiming[]>([]);
   const startTimeRef = useRef<number | null>(null);
   const finishedLinesRef = useRef<boolean[]>(Array(BOARD_SIZE).fill(false));
   const triggeredRowsRef = useRef<boolean[][]>(
     Array.from({ length: BOARD_SIZE }).map(() => Array(BOARD_SIZE).fill(false))
   );
+  
+  // Кэшируем часто используемые константы
+  const dprRef = useRef(window.devicePixelRatio || 1);
+  const mathPiDiv180Ref = useRef(Math.PI / 180);
+  const cellSizeHalfRef = useRef(CELL_SIZE / 2);
   // Для задержки старта каждой линии (эффект "волны")
   const lineDelays = useRef<number[]>(Array.from({ length: BOARD_SIZE }).map((_, i) => i * 0.07)); // 70ms между линиями
   const lineStartTimes = useRef<number[]>(Array(BOARD_SIZE).fill(0));
@@ -136,22 +135,16 @@ const WhirlwindSpinnerCanvas: React.FC<WhirlwindSpinnerCanvasProps> = ({
     // eslint-disable-next-line
   }, [width, height]);
 
-  // Основная функция анимации с throttling для мобильных устройств
+  // Основная функция анимации
   function animate(now: number) {
-    // Throttling для лучшей производительности на мобильных
-    if (now - lastFrameTimeRef.current < FRAME_TIME) {
-      animationRef.current = requestAnimationFrame(animate);
-      return;
-    }
-    lastFrameTimeRef.current = now;
-    
     if (!startTimeRef.current) startTimeRef.current = now;
     const globalStart = startTimeRef.current;
     const ctx = canvasRef.current?.getContext("2d");
     if (!ctx) return;
-    
-    // Используем кэшированный DPR
+    // Используем кэшированные значения
     const dpr = dprRef.current;
+    const mathPiDiv180 = mathPiDiv180Ref.current;
+    const cellSizeHalf = cellSizeHalfRef.current;
     const canvas = canvasRef.current;
     const logicalWidth = width;
     const logicalHeight = height + EXTRA;
@@ -164,7 +157,7 @@ const WhirlwindSpinnerCanvas: React.FC<WhirlwindSpinnerCanvasProps> = ({
       }
     }
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, logicalWidth, logicalHeight);
+          ctx.clearRect(0, 0, logicalWidth, logicalHeight);
 
     let allFinished = true;
     for (let lineIdx = 0; lineIdx < BOARD_SIZE; lineIdx++) {
@@ -217,27 +210,27 @@ const WhirlwindSpinnerCanvas: React.FC<WhirlwindSpinnerCanvasProps> = ({
         const rot = interpKeyframes(rotKeyframes, times, t);
         const opacityKeyframes = [0.85, 1, 1, 0.7, 0];
         const opacity = interpKeyframes(opacityKeyframes, times, t);
-        const cellX = cellIdx * (CELL_SIZE + GAP_PX) + CELL_SIZE / 2 + x;
+        const cellX = cellIdx * (CELL_SIZE + GAP_PX) + cellSizeHalf + x;
         ctx.save();
         ctx.globalAlpha = opacity;
         ctx.translate(cellX, y);
         ctx.scale(scale * scaleX, scale);
-        ctx.rotate((rot * Math.PI) / 180);
+        ctx.rotate(rot * mathPiDiv180);
         const img = imagesRef.current[cell.color];
         if (img && img.complete) {
-          ctx.drawImage(img, -CELL_SIZE / 2, -CELL_SIZE / 2, CELL_SIZE, CELL_SIZE);
+          ctx.drawImage(img, -cellSizeHalf, -cellSizeHalf, CELL_SIZE, CELL_SIZE);
         } else {
           ctx.fillStyle = cell.color;
           ctx.beginPath();
-          ctx.moveTo(-CELL_SIZE / 2 + 8, -CELL_SIZE / 2);
-          ctx.lineTo(CELL_SIZE / 2 - 8, -CELL_SIZE / 2);
-          ctx.quadraticCurveTo(CELL_SIZE / 2, -CELL_SIZE / 2, CELL_SIZE / 2, -CELL_SIZE / 2 + 8);
-          ctx.lineTo(CELL_SIZE / 2, CELL_SIZE / 2 - 8);
-          ctx.quadraticCurveTo(CELL_SIZE / 2, CELL_SIZE / 2, CELL_SIZE / 2 - 8, CELL_SIZE / 2);
-          ctx.lineTo(-CELL_SIZE / 2 + 8, CELL_SIZE / 2);
-          ctx.quadraticCurveTo(-CELL_SIZE / 2, CELL_SIZE / 2, -CELL_SIZE / 2, CELL_SIZE / 2 - 8);
-          ctx.lineTo(-CELL_SIZE / 2, -CELL_SIZE / 2 + 8);
-          ctx.quadraticCurveTo(-CELL_SIZE / 2, -CELL_SIZE / 2, -CELL_SIZE / 2 + 8, -CELL_SIZE / 2);
+          ctx.moveTo(-cellSizeHalf + 8, -cellSizeHalf);
+          ctx.lineTo(cellSizeHalf - 8, -cellSizeHalf);
+          ctx.quadraticCurveTo(cellSizeHalf, -cellSizeHalf, cellSizeHalf, -cellSizeHalf + 8);
+          ctx.lineTo(cellSizeHalf, cellSizeHalf - 8);
+          ctx.quadraticCurveTo(cellSizeHalf, cellSizeHalf, cellSizeHalf - 8, cellSizeHalf);
+          ctx.lineTo(-cellSizeHalf + 8, cellSizeHalf);
+          ctx.quadraticCurveTo(-cellSizeHalf, cellSizeHalf, -cellSizeHalf, cellSizeHalf - 8);
+          ctx.lineTo(-cellSizeHalf, -cellSizeHalf + 8);
+          ctx.quadraticCurveTo(-cellSizeHalf, -cellSizeHalf, -cellSizeHalf + 8, -cellSizeHalf);
           ctx.closePath();
           ctx.fill();
         }

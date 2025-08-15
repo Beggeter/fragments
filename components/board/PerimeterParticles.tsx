@@ -1,5 +1,4 @@
 import React, { useMemo } from "react";
-import { useSettingsStore } from "@/lib/state/settings";
 
 interface PerimeterParticlesProps {
   width: number;
@@ -30,11 +29,10 @@ const CONFETTI_COLORS = [
   "#40FF80", // ярко-зелено-голубой
   "#8040FF", // ярко-фиолетовый
 ];
-// Уменьшено для лучшей производительности на мобильных
-const N = 8; // было 14
-const M = 8; // было 14  
+const N = 14;
+const M = 14;
 const MIN_PARTICLE_SIZE = 2;
-const ANIMATION_DURATION = 800; // Немного быстрее
+const ANIMATION_DURATION = 1000;
 
 type Particle = {
   x: number;
@@ -51,11 +49,6 @@ type Particle = {
 
 export const PerimeterParticles: React.FC<PerimeterParticlesProps> = React.memo(
   ({ width, height, visible, color = "#fff", className = "" }) => {
-    const { animationsEnabled, performanceMode } = useSettingsStore();
-    
-    // Ранний возврат если анимации отключены
-    if (!visible || !animationsEnabled) return null;
-    
     // Проверяем и корректируем размеры для production сборки
     const validWidth = Math.max(width, 200); // минимальный размер 200px
     const validHeight = Math.max(height, 200);
@@ -109,52 +102,68 @@ export const PerimeterParticles: React.FC<PerimeterParticlesProps> = React.memo(
 
         // Рандомные параметры - увеличенная вариативность
         const baseDist = 3;
-        const randomDist = baseDist + Math.random() * 15; // Увеличили максимальное расстояние
-        const randomAngle = (Math.random() - 0.5) * 3.14; // Полный круг вместо ограниченного угла
-        const randomDelay = Math.random() * 200; // Увеличили задержку
-        const randomDuration = ANIMATION_DURATION - Math.random() * 600; // Больше вариативности в длительности
-        const randomSize = MIN_PARTICLE_SIZE + Math.random() * 8; // Увеличили максимальный размер
-        const randomRotation = Math.random() * 360; // Полный оборот
-        const randomColor = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+        // Используем детерминированные значения на основе индекса частицы
+        const seed = pt.x + pt.y * 1000 + pt.idx; // Уникальный seed для каждой частицы
+        const randomDist = baseDist + (seed % 1000) / 1000 * 15; // 0-15
+        const randomAngle = ((seed % 6283) / 1000 - 3.14) ; // -π до π
+        const randomDelay = (seed % 200); // 0-200ms
+        const randomDuration = ANIMATION_DURATION - (seed % 600); // Вариативность в длительности
+        const randomSize = MIN_PARTICLE_SIZE + (seed % 8); // Размер
+        const randomRotation = (seed % 360); // Поворот
+        const randomColor = CONFETTI_COLORS[seed % CONFETTI_COLORS.length];
 
 
         let transformTo = "";
+        // Предвычисляем cos и sin
+        const cosAngle = Math.cos(randomAngle);
+        const sinAngle = Math.sin(randomAngle);
+        const absCosAngle = Math.abs(cosAngle);
+        const absSinAngle = Math.abs(sinAngle);
+        
         if (pt.side === "top") {
           // Для верхней стороны - летим вверх и в случайном направлении по горизонтали
-          const xOffset = Math.cos(randomAngle) * randomDist * 0.8;
-          const yOffset = -randomDist - Math.abs(Math.sin(randomAngle) * randomDist * 0.5);
+          const xOffset = cosAngle * randomDist * 0.8;
+          const yOffset = -randomDist - absSinAngle * randomDist * 0.5;
           transformTo = `translate(${xOffset}px, ${yOffset}px)`;
         } else if (pt.side === "bottom") {
           // Для нижней стороны - летим вниз и в случайном направлении по горизонтали
-          const xOffset = Math.cos(randomAngle) * randomDist * 0.8;
-          const yOffset = randomDist + Math.abs(Math.sin(randomAngle) * randomDist * 0.5);
+          const xOffset = cosAngle * randomDist * 0.8;
+          const yOffset = randomDist + absSinAngle * randomDist * 0.5;
           transformTo = `translate(${xOffset}px, ${yOffset}px)`;
         } else if (pt.side === "left") {
           // Для левой стороны - летим влево и в случайном направлении по вертикали
-          const xOffset = -randomDist - Math.abs(Math.cos(randomAngle) * randomDist * 0.5);
-          const yOffset = Math.sin(randomAngle) * randomDist * 0.8;
+          const xOffset = -randomDist - absCosAngle * randomDist * 0.5;
+          const yOffset = sinAngle * randomDist * 0.8;
           transformTo = `translate(${xOffset}px, ${yOffset}px)`;
         } else if (pt.side === "right") {
           // Для правой стороны - летим вправо и в случайном направлении по вертикали
-          const xOffset = randomDist + Math.abs(Math.cos(randomAngle) * randomDist * 0.5);
-          const yOffset = Math.sin(randomAngle) * randomDist * 0.8;
+          const xOffset = randomDist + absCosAngle * randomDist * 0.5;
+          const yOffset = sinAngle * randomDist * 0.8;
           transformTo = `translate(${xOffset}px, ${yOffset}px)`;
         } else if (pt.side === "corner-tl") {
-          // Для углов - более случайное направление
-          const xOffset = -randomDist * (0.5 + Math.random() * 0.5);
-          const yOffset = -randomDist * (0.5 + Math.random() * 0.5);
+          // Для углов - детерминированное направление
+          const factor1 = 0.5 + ((seed + 1) % 500) / 1000; // 0.5-1.0
+          const factor2 = 0.5 + ((seed + 2) % 500) / 1000; // 0.5-1.0
+          const xOffset = -randomDist * factor1;
+          const yOffset = -randomDist * factor2;
           transformTo = `translate(${xOffset}px, ${yOffset}px)`;
         } else if (pt.side === "corner-tr") {
-          const xOffset = randomDist * (0.5 + Math.random() * 0.5);
-          const yOffset = -randomDist * (0.5 + Math.random() * 0.5);
+          const factor1 = 0.5 + ((seed + 3) % 500) / 1000;
+          const factor2 = 0.5 + ((seed + 4) % 500) / 1000;
+          const xOffset = randomDist * factor1;
+          const yOffset = -randomDist * factor2;
           transformTo = `translate(${xOffset}px, ${yOffset}px)`;
         } else if (pt.side === "corner-br") {
-          const xOffset = randomDist * (0.5 + Math.random() * 0.5);
-          const yOffset = randomDist * (0.5 + Math.random() * 0.5);
+          const factor1 = 0.5 + ((seed + 5) % 500) / 1000;
+          const factor2 = 0.5 + ((seed + 6) % 500) / 1000;
+          const xOffset = randomDist * factor1;
+          const yOffset = randomDist * factor2;
           transformTo = `translate(${xOffset}px, ${yOffset}px)`;
         } else if (pt.side === "corner-bl") {
-          const xOffset = -randomDist * (0.5 + Math.random() * 0.5);
-          const yOffset = randomDist * (0.5 + Math.random() * 0.5);
+          const factor1 = 0.5 + ((seed + 7) % 500) / 1000;
+          const factor2 = 0.5 + ((seed + 8) % 500) / 1000;
+          const xOffset = -randomDist * factor1;
+          const yOffset = randomDist * factor2;
           transformTo = `translate(${xOffset}px, ${yOffset}px)`;
         }
 
@@ -170,7 +179,7 @@ export const PerimeterParticles: React.FC<PerimeterParticlesProps> = React.memo(
           randomColor
         };
       });
-    }, [validWidth, validHeight, performanceMode]);
+    }, [validWidth, validHeight]);
 
     if (!visible) return null;
 

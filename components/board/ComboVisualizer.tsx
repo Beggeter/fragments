@@ -218,14 +218,11 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
         if (containerSize.width > 0 && containerSize.height > 0) {
           setShowComboText(true);
         } else {
-          // Delay showing combo text until container size is available
-          const checkSizeTimer = setInterval(() => {
-            if (containerSize.width > 0 && containerSize.height > 0) {
-              setShowComboText(true);
-              clearInterval(checkSizeTimer);
-            }
-          }, 50);
-          setTimeout(() => clearInterval(checkSizeTimer), 500); // Fallback timeout
+          // Простая задержка вместо setInterval для лучшей производительности
+          const delayedShowTimer = setTimeout(() => {
+            setShowComboText(true);
+          }, 100);
+          return () => clearTimeout(delayedShowTimer);
         }
         setShowParticles(true);
         setShowClearText(false);

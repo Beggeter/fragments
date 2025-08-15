@@ -1,5 +1,4 @@
 import React, { useRef, useEffect } from "react";
-import { useSettingsStore } from "@/lib/state/settings";
 
 export interface ExplosionParticlesCanvasProps {
   centerX: number;
@@ -64,22 +63,14 @@ const ExplosionParticlesCanvas: React.FC<ExplosionParticlesCanvasProps> = ({
   mode = "explode",
   gatherTargets = [],
 }) => {
-  const { animationsEnabled, performanceMode } = useSettingsStore();
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
-  // Ранний возврат если анимации отключены
-  if (!isActive || !animationsEnabled) {
-    if (onComplete) onComplete();
-    return null;
-  }
   const particlesRef = useRef<Particle[]>([]);
   const animationRef = useRef<number | null>(null);
   const finishedRef = useRef(false);
   
-  // Оптимизация для мобильных устройств
-  const lastFrameTimeRef = useRef(0);
-  const TARGET_FPS = 30; // Ограничиваем до 30 FPS для частиц на мобильных
-  const FRAME_TIME = 1000 / TARGET_FPS;
+  // Кэшируем часто используемые вычисления
+  const dprRef = useRef(window.devicePixelRatio || 1);
+  const mathPiDiv180Ref = useRef(Math.PI / 180); // Константа для конвертации градусов в радианы
   
   const padding = 300; // px
   // Управление размером частиц
@@ -136,14 +127,7 @@ const ExplosionParticlesCanvas: React.FC<ExplosionParticlesCanvasProps> = ({
       });
     } else {
       PARTICLE_TYPES.forEach((type, typeIndex) => {
-        // Адаптивное количество частиц в зависимости от настроек производительности
-        let baseCount = type === "fire" ? 15 : type === "spark" ? 10 : type === "smoke" ? 8 : 6;
-        if (performanceMode === 'low') {
-          baseCount = Math.ceil(baseCount * 0.3); // 30% частиц
-        } else if (performanceMode === 'medium') {
-          baseCount = Math.ceil(baseCount * 0.6); // 60% частиц
-        }
-        const count = baseCount;
+        const count = type === "fire" ? 15 : type === "spark" ? 10 : type === "smoke" ? 8 : 6;
         for (let i = 0; i < count; i++) {
           const angle = (Math.PI * 2 * i) / count + (typeIndex * Math.PI / 6);
           const distance = 120 + Math.random() * 180;
@@ -191,25 +175,18 @@ const ExplosionParticlesCanvas: React.FC<ExplosionParticlesCanvasProps> = ({
     // Запуск анимации
     if (animationRef.current) cancelAnimationFrame(animationRef.current);
     animate(now);
+    // Не включаем gatherTargets - JSON.stringify слишком дорог для анимации
     // eslint-disable-next-line
-  }, [isActive, centerX, centerY, boardWidth, boardHeight, cellSize, gap, mode, JSON.stringify(gatherTargets)]);
+  }, [isActive, centerX, centerY, boardWidth, boardHeight, cellSize, gap, mode]);
 
-  // Основная анимация с throttling для мобильных
+  // Основная анимация
   function animate(startTime: number) {
-    const now = performance.now();
-    
-    // Throttling для лучшей производительности на мобильных
-    if (now - lastFrameTimeRef.current < FRAME_TIME) {
-      animationRef.current = requestAnimationFrame(() => animate(startTime));
-      return;
-    }
-    lastFrameTimeRef.current = now;
-    
     const ctx = canvasRef.current?.getContext("2d");
-    const dpr = window.devicePixelRatio || 1;
+    const dpr = dprRef.current; // Используем кэшированное значение
     ctx?.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (!ctx) return;
-    
+    const now = performance.now();
+    const mathPiDiv180 = mathPiDiv180Ref.current; // Кэшированная константа
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
     let alive = 0;
     for (const p of particlesRef.current) {
@@ -225,11 +202,26 @@ const ExplosionParticlesCanvas: React.FC<ExplosionParticlesCanvasProps> = ({
       ctx.save();
       ctx.globalAlpha = opacity;
       ctx.translate(x, y);
-      ctx.rotate((p.rotation * Math.PI) / 180);
-      // Упрощенные тени только для важных эффектов (лучше производительность на мобильных)
-      if (p.type === "fire" || p.type === "star") {
+      ctx.rotate(p.rotation * mathPiDiv180); // Используем предвычисленную константу
+      // Blur/тени для некоторых типов
+      if (p.type === "fire") {
         ctx.shadowColor = p.color;
-        ctx.shadowBlur = 4; // Уменьшили blur для производительности
+        ctx.shadowBlur = 8;
+      } else if (p.type === "spark") {
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 6;
+      } else if (p.type === "star") {
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 10;
+      } else if (p.type === "glitter") {
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 6;
+      } else if (p.type === "debris") {
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 2;
+      } else if (p.type === "smoke") {
+        ctx.shadowColor = p.color;
+        ctx.shadowBlur = 12;
       }
       // Рисуем форму
       if (p.type === "star") {
@@ -238,11 +230,13 @@ const ExplosionParticlesCanvas: React.FC<ExplosionParticlesCanvasProps> = ({
       } else if (p.type === "debris") {
         ctx.fillStyle = p.color;
         ctx.beginPath();
+        // Используем rotation для детерминированного размера вместо Math.random()
+        const sizeVariation = 0.6 + ((p.rotation % 100) / 250); // 0.6-1.0 
         ctx.rect(
           -((p.size * scale) / 2),
           -((p.size * scale) / 2),
           p.size * scale,
-          p.size * scale * (0.6 + Math.random() * 0.4)
+          p.size * scale * sizeVariation
         );
         ctx.fill();
       } else if (p.type === "smoke") {
@@ -268,18 +262,30 @@ const ExplosionParticlesCanvas: React.FC<ExplosionParticlesCanvasProps> = ({
     }
   }
 
-  // Автоматический ресайз canvas под размеры поля
+  // Автоматический ресайз canvas под размеры поля (оптимизированный)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    
     const width = boardWidth * (cellSize + gap) - gap;
     const height = boardHeight * (cellSize + gap) - gap;
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = (width + padding * 2) * dpr;
-    canvas.height = (height + padding * 2) * dpr;
-    canvas.style.width = (width + padding * 2) + "px";
-    canvas.style.height = (height + padding * 2) + "px";
-  }, [boardWidth, boardHeight, cellSize, gap]);
+    const totalWidth = width + padding * 2;
+    const totalHeight = height + padding * 2;
+    const dpr = dprRef.current; // Используем кэшированное значение
+    
+    // Избегаем ненужного ресайза если размеры не изменились
+    const currentWidth = canvas.width / dpr;
+    const currentHeight = canvas.height / dpr;
+    
+    if (Math.abs(currentWidth - totalWidth) < 1 && Math.abs(currentHeight - totalHeight) < 1) {
+      return; // Размеры практически не изменились
+    }
+    
+    canvas.width = totalWidth * dpr;
+    canvas.height = totalHeight * dpr;
+    canvas.style.width = totalWidth + "px";
+    canvas.style.height = totalHeight + "px";
+  }, [boardWidth, boardHeight, cellSize, gap, padding]);
 
   // Очистка анимации при размонтировании
   useEffect(() => {

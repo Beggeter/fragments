@@ -138,10 +138,20 @@ const getSideAtPoint = (points: { x: number; y: number }[], point: { x: number; 
   return 'right';
 };
 
-// Функция для генерации псевдослучайного числа
-const seededRandom = (seed: number): number => {
+// Кэшируем Math.sin для лучшей производительности
+const sinCache = new Map<number, number>();
+const getSeededRandom = (seed: number): number => {
+  const key = Math.floor(seed * 1000); // Ограниченная точность для кэша
+  if (sinCache.has(key)) {
+    return sinCache.get(key)!;
+  }
   const x = Math.sin(seed) * 10000;
-  return x - Math.floor(x);
+  const result = x - Math.floor(x);
+  // Ограничиваем размер кэша
+  if (sinCache.size < 1000) {
+    sinCache.set(key, result);
+  }
+  return result;
 };
 
 export const NeonGlowParticles: React.FC<NeonGlowParticlesProps> = React.memo(
@@ -150,6 +160,11 @@ export const NeonGlowParticles: React.FC<NeonGlowParticlesProps> = React.memo(
     const [nextId, setNextId] = useState(0);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
     const animationRef = useRef<number | null>(null);
+    const timeoutRefs = useRef<Set<NodeJS.Timeout>>(new Set()); // Отслеживаем все setTimeout
+    
+    // Кэшируем Math.cos и Math.sin значения
+    const mathCosCache = useRef<Map<number, number>>(new Map());
+    const mathSinCache = useRef<Map<number, number>>(new Map());
     
     // Парсим path один раз
     const pathPoints = useMemo(() => {
@@ -164,10 +179,12 @@ export const NeonGlowParticles: React.FC<NeonGlowParticlesProps> = React.memo(
       // Проверяем максимальное количество частиц
       if (particles.length >= MAX_PARTICLES) return;
       
-      const id = `particle-${Date.now()}-${Math.random()}`;
+      const currentId = nextId;
+      setNextId(prev => prev + 1);
+      const id = `particle-${Date.now()}-${currentId}`;
       
-      // Выбираем случайную точку вдоль всего path с интерполяцией
-      const randomPosition = Math.random(); // 0-1 вдоль всего пути
+      // Используем id для детерминированной позиции вместо Math.random()
+      const randomPosition = getSeededRandom(currentId * 0.1) ; // 0-1 вдоль всего пути
       const totalLength = pathPoints.length - 1;
       const exactIndex = randomPosition * totalLength;
       const index1 = Math.floor(exactIndex);
@@ -185,14 +202,15 @@ export const NeonGlowParticles: React.FC<NeonGlowParticlesProps> = React.memo(
       // Определяем сторону
       const side = getSideAtPoint(pathPoints, startPoint);
       
-      // Генерируем параметры
-      const randomSize = MIN_PARTICLE_SIZE + Math.random() * (MAX_PARTICLE_SIZE - MIN_PARTICLE_SIZE);
-             const randomDuration = ANIMATION_DURATION - Math.random() * 2000; // 10-12 секунд
-      const randomRotation = Math.random() * 360;
+      // Генерируем параметры детерминированно
+      const randomSize = MIN_PARTICLE_SIZE + getSeededRandom(currentId * 0.2) * (MAX_PARTICLE_SIZE - MIN_PARTICLE_SIZE);
+      const randomDuration = ANIMATION_DURATION - getSeededRandom(currentId * 0.3) * 2000; // 10-12 секунд
+      const randomRotation = getSeededRandom(currentId * 0.4) * 360;
       
       // Используем цвет неоновой подсветки или случайный цвет
-      const useNeonColor = Math.random() > 0.6; // 40% шанс использовать цвет неона
-      const randomColor = useNeonColor ? color : CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+      const useNeonColor = getSeededRandom(currentId * 0.5) > 0.6; // 40% шанс использовать цвет неона
+      const colorIndex = Math.floor(getSeededRandom(currentId * 0.6) * CONFETTI_COLORS.length);
+      const randomColor = useNeonColor ? color : CONFETTI_COLORS[colorIndex];
       
       // Вычисляем направление полета (перпендикулярно стороне)
       let angle = 0;
@@ -213,11 +231,26 @@ export const NeonGlowParticles: React.FC<NeonGlowParticlesProps> = React.memo(
            break;
        }
       
-      // Добавляем небольшое случайное отклонение
-      angle += (Math.random() - 0.5) * 0.1; // ±5 градусов
+      // Добавляем небольшое детерминированное отклонение
+      angle += (getSeededRandom(currentId * 0.7) - 0.5) * 0.1; // ±5 градусов
       
-      const endX = startPoint.x + Math.cos(angle) * distance;
-      const endY = startPoint.y + Math.sin(angle) * distance;
+      // Используем кэшированные cos/sin значения
+      const angleKey = Math.floor(angle * 1000);
+      let cosAngle = mathCosCache.current.get(angleKey);
+      let sinAngle = mathSinCache.current.get(angleKey);
+      
+      if (cosAngle === undefined) {
+        cosAngle = Math.cos(angle);
+        sinAngle = Math.sin(angle);
+        // Ограничиваем размер кэша
+        if (mathCosCache.current.size < 500) {
+          mathCosCache.current.set(angleKey, cosAngle);
+          mathSinCache.current.set(angleKey, sinAngle!);
+        }
+      }
+      
+      const endX = startPoint.x + cosAngle * distance;
+      const endY = startPoint.y + sinAngle! * distance;
       
       const newParticle: Particle = {
         id,
@@ -239,10 +272,12 @@ export const NeonGlowParticles: React.FC<NeonGlowParticlesProps> = React.memo(
       
       setParticles(prev => [...prev, newParticle]);
       
-      // Удаляем частицу через время анимации
-      setTimeout(() => {
+      // Удаляем частицу через время анимации (с отслеживанием для cleanup)
+      const timeoutId = setTimeout(() => {
         setParticles(prev => prev.filter(p => p.id !== id));
+        timeoutRefs.current.delete(timeoutId);
       }, randomDuration);
+      timeoutRefs.current.add(timeoutId);
     }, [pathPoints, color, cellSize]);
     
     // Управляем созданием новых частиц
@@ -255,6 +290,9 @@ export const NeonGlowParticles: React.FC<NeonGlowParticlesProps> = React.memo(
             clearInterval(intervalRef.current);
             intervalRef.current = null;
           }
+          // Очищаем все активные setTimeout
+          timeoutRefs.current.forEach(timeoutId => clearTimeout(timeoutId));
+          timeoutRefs.current.clear();
         };
       } else {
         if (intervalRef.current) {
