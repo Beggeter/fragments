@@ -22,6 +22,8 @@ interface MainMenuProps {
   onStartZen?: () => void;
   onOpenShop: (initialTab?: string) => void;
   onOpenLeaderboard?: () => void;
+  isTransitioning?: boolean;
+  isInitialized?: boolean;
 }
 interface BottomButtonsProps {
   onStartClassic: () => void;
@@ -30,6 +32,8 @@ interface BottomButtonsProps {
   onShowZenAccessModal: () => void;
   onOpenShop: (initialTab?: string) => void;
   canAccessZen: boolean;
+  isTransitioning?: boolean;
+  isInitialized?: boolean;
 }
 
 const MainMenu: FC<MainMenuProps> = ({
@@ -37,6 +41,8 @@ const MainMenu: FC<MainMenuProps> = ({
   onStartZen,
   onOpenShop,
   onOpenLeaderboard,
+  isTransitioning = false,
+  isInitialized = true,
 }) => {
   const [fadeIn, setFadeIn] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
@@ -104,6 +110,8 @@ const MainMenu: FC<MainMenuProps> = ({
             onShowZenAccessModal={() => setShowZenAccessModal(true)}
             onOpenShop={onOpenShop}
             canAccessZen={canAccessZen}
+            isTransitioning={isTransitioning}
+            isInitialized={isInitialized}
           />
         </main>
       </div>
@@ -184,18 +192,23 @@ const BottomButtons: FC<BottomButtonsProps> = ({
   onShowZenAccessModal,
   onOpenShop,
   canAccessZen,
+  isTransitioning = false,
+  isInitialized = true,
 }) => {
+  // ✅ Вычисляем состояние блокировки кнопок
+  const isDisabled = isTransitioning || !isInitialized;
   return (
     <div className="flex flex-col gap-4 items-center w-full z-100">
       {canAccessZen ? (
         <MenuButton
-          text="Zen"
+          text={isTransitioning ? "Loading..." : "Zen"}
           rightIcon={<CrownIcon className="h-[3rem] min-w-[3rem] drop-shadow-md" />}
           gradientClass="pink-gradient"
           className="rounded-3xl px-6 py-10 max-w-md w-[55vw] sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3"
           textClasses="font-black italic text-[2.3rem] text-lg"
           imageClasses="h-[3rem] min-w-[3rem] drop-shadow-md"
           onClick={onStartZen}
+          disabled={isDisabled}
         />
       ) : (
         <MenuButton
@@ -206,16 +219,18 @@ const BottomButtons: FC<BottomButtonsProps> = ({
           textClasses="font-black italic text-[2.3rem] text-lg"
           imageClasses="h-[3rem] min-w-[3rem] drop-shadow-md"
           onClick={onShowZenAccessModal}
+          disabled={isDisabled}
         />
       )}
       <MenuButton
-        text="Classic"
+        text={isTransitioning ? "Loading..." : "Classic"}
         rightIcon={infinity}
         gradientClass="green-gradient"
         className="rounded-3xl px-6 py-10 max-w-md w-[55vw] sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3"
         textClasses="font-black italic text-[2.3rem] text-lg"
         imageClasses="h-[2rem] min-w-[3rem] drop-shadow-md"
         onClick={onStartClassic}
+        disabled={isDisabled}
       />
     </div>
   );

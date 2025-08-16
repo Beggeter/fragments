@@ -64,6 +64,8 @@ const HomePage: React.FC = () => {
 
   // Добавляем состояние для отслеживания намеренного перезапуска
   const [isIntentionalRestart, setIsIntentionalRestart] = useState(false);
+  // ✅ Добавляем защиту от множественных кликов
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   // Создаем стабильную функцию для завершения перезапуска
   const handleRestartComplete = useCallback(() => {
@@ -159,18 +161,26 @@ const HomePage: React.FC = () => {
         console.warn('Failed to initialize @telegram-apps/sdk:', error);
       }
       
-      // Инициализируем Telegram WebApp с таймаутом для мобильных сетей
+      // ✅ Инициализируем Telegram WebApp с улучшенной обработкой слабого интернета
       console.log('🔄 Starting Telegram WebApp initialization...');
       let telegramSuccess = false;
       
       try {
-        // Увеличенный таймаут для мобильных сетей
+        // Детекция типа соединения для адаптивного таймаута
+        const connection = (navigator as any)?.connection;
+        const effectiveType = connection?.effectiveType;
+        const isSlowConnection = effectiveType && ['slow-2g', '2g', '3g'].includes(effectiveType);
+        
+        // Адаптивный таймаут: больше времени для медленных соединений
+        const timeoutMs = isSlowConnection ? 15000 : 10000;
+        console.log(`📶 Connection type: ${effectiveType || 'unknown'}, timeout: ${timeoutMs}ms`);
+        
         const initPromise = initializeTelegramWebApp();
         const timeoutPromise = new Promise<boolean>(resolve => 
           setTimeout(() => {
-            console.warn('⏰ Telegram initialization timeout (mobile network), continuing with fallback');
+            console.warn(`⏰ Telegram initialization timeout (${timeoutMs}ms), continuing with fallback`);
             resolve(false);
-          }, 8000) // 8 секунд для мобильных сетей
+          }, timeoutMs)
         );
         
         telegramSuccess = await Promise.race([initPromise, timeoutPromise]);
@@ -203,10 +213,16 @@ const HomePage: React.FC = () => {
 
         const tg = window.Telegram?.WebApp;
         if (tg) {
-          // Telegram WebApp уже инициализирован в initializeTelegramWebApp
+          // ✅ Проверяем готовность Telegram WebApp перед автоавторизацией
+          if (!telegramSuccess) {
+            console.warn('⚠️ Telegram WebApp not fully initialized, proceeding with caution');
+          }
+          
           const user = tg.initDataUnsafe?.user;
           if (user) {
             try {
+              console.log('🔐 Starting Telegram auto-authentication for user:', user.id);
+              
               const initData = tg.initData || "";
               const urlParams = new URLSearchParams(initData);
               const hash = urlParams.get("hash");
@@ -220,6 +236,7 @@ const HomePage: React.FC = () => {
                   initData: initData,
                 };
 
+                console.log('📡 Sending auth request to server...');
                 const response = await fetch("/api/auth/telegram", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
@@ -228,14 +245,22 @@ const HomePage: React.FC = () => {
 
                 const data = await response.json();
                 if (response.ok) {
+                  console.log('✅ Auto-auth successful, setting up session...');
                   safeLocalStorage.setItem("sessionToken", data.sessionToken);
                   safeLocalStorage.setItem("userData", JSON.stringify(data.user));
                   loginUser(data.user, data.sessionToken);
                   setAutoAuthCompleted(true);
+                  
+                  // ✅ Дополнительная задержка для стабилизации состояния
+                  await new Promise(resolve => setTimeout(resolve, 300));
                   setCurrentScreen("main menu");
                   setIsInitialized(true);
                   return;
+                } else {
+                  console.error('❌ Auth server error:', data);
                 }
+              } else {
+                console.warn('⚠️ No hash found in Telegram initData');
               }
             } catch (error) {
               console.error('Auto-auth failed:', error);
@@ -410,17 +435,71 @@ const HomePage: React.FC = () => {
     }
   };
 
-  const hadleStartClassic = () => {
-    setCurrentScreen("classic mode");
-  };
+  const handleStartClassic = useCallback(async () => {
+    // ✅ Защита от множественных кликов и проверка инициализации
+    if (isTransitioning || !isInitialized) {
+      console.warn('🚫 Classic mode blocked: transitioning=', isTransitioning, 'initialized=', isInitialized);
+      return;
+    }
+    
+    console.log('🎮 Starting Classic mode...');
+    setIsTransitioning(true);
+    
+    // ✅ Подготовка критических ресурсов перед переходом
+    try {
+      // Небольшая задержка для UI feedback + проверка готовности системы
+      await new Promise(resolve => setTimeout(resolve, 150));
+      
+      // Проверка готовности хранилища
+      if (typeof window !== 'undefined' && !window.localStorage) {
+        console.warn('⚠️ LocalStorage not available, using fallback');
+      }
+      
+      setCurrentScreen("classic mode");
+    } catch (error) {
+      console.error('❌ Failed to start Classic mode:', error);
+    } finally {
+      setIsTransitioning(false);
+    }
+  }, [isTransitioning, isInitialized]);
 
-  const handleStartZen = () => {
-    setCurrentScreen("zen mode");
-  };
+  const handleStartZen = useCallback(async () => {
+    // ✅ Защита от множественных кликов и проверка инициализации
+    if (isTransitioning || !isInitialized) {
+      console.warn('🚫 Zen mode blocked: transitioning=', isTransitioning, 'initialized=', isInitialized);
+      return;
+    }
+    
+    console.log('🧘 Starting Zen mode...');
+    setIsTransitioning(true);
+    
+    // ✅ Подготовка критических ресурсов перед переходом
+    try {
+      // Небольшая задержка для UI feedback + проверка готовности системы
+      await new Promise(resolve => setTimeout(resolve, 150));
+      
+      // Проверка готовности хранилища
+      if (typeof window !== 'undefined' && !window.localStorage) {
+        console.warn('⚠️ LocalStorage not available, using fallback');
+      }
+      
+      setCurrentScreen("zen mode");
+    } catch (error) {
+      console.error('❌ Failed to start Zen mode:', error);
+    } finally {
+      setIsTransitioning(false);
+    }
+  }, [isTransitioning, isInitialized]);
 
-  const handleGoToMenu = () => {
+  const handleGoToMenu = useCallback(() => {
+    // ✅ Защита от одновременных переходов
+    if (isTransitioning) {
+      console.warn('🚫 Menu transition blocked: already transitioning');
+      return;
+    }
+    console.log('🏠 Going to main menu...');
     setCurrentScreen("main menu");
-  };
+  }, [isTransitioning]);
 
   const handleGameOver = async () => {
     try {
@@ -679,10 +758,12 @@ const HomePage: React.FC = () => {
 
       {currentScreen === "main menu" && (
         <MainMenu
-          onStartClassic={hadleStartClassic}
+          onStartClassic={handleStartClassic}
           onStartZen={handleStartZen}
           onOpenShop={handleOpenShop}
           onOpenLeaderboard={handleOpenLeaderboard}
+          isTransitioning={isTransitioning}
+          isInitialized={isInitialized}
         />
       )}
 
