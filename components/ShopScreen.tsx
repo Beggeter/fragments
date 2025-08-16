@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useUser } from "@/hooks/useUser";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import BoosterPurchaseModal from "./store/BoosterPurchaseModal";
@@ -19,6 +19,9 @@ import {
 import TgStarIcon from "./UI/TgStarIcon";
 
 const TABS_KEYS = ["shards", "boosters", "zen"] as const;
+
+// Создаем Map для быстрого поиска бустеров вместо find() в каждом рендере
+const BOOSTERS_MAP = new Map(BOOSTERS.map(booster => [booster.name, booster]));
 
 interface ShopScreenProps {
   onBack: () => void;
@@ -184,13 +187,17 @@ function ZenSubCard({
   onClick,
 }: any) {
   const { t } = useTranslation();
-  const parsedBonuses = bonuses.map((bonus: any) => {
-    const boosterInfo = BOOSTERS.find((b) => b.name === bonus.name);
-    return {
-      ...bonus,
-      icon: boosterInfo ? boosterInfo.icon : "",
-    };
-  });
+  
+  // Кэшируем парсинг бонусов, используя Map для O(1) поиска вместо O(n) find()
+  const parsedBonuses = useMemo(() => {
+    return bonuses.map((bonus: any) => {
+      const boosterInfo = BOOSTERS_MAP.get(bonus.name);
+      return {
+        ...bonus,
+        icon: boosterInfo ? boosterInfo.icon : "",
+      };
+    });
+  }, [bonuses]);
 
   return (
     <ClickEffect
@@ -282,7 +289,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
     initialTab || "shards"
   );
   const [adminBalance, setAdminBalance] = useState<number | null>(null);
-  const [isBalanceLoading, setIsBalanceLoading] = useState(true);
+  const [isBalanceLoading, setIsBalanceLoading] = useState(false); // Не блокируем UI при загрузке
   const [selectedBooster, setSelectedBooster] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSub, setSelectedSub] = useState<any>(null);
@@ -336,8 +343,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
   // Функция для обновления баланса после покупки
   const handleBalanceUpdate = useCallback(async () => {
     try {
-      setIsBalanceLoading(true);
-
+      // Не блокируем UI при обновлении баланса
       if (isAdmin) {
         // Для админа получаем баланс отдельно
         const res = await fetch("/api/users/610936383/currency");
@@ -347,11 +353,8 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
         // Для обычного пользователя получаем актуальный баланс с сервера
         await refreshBalance();
       }
-
-      setIsBalanceLoading(false);
     } catch (error) {
       // console.error("Error updating balance:", error);
-      setIsBalanceLoading(false);
     }
   }, [refreshBalance, isAdmin]);
 
@@ -370,40 +373,53 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
   };
 
   useEffect(() => {
+    // Сначала сразу показываем UI, потом загружаем баланс
+    setIsBalanceLoading(false);
+    
     if (isAdmin) {
-      setIsBalanceLoading(true);
+      // Загружаем баланс асинхронно, не блокируя UI
       fetch("/api/users/610936383/currency")
         .then((res) => res.json())
         .then((data) => {
           setAdminBalance(typeof data.balance === "number" ? data.balance : 0);
-          setIsBalanceLoading(false);
         })
         .catch(() => {
           setAdminBalance(0);
-          setIsBalanceLoading(false);
         });
     } else {
       setAdminBalance(null);
-      setIsBalanceLoading(false);
     }
   }, [isAdmin]);
 
   // Обновляем баланс при возвращении в приложение (например, после оплаты в боте)
   useEffect(() => {
+    // Добавляем небольшую задержку, чтобы не блокировать первоначальный рендер
+    let isInitialMount = true;
+    
     const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        handleBalanceUpdate();
+      if (!document.hidden && !isInitialMount) {
+        // Откладываем обновление баланса, чтобы не блокировать UI
+        setTimeout(() => handleBalanceUpdate(), 100);
       }
     };
 
     const handleFocus = () => {
-      handleBalanceUpdate();
+      if (!isInitialMount) {
+        // Откладываем обновление баланса, чтобы не блокировать UI
+        setTimeout(() => handleBalanceUpdate(), 100);
+      }
     };
+
+    // Помечаем, что это больше не первоначальный маунт после небольшой задержки
+    const timer = setTimeout(() => {
+      isInitialMount = false;
+    }, 1000);
 
     document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("focus", handleFocus);
 
     return () => {
+      clearTimeout(timer);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("focus", handleFocus);
     };
