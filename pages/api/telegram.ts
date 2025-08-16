@@ -4,7 +4,7 @@ import TelegramBot from "node-telegram-bot-api";
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN!;
 const bot = new TelegramBot(TELEGRAM_TOKEN, { polling: false });
 
-const WEBAPP_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://fragmentstgm.ru";
+const WEBAPP_URL = process.env.NEXT_PUBLIC_BASE_URL || "https://fragmentstgm.ru?v=2";
 
 export default async function handler(
   req: NextApiRequest,
