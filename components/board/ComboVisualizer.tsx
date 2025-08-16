@@ -67,7 +67,7 @@ const ComboCounter: React.FC<{ value: number }> = React.memo(({ value }) => {
       const timer = setTimeout(() => {
         setDisplayValue(value);
         setIsAnimating(false);
-      }, 400); // ✅ Увеличили время для более заметной анимации
+      }, 800); // ✅ Еще больше увеличили время для плавной анимации
 
       return () => clearTimeout(timer);
     }
@@ -75,16 +75,24 @@ const ComboCounter: React.FC<{ value: number }> = React.memo(({ value }) => {
 
   return (
     <g>
-      {/* ✅ CSS keyframes для плавной анимации */}
+      {/* ✅ CSS keyframes для очень плавной анимации */}
       <style>{`
         @keyframes combo-slide-up {
           0% {
-            transform: translateY(25px) scale(0.8);
-            opacity: 0.2;
+            transform: translateY(30px) scale(0.7);
+            opacity: 0;
+          }
+          25% {
+            transform: translateY(20px) scale(0.85);
+            opacity: 0.4;
           }
           50% {
-            transform: translateY(12px) scale(0.9);
-            opacity: 0.8;
+            transform: translateY(10px) scale(0.95);
+            opacity: 0.7;
+          }
+          75% {
+            transform: translateY(3px) scale(1.02);
+            opacity: 0.9;
           }
           100% {
             transform: translateY(0px) scale(1);
@@ -101,10 +109,10 @@ const ComboCounter: React.FC<{ value: number }> = React.memo(({ value }) => {
         {...numberStyle}
         style={{
           ...numberStyle,
-          // ✅ Более заметная CSS анимация
-          transition: isAnimating ? 'transform 0.4s ease-in-out, opacity 0.4s ease-in-out' : 'none',
-          transform: isAnimating ? 'translateY(-20px) scale(1.1)' : 'translateY(0px) scale(1)',
-          opacity: isAnimating ? 0.3 : 1,
+          // ✅ Очень плавная CSS анимация
+          transition: isAnimating ? 'transform 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94)' : 'none',
+          transform: isAnimating ? 'translateY(-30px) scale(0.8)' : 'translateY(0px) scale(1)',
+          opacity: isAnimating ? 0.1 : 1,
         }}
       >
         {displayValue}
@@ -119,11 +127,10 @@ const ComboCounter: React.FC<{ value: number }> = React.memo(({ value }) => {
           {...numberStyle}
           style={{
             ...numberStyle,
-            // ✅ Новое число появляется снизу с увеличением
-            transform: 'translateY(25px) scale(0.8)',
-            opacity: 0.6,
-            transition: 'transform 0.4s ease-in-out, opacity 0.4s ease-in-out',
-            animation: 'combo-slide-up 0.4s ease-in-out forwards',
+            // ✅ Новое число появляется снизу с плавной анимацией
+            transform: 'translateY(30px) scale(0.7)',
+            opacity: 0,
+            animation: 'combo-slide-up 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards',
           }}
         >
           {value}
@@ -671,7 +678,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
         (() => {
           const comboPos = getNearestPosition(lastScore.pixelPosition);
           // Ensure the position is within bounds and prevent negative values
-          const totalWidth = comboWidth + 70 + 24;
+          const totalWidth = comboWidth + 70 + 40; // ✅ Увеличили отступ
           const left = Math.max(
             0,
             Math.min(
@@ -814,7 +821,7 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
                   Combo
                 </text>
                 <g
-                  transform={`translate(${comboWidth + 16}, ${
+                  transform={`translate(${comboWidth + 32}, ${
                     comboHeight - 18
                   })`}
                 >
