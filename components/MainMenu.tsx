@@ -16,6 +16,7 @@ import { ZenAccessModal } from "@/components/UI/ZenAccessModal";
 import { useUser } from "@/hooks/useUser";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { DailyBonusModal } from "./DailyBonusModal";
+import { Suspense } from "react";
 
 interface MainMenuProps {
   onStartClassic: () => void;
@@ -76,7 +77,9 @@ const MainMenu: FC<MainMenuProps> = ({
           backfaceVisibility: "hidden",
         }}
       >
-        <BackgroundAnimation className="overflow-x-hidden absolute inset-0 px-4 -top-15" />
+        <Suspense fallback={<div />}>
+          <BackgroundAnimation className="overflow-x-hidden absolute inset-0 px-4 -top-15" />
+        </Suspense>
         <main 
           className="flex flex-col gap-[15vh] items-center"
           style={{
@@ -127,11 +130,13 @@ const MainMenu: FC<MainMenuProps> = ({
         onClose={() => setShowZenAccessModal(false)}
         onOpenShop={() => onOpenShop("zen")}
       />
-      <DailyBonusModal
-        isOpen={showBonusModal}
-        onClose={() => setShowBonusModal(false)}
-        onOpenShop={onOpenShop}
-      />
+      <Suspense fallback={<div />}>
+        <DailyBonusModal
+          isOpen={showBonusModal}
+          onClose={() => setShowBonusModal(false)}
+          onOpenShop={onOpenShop}
+        />
+      </Suspense>
     </>
   );
 };

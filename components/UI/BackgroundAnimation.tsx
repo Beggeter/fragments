@@ -4,12 +4,15 @@ import React, { FC, useEffect, useMemo, useState } from "react";
 import star from "@/public/romn.svg";
 import Image from "next/image";
 import { createArray, getRandomItem } from "@/utils/helpers";
+import { getOptimizedResourceCount } from "@/lib/utils/resourceCache";
 
 interface BackgroundAnimationProps {
   className?: string;
 }
 
-const NUM_ELEMENTS = 20; // Количество анимированных элементов
+// ✅ Адаптивное количество элементов в зависимости от типа соединения
+const BASE_ELEMENT_COUNT = 20;
+const NUM_ELEMENTS = getOptimizedResourceCount(BASE_ELEMENT_COUNT);
 const SIZES = [20, 30, 40, 50, 60, 70];
 const START_LEFT = 3; // Начальная позиция слева
 const END_LEFT = 97; // Конечная позиция слева
@@ -36,15 +39,22 @@ const generateRandomElements = () => {
 };
 
 const BackgroundAnimation: FC<BackgroundAnimationProps> = ({ className }) => {
-  const [animatedElements, setAnimatedElements] = useState<any[]>([]); // Use useState to manage elements
+  const [animatedElements, setAnimatedElements] = useState<any[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false); // ✅ Добавляем состояние загрузки
 
   useEffect(() => {
-    setAnimatedElements(generateRandomElements());
+    // ✅ Задержка инициализации анимации для приоритета критичного контента
+    const initTimer = setTimeout(() => {
+      setAnimatedElements(generateRandomElements());
+      setIsLoaded(true);
+    }, 100); // Небольшая задержка для лучшей производительности
+    
+    return () => clearTimeout(initTimer);
   }, []);
 
   return (
     <div className={className} style={{ pointerEvents: 'none' }}>
-      {animatedElements.map((element) =>
+      {isLoaded && animatedElements.map((element) =>
         element.id % 2 === 0 ? (
           <div
             key={element.id}

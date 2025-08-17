@@ -98,7 +98,7 @@ export function isLaunchedInTelegram(): boolean {
 }
 
 // Ожидание загрузки Telegram WebApp API - оптимизировано для мобильных сетей
-function waitForTelegramWebApp(maxAttempts = 40, interval = 250): Promise<boolean> {
+function waitForTelegramWebApp(maxAttempts = 50, interval = 200): Promise<boolean> {
   return new Promise((resolve) => {
     let attempts = 0;
     
@@ -112,18 +112,33 @@ function waitForTelegramWebApp(maxAttempts = 40, interval = 250): Promise<boolea
       
       attempts++;
       
-      // Увеличиваем интервал для мобильных сетей после 10 попыток
-      const currentInterval = attempts > 10 ? interval * 2 : interval;
+      // ✅ Адаптивный интервал в зависимости от типа соединения
+      const connection = (navigator as any)?.connection;
+      const effectiveType = connection?.effectiveType;
+      let currentInterval = interval;
+      
+      if (effectiveType) {
+        if (effectiveType === 'slow-2g') {
+          currentInterval = attempts > 5 ? interval * 4 : interval * 2;
+        } else if (effectiveType === '2g') {
+          currentInterval = attempts > 8 ? interval * 3 : interval * 1.5;
+        } else if (effectiveType === '3g') {
+          currentInterval = attempts > 10 ? interval * 2 : interval;
+        }
+      } else {
+        // Fallback для неизвестного типа соединения
+        currentInterval = attempts > 10 ? interval * 2 : interval;
+      }
       
       if (attempts >= maxAttempts) {
-        console.warn(`❌ Telegram WebApp API not loaded after ${maxAttempts} attempts`);
+        console.warn(`❌ Telegram WebApp API not loaded after ${maxAttempts} attempts (${effectiveType || 'unknown'} connection)`);
         resolve(false);
         return;
       }
       
-      // Логируем каждые 5 попыток для отладки мобильных сетей
-      if (attempts % 5 === 0) {
-        console.log(`🔄 Still waiting for Telegram API... (${attempts}/${maxAttempts})`);
+      // Логируем каждые 8 попыток для отладки мобильных сетей
+      if (attempts % 8 === 0) {
+        console.log(`🔄 Still waiting for Telegram API... (${attempts}/${maxAttempts}) [${effectiveType || 'unknown'}]`);
       }
       
       setTimeout(checkTelegram, currentInterval);
@@ -189,8 +204,20 @@ async function performInitialization(): Promise<boolean> {
       return false;
     }
     
-    // Задержка для стабильности (увеличена для мобильных сетей)
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // ✅ Адаптивная задержка для стабильности в зависимости от типа соединения
+    const connection = (navigator as any)?.connection;
+    const effectiveType = connection?.effectiveType;
+    let stabilityDelay = 200;
+    
+    if (effectiveType === 'slow-2g') {
+      stabilityDelay = 500;
+    } else if (effectiveType === '2g') {
+      stabilityDelay = 400;
+    } else if (effectiveType === '3g') {
+      stabilityDelay = 300;
+    }
+    
+    await new Promise(resolve => setTimeout(resolve, stabilityDelay));
     
     // Дополнительная проверка сети
     const connectionType = (navigator as any)?.connection?.effectiveType;

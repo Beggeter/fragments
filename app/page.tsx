@@ -21,7 +21,9 @@ import PieceReturnAnimation from "../components/board/PieceReturnAnimation";
 import TestStarsPayment from "../components/TestStarsPayment";
 import TestInvoiceSystem from "../components/TestInvoiceSystem";
 import InvoiceSupportInfo from "../components/InvoiceSupportInfo";
+import NetworkStatus from "../components/NetworkStatus";
 import { initializeTelegramWebApp, isLaunchedInTelegram, safeLocalStorage } from "@/lib/utils/telegramSDK";
+import { preloadCriticalResources, getConnectionQuality } from "@/lib/utils/resourceCache";
 
 type Screen =
   | "admin login"
@@ -154,6 +156,20 @@ const HomePage: React.FC = () => {
     const initializeApp = async () => {
       console.log('🚀 Starting app initialization...');
       
+      // ✅ Запускаем предзагрузку критичных ресурсов сразу
+      const connectionQuality = getConnectionQuality();
+      console.log(`📶 Connection quality detected: ${connectionQuality}`);
+      
+      if (connectionQuality !== 'slow') {
+        // Для быстрых соединений запускаем предзагрузку немедленно
+        preloadCriticalResources();
+      } else {
+        // Для медленных соединений задерживаем предзагрузку
+        setTimeout(() => {
+          preloadCriticalResources();
+        }, 2000);
+      }
+      
       try {
         // Инициализируем TMA SDK (новый @telegram-apps/sdk)
         await init();
@@ -172,7 +188,7 @@ const HomePage: React.FC = () => {
         const isSlowConnection = effectiveType && ['slow-2g', '2g', '3g'].includes(effectiveType);
         
         // Адаптивный таймаут: больше времени для медленных соединений
-        const timeoutMs = isSlowConnection ? 15000 : 10000;
+        const timeoutMs = isSlowConnection ? 20000 : 12000; // Увеличили таймауты
         console.log(`📶 Connection type: ${effectiveType || 'unknown'}, timeout: ${timeoutMs}ms`);
         
         const initPromise = initializeTelegramWebApp();
@@ -251,8 +267,12 @@ const HomePage: React.FC = () => {
                   loginUser(data.user, data.sessionToken);
                   setAutoAuthCompleted(true);
                   
-                  // ✅ Дополнительная задержка для стабилизации состояния
-                  await new Promise(resolve => setTimeout(resolve, 300));
+                  // ✅ Дополнительная задержка для стабилизации состояния на слабом интернете
+                  const connection = (navigator as any)?.connection;
+                  const isSlowConnection = connection?.effectiveType && ['slow-2g', '2g', '3g'].includes(connection.effectiveType);
+                  const stabilityDelay = isSlowConnection ? 800 : 300;
+                  
+                  await new Promise(resolve => setTimeout(resolve, stabilityDelay));
                   setCurrentScreen("main menu");
                   setIsInitialized(true);
                   return;
@@ -830,6 +850,9 @@ const HomePage: React.FC = () => {
 
       {/* Тестовый компонент для Stars API (только в dev режиме) */}
       {/* <TestStarsPayment /> */}
+      
+      {/* Компонент для отображения состояния сети */}
+      <NetworkStatus />
     </div>
   );
 };

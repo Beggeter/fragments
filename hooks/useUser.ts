@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { safeLocalStorage } from '@/lib/utils/telegramSDK';
+import { cachedFetch, resourceCache } from '@/lib/utils/resourceCache';
 
 interface User {
   id: number;
@@ -143,31 +144,54 @@ export const useUser = () => {
 
   const refreshUserData = async (telegramId: number, sessionToken: string) => {
     try {
-      const res = await fetch(`/api/users/${telegramId}`, {
+      // ✅ Добавляем таймаут для запросов на медленных соединениях
+      const connection = (navigator as any)?.connection;
+      const isSlowConnection = connection?.effectiveType && ['slow-2g', '2g', '3g'].includes(connection.effectiveType);
+      const timeoutMs = isSlowConnection ? 15000 : 8000;
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      
+      // ✅ Используем кэшированный запрос для лучшей производительности
+      const userData = await cachedFetch<User>(`/api/users/${telegramId}`, {
         headers: {
           'Authorization': `Bearer ${sessionToken}`
-        }
+        },
+        signal: controller.signal
+      }, 60000); // Кэшируем на 1 минуту
+      
+      clearTimeout(timeoutId);
+      
+      // console.log("Fresh user data loaded from server:", userData);
+      
+      // Обновляем localStorage БЕЗ currency - баланс всегда с сервера
+      const { currency, ...userDataForStorage } = userData;
+      safeLocalStorage.setItem('userData', JSON.stringify(userDataForStorage));
+      
+      setUserState({
+        user: userData,
+        sessionToken,
+        isLoading: false,
+        isAuthenticated: true,
       });
-      if (res.ok) {
-        const freshUser = await res.json();
-        // console.log("Fresh user data loaded from server:", freshUser);
-        
-        // Обновляем localStorage БЕЗ currency - баланс всегда с сервера
-        const { currency, ...userDataForStorage } = freshUser;
-        safeLocalStorage.setItem('userData', JSON.stringify(userDataForStorage));
-        
-        setUserState({
-          user: freshUser,
-          sessionToken,
-          isLoading: false,
-          isAuthenticated: true,
-        });
-      } else {
-        // console.error('Failed to refresh user data');
-        setUserState(prev => ({ ...prev, isLoading: false }));
-      }
     } catch (error) {
       // console.error('Error refreshing user data:', error);
+      // ✅ Даже при ошибке сети показываем данные из localStorage если они есть
+      const userData = safeLocalStorage.getItem('userData');
+      if (userData) {
+        try {
+          const user = JSON.parse(userData);
+          setUserState({
+            user,
+            sessionToken,
+            isLoading: false,
+            isAuthenticated: true,
+          });
+          return;
+        } catch (parseError) {
+          // Ignore parse error and continue with error state
+        }
+      }
       setUserState(prev => ({ ...prev, isLoading: false }));
     }
   };

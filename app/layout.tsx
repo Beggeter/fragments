@@ -65,6 +65,12 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         
+        {/* DNS prefetch для внешних ресурсов */}
+        <link rel="dns-prefetch" href="https://telegram.org" />
+        
+        {/* Resource hints для оптимизации загрузки */}
+        <meta httpEquiv="x-dns-prefetch-control" content="on" />
+        
         {/* Telegram Web App Script - оптимизированная загрузка для мобильных сетей */}
         <Script
           src="https://telegram.org/js/telegram-web-app.js"
