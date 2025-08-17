@@ -22,8 +22,10 @@ import TestStarsPayment from "../components/TestStarsPayment";
 import TestInvoiceSystem from "../components/TestInvoiceSystem";
 import InvoiceSupportInfo from "../components/InvoiceSupportInfo";
 import NetworkStatus from "../components/NetworkStatus";
+import EmergencyRecoveryButton from "../components/EmergencyRecoveryButton";
 import { initializeTelegramWebApp, isLaunchedInTelegram, safeLocalStorage } from "@/lib/utils/telegramSDK";
 import { preloadCriticalResources, getConnectionQuality } from "@/lib/utils/resourceCache";
+import { emergencyRecovery, checkEmergencyReload } from "@/lib/utils/emergencyRecovery";
 
 type Screen =
   | "admin login"
@@ -155,6 +157,12 @@ const HomePage: React.FC = () => {
   useEffect(() => {
     const initializeApp = async () => {
       console.log('🚀 Starting app initialization...');
+      
+      // ✅ Проверяем, была ли экстренная перезагрузка
+      if (checkEmergencyReload()) {
+        console.log('🚑 Emergency reload detected, resetting recovery attempts');
+        emergencyRecovery.resetRecoveryAttempts();
+      }
       
       // ✅ Запускаем предзагрузку критичных ресурсов сразу
       const connectionQuality = getConnectionQuality();
@@ -465,21 +473,39 @@ const HomePage: React.FC = () => {
     console.log('🎮 Starting Classic mode...');
     setIsTransitioning(true);
     
-    // ✅ Подготовка критических ресурсов перед переходом
+    // ✅ Принудительная очистка всех состояний перед переходом
     try {
-      // Небольшая задержка для UI feedback + проверка готовности системы
-      await new Promise(resolve => setTimeout(resolve, 150));
+      // Сброс состояния игры перед переходом
+      const { resetGame } = useGameStore.getState();
+      resetGame();
+      
+      // Очистка потенциальных блокировок UI
+      document.body.style.pointerEvents = '';
       
       // Проверка готовности хранилища
       if (typeof window !== 'undefined' && !window.localStorage) {
         console.warn('⚠️ LocalStorage not available, using fallback');
       }
       
+      // ✅ Ступенчатая инициализация для предотвращения блокировки
+      // Сначала переключаем экран
       setCurrentScreen("classic mode");
+      
+      // Даем время браузеру отрендерить экран
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      console.log('✅ Classic mode screen set, initializing game components...');
+      
     } catch (error) {
       console.error('❌ Failed to start Classic mode:', error);
+      // При ошибке возвращаемся в главное меню
+      setCurrentScreen("main menu");
     } finally {
-      setIsTransitioning(false);
+      // Убираем флаг перехода с небольшой задержкой
+      setTimeout(() => {
+        setIsTransitioning(false);
+        console.log('🏁 Classic mode transition completed');
+      }, 200);
     }
   }, [isTransitioning, isInitialized]);
 
@@ -518,6 +544,26 @@ const HomePage: React.FC = () => {
       return;
     }
     console.log('🏠 Going to main menu...');
+    
+    // ✅ Принудительная очистка состояния при выходе из игры
+    try {
+      // Очистка потенциальных блокировок UI
+      document.body.style.pointerEvents = '';
+      
+      // Очистка всех таймеров и интервалов (если есть)
+      const highestTimeoutId = setTimeout(() => {}, 0);
+      for (let i = 0; i < highestTimeoutId; i++) {
+        clearTimeout(i);
+      }
+      
+      // Сброс игрового состояния
+      const { resetGame } = useGameStore.getState();
+      resetGame();
+      
+    } catch (error) {
+      console.warn('⚠️ Error during cleanup:', error);
+    }
+    
     setCurrentScreen("main menu");
   }, [isTransitioning]);
 
@@ -853,6 +899,9 @@ const HomePage: React.FC = () => {
       
       {/* Компонент для отображения состояния сети */}
       <NetworkStatus />
+      
+      {/* Кнопка экстренного восстановления */}
+      <EmergencyRecoveryButton showAfterDelay={8000} />
     </div>
   );
 };

@@ -408,6 +408,9 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   onPieceReturnAnimation,
   gameMode = 'classic',
 }) => {
+  // ✅ Состояние готовности компонента для предотвращения блокировки UI
+  const [isComponentReady, setIsComponentReady] = useState(false);
+  const [initializationStep, setInitializationStep] = useState(0);
   const {
     board,
     currentPieces,
@@ -441,6 +444,27 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   } = useDnDLogic();
 
   const { t } = useTranslation();
+
+  // ✅ Показываем экран загрузки пока компонент не готов
+  if (!isComponentReady) {
+    return (
+      <div className="min-h-screen bg-[var(--game-background)] flex items-center justify-center">
+        <div className="text-center text-white">
+          <div className="text-lg mb-4">Загрузка игры...</div>
+          <div className="flex items-center justify-center gap-2">
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse delay-100"></div>
+            <div className="w-2 h-2 bg-white rounded-full animate-pulse delay-200"></div>
+          </div>
+          {initializationStep > 0 && (
+            <div className="text-sm text-gray-400 mt-4">
+              Шаг {initializationStep} из 3
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   const [clearingCells, setClearingCells] = useState<boolean[][]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -840,15 +864,50 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     handleRestartComplete,
   ]);
 
-  // Init workers once
+  // ✅ Поэтапная инициализация для предотвращения блокировки UI
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    try {
-      contoursWorkerRef.current = new Worker(new URL('../lib/workers/contours.worker.ts', import.meta.url));
-    } catch {}
-    try {
-      evaluatorWorkerRef.current = new Worker(new URL('../lib/workers/evaluator.worker.ts', import.meta.url));
-    } catch {}
+    const initializeGameBoard = async () => {
+      console.log('🔧 Starting GameBoard initialization...');
+      
+      // Шаг 1: Базовая инициализация
+      setInitializationStep(1);
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Шаг 2: Инициализация воркеров (только для быстрых соединений)
+      if (typeof window !== 'undefined') {
+        const connection = (navigator as any)?.connection;
+        const isSlowConnection = connection?.effectiveType && ['slow-2g', '2g'].includes(connection.effectiveType);
+        
+        if (!isSlowConnection) {
+          setInitializationStep(2);
+          try {
+            contoursWorkerRef.current = new Worker(new URL('../lib/workers/contours.worker.ts', import.meta.url));
+          } catch (error) {
+            console.warn('Failed to initialize contours worker:', error);
+          }
+          
+          await new Promise(resolve => setTimeout(resolve, 50));
+          
+          try {
+            evaluatorWorkerRef.current = new Worker(new URL('../lib/workers/evaluator.worker.ts', import.meta.url));
+          } catch (error) {
+            console.warn('Failed to initialize evaluator worker:', error);
+          }
+        } else {
+          console.log('📶 Slow connection detected, skipping workers initialization');
+        }
+      }
+      
+      // Шаг 3: Финальная готовность
+      setInitializationStep(3);
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      setIsComponentReady(true);
+      console.log('✅ GameBoard initialization completed');
+    };
+    
+    initializeGameBoard();
+    
     return () => {
       contoursWorkerRef.current?.terminate?.();
       evaluatorWorkerRef.current?.terminate?.();
