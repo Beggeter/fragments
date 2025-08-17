@@ -64,8 +64,8 @@ const HomePage: React.FC = () => {
 
   // Добавляем состояние для отслеживания намеренного перезапуска
   const [isIntentionalRestart, setIsIntentionalRestart] = useState(false);
-  // ✅ Добавляем защиту от множественных кликов
-  const [isTransitioning, setIsTransitioning] = useState(false);
+  // Вместо isTransitioning и isInitialized:
+  const [appState, setAppState] = useState<'idle' | 'transitioning' | 'error' | 'loading'>('loading');
 
   // Создаем стабильную функцию для завершения перезапуска
   const handleRestartComplete = useCallback(() => {
@@ -151,6 +151,7 @@ const HomePage: React.FC = () => {
 
   // Инициализация: определяем контекст и показываем соответствующий экран
   useEffect(() => {
+    setAppState('loading');
     const initializeApp = async () => {
       console.log('🚀 Starting app initialization...');
       
@@ -159,6 +160,8 @@ const HomePage: React.FC = () => {
         await init();
       } catch (error) {
         console.warn('Failed to initialize @telegram-apps/sdk:', error);
+        setAppState('error');
+        return;
       }
       
       // ✅ Инициализируем Telegram WebApp с улучшенной обработкой слабого интернета
@@ -188,10 +191,13 @@ const HomePage: React.FC = () => {
       } catch (error) {
         console.error('❌ Error during Telegram initialization:', error);
         telegramSuccess = false;
+        setAppState('error');
+        return;
       }
       
       // Проверяем, что мы на клиенте
       if (typeof window === "undefined") {
+        setAppState('error');
         return;
       }
 
@@ -200,6 +206,7 @@ const HomePage: React.FC = () => {
       const existingAdminToken = safeLocalStorage.getItem("adminToken");
 
       if (existingSessionToken || existingAdminToken) {
+        setAppState('idle');
         setIsInitialized(true);
         return;
       }
@@ -254,25 +261,34 @@ const HomePage: React.FC = () => {
                   // ✅ Дополнительная задержка для стабилизации состояния
                   await new Promise(resolve => setTimeout(resolve, 300));
                   setCurrentScreen("main menu");
+                  setAppState('idle');
                   setIsInitialized(true);
                   return;
                 } else {
                   console.error('❌ Auth server error:', data);
+                  setAppState('error');
+                  return;
                 }
               } else {
                 console.warn('⚠️ No hash found in Telegram initData');
+                setAppState('error');
+                return;
               }
             } catch (error) {
               console.error('Auto-auth failed:', error);
+              setAppState('error');
+              return;
             }
           }
         }
 
         // Если автоматическая авторизация не удалась, показываем Telegram login
         setCurrentScreen("telegram login");
+        setAppState('idle');
       } else {
         // В браузере: сразу показываем админ-логин
         setCurrentScreen("admin login");
+        setAppState('idle');
       }
 
       setIsInitialized(true);
@@ -435,19 +451,22 @@ const HomePage: React.FC = () => {
     }
   };
 
+  // Кнопки активны только если appState === 'idle'
+  const isMenuButtonActive = appState === 'idle';
+
   const handleStartClassic = useCallback(async () => {
-    // ✅ Защита от множественных кликов и проверка инициализации
-    if (isTransitioning || !isInitialized) {
-      console.warn('🚫 Classic mode blocked: transitioning=', isTransitioning, 'initialized=', isInitialized);
-      return;
-    }
-    
-    console.log('🎮 Starting Classic mode...');
-    setIsTransitioning(true);
-    
-    // ✅ Подготовка критических ресурсов перед переходом
+    if (appState !== 'idle') return;
+    setAppState('transitioning');
     try {
-      // Небольшая задержка для UI feedback + проверка готовности системы
+      // ✅ Защита от множественных кликов и проверка инициализации
+      if (appState !== 'idle') {
+        console.warn('🚫 Classic mode blocked: transitioning=', appState, 'initialized=', isInitialized);
+        return;
+      }
+      
+      console.log('🎮 Starting Classic mode...');
+      
+      // ✅ Подготовка критических ресурсов перед переходом
       await new Promise(resolve => setTimeout(resolve, 150));
       
       // Проверка готовности хранилища
@@ -456,26 +475,26 @@ const HomePage: React.FC = () => {
       }
       
       setCurrentScreen("classic mode");
+      setAppState('idle');
     } catch (error) {
       console.error('❌ Failed to start Classic mode:', error);
-    } finally {
-      setIsTransitioning(false);
+      setAppState('error');
     }
-  }, [isTransitioning, isInitialized]);
+  }, [appState]);
 
   const handleStartZen = useCallback(async () => {
-    // ✅ Защита от множественных кликов и проверка инициализации
-    if (isTransitioning || !isInitialized) {
-      console.warn('🚫 Zen mode blocked: transitioning=', isTransitioning, 'initialized=', isInitialized);
-      return;
-    }
-    
-    console.log('🧘 Starting Zen mode...');
-    setIsTransitioning(true);
-    
-    // ✅ Подготовка критических ресурсов перед переходом
+    if (appState !== 'idle') return;
+    setAppState('transitioning');
     try {
-      // Небольшая задержка для UI feedback + проверка готовности системы
+      // ✅ Защита от множественных кликов и проверка инициализации
+      if (appState !== 'idle') {
+        console.warn('🚫 Zen mode blocked: transitioning=', appState, 'initialized=', isInitialized);
+        return;
+      }
+      
+      console.log('🧘 Starting Zen mode...');
+      
+      // ✅ Подготовка критических ресурсов перед переходом
       await new Promise(resolve => setTimeout(resolve, 150));
       
       // Проверка готовности хранилища
@@ -484,22 +503,20 @@ const HomePage: React.FC = () => {
       }
       
       setCurrentScreen("zen mode");
+      setAppState('idle');
     } catch (error) {
       console.error('❌ Failed to start Zen mode:', error);
-    } finally {
-      setIsTransitioning(false);
+      setAppState('error');
     }
-  }, [isTransitioning, isInitialized]);
+  }, [appState]);
 
   const handleGoToMenu = useCallback(() => {
-    // ✅ Защита от одновременных переходов
-    if (isTransitioning) {
-      console.warn('🚫 Menu transition blocked: already transitioning');
-      return;
-    }
+    if (appState !== 'idle') return;
+    setAppState('transitioning');
     console.log('🏠 Going to main menu...');
     setCurrentScreen("main menu");
-  }, [isTransitioning]);
+    setAppState('idle');
+  }, [appState]);
 
   const handleGameOver = async () => {
     try {
@@ -762,7 +779,7 @@ const HomePage: React.FC = () => {
           onStartZen={handleStartZen}
           onOpenShop={handleOpenShop}
           onOpenLeaderboard={handleOpenLeaderboard}
-          isTransitioning={isTransitioning}
+          isTransitioning={appState !== 'idle'}
           isInitialized={isInitialized}
         />
       )}
