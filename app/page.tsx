@@ -18,6 +18,7 @@ import ShopScreen from "../components/ShopScreen";
 import LeaderboardScreen from "../components/LeaderboardScreen";
 import PieceReturnAnimation from "../components/board/PieceReturnAnimation";
 import { initializeTelegramWebApp, isLaunchedInTelegram, safeLocalStorage } from "@/lib/utils/telegramSDK";
+import { ToastOverlay, ToastMessage } from "@/components/ToastOverlay";
 
 type Screen =
   | "admin login"
@@ -62,6 +63,16 @@ const HomePage: React.FC = () => {
   const [isIntentionalRestart, setIsIntentionalRestart] = useState(false);
   // ✅ Добавляем защиту от множественных кликов
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [toastMessages, setToastMessages] = useState<ToastMessage[]>([]);
+  const showToast = useCallback((text: string, type?: "info" | "error" | "success") => {
+    setToastMessages(msgs => [
+      ...msgs,
+      { id: Date.now() + Math.random(), text, type }
+    ]);
+  }, []);
+  const removeToast = useCallback((id: number) => {
+    setToastMessages(msgs => msgs.filter(m => m.id !== id));
+  }, []);
 
   // Создаем стабильную функцию для завершения перезапуска
   const handleRestartComplete = useCallback(() => {
@@ -221,6 +232,10 @@ const HomePage: React.FC = () => {
   }, []); // Запускаем только один раз при монтировании
 
   useEffect(() => {
+    showToast("App mounted", "info");
+  }, [showToast]);
+
+  useEffect(() => {
     const preventContextMenu = (e: MouseEvent | TouchEvent) => {
       e.preventDefault(); // Отключить контекстное меню
     };
@@ -268,7 +283,12 @@ const HomePage: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (!resourcesLoaded) showToast("Загрузка ресурсов...", "info");
+  }, [resourcesLoaded, showToast]);
+
+  useEffect(() => {
     if (showSpinnerAnimation) {
+      showToast("Анимация спиннера", "info");
       document.body.classList.add("screen-shake");
       const shakeTimeout = setTimeout(() => {
         document.body.classList.remove("screen-shake");
@@ -597,117 +617,120 @@ const HomePage: React.FC = () => {
   }
 
   return (
-    <div
-      className={`${
-        currentScreen === "classic mode" || currentScreen === "zen mode"
-          ? "bg-[var(--game-background)]"
-          : "menu-bg"
-      } min-h-screen `}
-      style={{
-        paddingTop: "var(--tg-content-safe-area-inset-top)",
-        overflow: "hidden",
-      }}
-    >
+    <>
+      <ToastOverlay messages={toastMessages} onRemove={removeToast} />
+      <div
+        className={`${
+          currentScreen === "classic mode" || currentScreen === "zen mode"
+            ? "bg-[var(--game-background)]"
+            : "menu-bg"
+        } min-h-screen `}
+        style={{
+          paddingTop: "var(--tg-content-safe-area-inset-top)",
+          overflow: "hidden",
+        }}
+      >
 
-      {/* Piece Return Animation */}
-      {pieceReturnAnimation && boardRect && (
-        <PieceReturnAnimation
-          piece={pieceReturnAnimation.piece}
-          fromPosition={pieceReturnAnimation.fromPosition}
-          targetRect={pieceReturnAnimation.targetRect}
-          cellSize={pieceReturnAnimation.cellSize}
-          gap={pieceReturnAnimation.gap}
-          onComplete={() => setPieceReturnAnimation(null)}
-          boardRect={boardRect}
-        />
-      )}
+        {/* Piece Return Animation */}
+        {pieceReturnAnimation && boardRect && (
+          <PieceReturnAnimation
+            piece={pieceReturnAnimation.piece}
+            fromPosition={pieceReturnAnimation.fromPosition}
+            targetRect={pieceReturnAnimation.targetRect}
+            cellSize={pieceReturnAnimation.cellSize}
+            gap={pieceReturnAnimation.gap}
+            onComplete={() => setPieceReturnAnimation(null)}
+            boardRect={boardRect}
+          />
+        )}
 
-      {currentScreen === "admin login" && (
-        <AdminLogin onLoginSuccess={handleAdminLoginSuccess} />
-      )}
+        {currentScreen === "admin login" && (
+          <AdminLogin onLoginSuccess={handleAdminLoginSuccess} />
+        )}
 
-      {currentScreen === "telegram login" && !autoAuthCompleted && (
-        <TelegramLogin
-          onLoginSuccess={handleTelegramLoginSuccess}
-          seamless={isTelegramAutoAuth}
-        />
-      )}
+        {currentScreen === "telegram login" && !autoAuthCompleted && (
+          <TelegramLogin
+            onLoginSuccess={handleTelegramLoginSuccess}
+            seamless={isTelegramAutoAuth}
+          />
+        )}
 
-      {currentScreen === "main menu" && (
-        <MainMenu
-          onStartClassic={handleStartClassic}
-          onStartZen={handleStartZen}
-          onOpenShop={handleOpenShop}
-          onOpenLeaderboard={handleOpenLeaderboard}
-          isTransitioning={isTransitioning}
-          isInitialized={isInitialized}
-        />
-      )}
+        {currentScreen === "main menu" && (
+          <MainMenu
+            onStartClassic={handleStartClassic}
+            onStartZen={handleStartZen}
+            onOpenShop={handleOpenShop}
+            onOpenLeaderboard={handleOpenLeaderboard}
+            isTransitioning={isTransitioning}
+            isInitialized={isInitialized}
+          />
+        )}
 
-      {currentScreen === "classic mode" && (
-        <GameBoard
-          onExitGame={handleGoToMenu}
-          onScoreUpdate={(newScore) => setScore(newScore)}
-          onGameOver={handleGameOver}
-          onBoardRectChange={setBoardRect}
-          clearedLine={clearedLine}
-          onGoHome={handleGoToMenu}
-          isIntentionalRestart={isIntentionalRestart}
-          onRestartComplete={handleRestartComplete}
-          onOpenShop={handleOpenShop}
-          onPieceReturnAnimation={handlePieceReturnAnimation}
-          gameMode="classic"
-        />
-      )}
+        {currentScreen === "classic mode" && (
+          <GameBoard
+            onExitGame={handleGoToMenu}
+            onScoreUpdate={(newScore) => setScore(newScore)}
+            onGameOver={handleGameOver}
+            onBoardRectChange={setBoardRect}
+            clearedLine={clearedLine}
+            onGoHome={handleGoToMenu}
+            isIntentionalRestart={isIntentionalRestart}
+            onRestartComplete={handleRestartComplete}
+            onOpenShop={handleOpenShop}
+            onPieceReturnAnimation={handlePieceReturnAnimation}
+            gameMode="classic"
+          />
+        )}
 
-      {currentScreen === "zen mode" && (
-        <ZenGameBoard
-          onBackToMenu={handleGoToMenu}
-          onOpenShop={handleOpenShop}
-        />
-      )}
+        {currentScreen === "zen mode" && (
+          <ZenGameBoard
+            onBackToMenu={handleGoToMenu}
+            onOpenShop={handleOpenShop}
+          />
+        )}
 
-      {currentScreen === "gameover" && (
-        <GameOver
-          onPlayAgain={() => {
-            setIsIntentionalRestart(true); // Устанавливаем флаг перед сбросом
-            // Возвращаемся к предыдущему экрану (classic или zen)
-            const previousScreen = shopReturnTo || "classic mode";
-            setCurrentScreen(previousScreen);
-            useGameStore.getState().resetGame();
-          }}
-          onBackToMenu={() => {
-            setIsIntentionalRestart(true); // Устанавливаем флаг перед сбросом
-            useGameStore.getState().resetGame();
-            setCurrentScreen("main menu");
-          }}
-          gameMode={shopReturnTo === "zen mode" ? "zen" : "classic"}
-        />
-      )}
+        {currentScreen === "gameover" && (
+          <GameOver
+            onPlayAgain={() => {
+              setIsIntentionalRestart(true); // Устанавливаем флаг перед сбросом
+              // Возвращаемся к предыдущему экрану (classic или zen)
+              const previousScreen = shopReturnTo || "classic mode";
+              setCurrentScreen(previousScreen);
+              useGameStore.getState().resetGame();
+            }}
+            onBackToMenu={() => {
+              setIsIntentionalRestart(true); // Устанавливаем флаг перед сбросом
+              useGameStore.getState().resetGame();
+              setCurrentScreen("main menu");
+            }}
+            gameMode={shopReturnTo === "zen mode" ? "zen" : "classic"}
+          />
+        )}
 
-      {currentScreen === "shop" && (
-        <ShopScreen
-          onBack={handleShopBack}
-          initialTab={
-            shopReturnTo === "zen"
-              ? "zen"
-              : shopReturnTo === "classic mode" || shopReturnTo === "zen mode"
-              ? "boosters"
-              : "shards"
-          }
-        />
-      )}
+        {currentScreen === "shop" && (
+          <ShopScreen
+            onBack={handleShopBack}
+            initialTab={
+              shopReturnTo === "zen"
+                ? "zen"
+                : shopReturnTo === "classic mode" || shopReturnTo === "zen mode"
+                ? "boosters"
+                : "shards"
+            }
+          />
+        )}
 
-      {currentScreen === "leaderboard" && (
-        <LeaderboardScreen onBack={handleLeaderboardBack} />
-      )}
+        {currentScreen === "leaderboard" && (
+          <LeaderboardScreen onBack={handleLeaderboardBack} />
+        )}
 
-      {/* Fallback для отладки */}
-      {!currentScreen && <LoadingScreen />}
+        {/* Fallback для отладки */}
+        {!currentScreen && <LoadingScreen />}
 
-      {/* Тестовый компонент для Stars API (только в dev режиме) */}
-      {/* <TestStarsPayment /> */}
-    </div>
+        {/* Тестовый компонент для Stars API (только в dev режиме) */}
+        {/* <TestStarsPayment /> */}
+      </div>
+    </>
   );
 };
 
