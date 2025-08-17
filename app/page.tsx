@@ -369,15 +369,24 @@ const HomePage: React.FC = () => {
     }
   };
 
+  // 1. Обертка для setCurrentScreen с логом
+  const setCurrentScreenWithToast = useCallback((screen: Screen | "") => {
+    showToast(`setCurrentScreen: ${screen}`, 'info');
+    setCurrentScreen(screen);
+  }, [showToast]);
+
+  // 2. В handleStartClassic и других переходах используем setCurrentScreenWithToast
   const handleStartClassic = async () => {
+    showToast('Клик по Classic', 'info');
     // ✅ Защита от множественных кликов и проверка инициализации
     if (isTransitioning || !isInitialized) {
-      console.warn('🚫 Classic mode blocked: transitioning=', isTransitioning, 'initialized=', isInitialized);
+      showToast(`Блокировка: isTransitioning=${isTransitioning}, isInitialized=${isInitialized}`, 'error');
       return;
     }
     
     console.log('🎮 Starting Classic mode...');
     setIsTransitioning(true);
+    showToast('isTransitioning=true', 'info');
     
     try {
       // Небольшая задержка для UI feedback + проверка готовности системы
@@ -388,11 +397,13 @@ const HomePage: React.FC = () => {
         console.warn('⚠️ LocalStorage not available, using fallback');
       }
       
-      setCurrentScreen("classic mode");
+      setCurrentScreenWithToast("classic mode");
+      showToast('Экран classic mode', 'success');
     } catch (error) {
-      console.error('❌ Failed to start Classic mode:', error);
+      showToast('Ошибка в onStartClassic: ' + (error?.message || error), 'error');
     } finally {
       setIsTransitioning(false);
+      showToast('isTransitioning=false', 'info');
     }
   };
 
@@ -416,7 +427,7 @@ const HomePage: React.FC = () => {
         console.warn('⚠️ LocalStorage not available, using fallback');
       }
       
-      setCurrentScreen("zen mode");
+      setCurrentScreenWithToast("zen mode");
     } catch (error) {
       console.error('❌ Failed to start Zen mode:', error);
     } finally {
@@ -431,7 +442,7 @@ const HomePage: React.FC = () => {
       return;
     }
     console.log('🏠 Going to main menu...');
-    setCurrentScreen("main menu");
+    setCurrentScreenWithToast("main menu");
   }, [isTransitioning]);
 
   const handleGameOver = async () => {
@@ -505,7 +516,7 @@ const HomePage: React.FC = () => {
     if (currentScreen === "classic mode" || currentScreen === "zen mode") {
       setShopReturnTo(currentScreen);
     }
-    setCurrentScreen("gameover");
+    setCurrentScreenWithToast("gameover");
   };
 
   const handleResourcesLoaded = () => {
@@ -525,26 +536,26 @@ const HomePage: React.FC = () => {
       if (initialTab === "zen") {
         setShopReturnTo("zen");
       }
-      setCurrentScreen("shop");
+      setCurrentScreenWithToast("shop");
     },
     [currentScreen]
   );
 
   const handleShopBack = useCallback(() => {
     if (shopReturnTo === "classic mode" || shopReturnTo === "zen mode") {
-      setCurrentScreen(shopReturnTo);
+      setCurrentScreenWithToast(shopReturnTo);
     } else {
-      setCurrentScreen("main menu");
+      setCurrentScreenWithToast("main menu");
     }
     setShopReturnTo(null);
   }, [shopReturnTo]);
 
   const handleOpenLeaderboard = useCallback(() => {
-    setCurrentScreen("leaderboard");
+    setCurrentScreenWithToast("leaderboard");
   }, []);
 
   const handleLeaderboardBack = useCallback(() => {
-    setCurrentScreen("main menu");
+    setCurrentScreenWithToast("main menu");
   }, []);
 
   // Колбэк для запуска анимации возвращения фигуры
@@ -560,6 +571,22 @@ const HomePage: React.FC = () => {
     },
     []
   );
+
+  // 3. showToast при маунте GameBoard
+  const GameBoardWithToast = (props: any) => {
+    useEffect(() => {
+      showToast('GameBoard смонтирован', 'success');
+    }, []);
+    return <GameBoard {...props} />;
+  };
+
+  // 4. showToast при ошибках чтения токена в useUser (обернуть useUser)
+  // (Псевдокод, т.к. useUser импортируется, но можно добавить showToast в useEffect в page.tsx)
+  useEffect(() => {
+    if (!isAuthenticated && !isAdmin && !userLoading && isInitialized) {
+      showToast('Пользователь не авторизован, возможно проблема с токеном', 'error');
+    }
+  }, [isAuthenticated, isAdmin, userLoading, isInitialized, showToast]);
 
   if (!resourcesLoaded) {
     const allColors: BlockColor[] = [
@@ -631,18 +658,27 @@ const HomePage: React.FC = () => {
         )}
 
         {currentScreen === "main menu" && (
-          <MainMenu
-            onStartClassic={handleStartClassic}
-            onStartZen={handleStartZen}
-            onOpenShop={handleOpenShop}
-            onOpenLeaderboard={handleOpenLeaderboard}
-            isTransitioning={isTransitioning}
-            isInitialized={isInitialized}
-          />
+          <>
+            <MainMenu
+              onStartClassic={handleStartClassic}
+              onStartZen={handleStartZen}
+              onOpenShop={handleOpenShop}
+              onOpenLeaderboard={handleOpenLeaderboard}
+              isTransitioning={isTransitioning}
+              isInitialized={isInitialized}
+            />
+            {/* Кнопка сброса localStorage только для отладки */}
+            <button
+              style={{ position: 'fixed', top: 8, left: 8, zIndex: 9999, background: '#222', color: '#fff', padding: 8, borderRadius: 8, opacity: 0.7 }}
+              onClick={handleDebugResetStorage}
+            >
+              Сбросить localStorage
+            </button>
+          </>
         )}
 
         {currentScreen === "classic mode" && (
-          <GameBoard
+          <GameBoardWithToast
             onExitGame={handleGoToMenu}
             onScoreUpdate={(newScore) => setScore(newScore)}
             onGameOver={handleGameOver}
@@ -670,13 +706,13 @@ const HomePage: React.FC = () => {
               setIsIntentionalRestart(true); // Устанавливаем флаг перед сбросом
               // Возвращаемся к предыдущему экрану (classic или zen)
               const previousScreen = shopReturnTo || "classic mode";
-              setCurrentScreen(previousScreen);
+              setCurrentScreenWithToast(previousScreen);
               useGameStore.getState().resetGame();
             }}
             onBackToMenu={() => {
               setIsIntentionalRestart(true); // Устанавливаем флаг перед сбросом
               useGameStore.getState().resetGame();
-              setCurrentScreen("main menu");
+              setCurrentScreenWithToast("main menu");
             }}
             gameMode={shopReturnTo === "zen mode" ? "zen" : "classic"}
           />
