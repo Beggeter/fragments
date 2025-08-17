@@ -125,16 +125,29 @@ class EmergencyRecovery {
   }
 
   private resetEventHandlers() {
-    // Очищаем зависшие таймеры
-    const highestTimeoutId = setTimeout(() => {}, 0);
-    for (let i = 0; i < highestTimeoutId; i++) {
-      clearTimeout(i);
-    }
+    // Очищаем зависшие таймеры (только в браузерной среде)
+    if (typeof window !== 'undefined') {
+      const testTimeout = setTimeout(() => {}, 0);
+      clearTimeout(testTimeout);
+      
+      // В браузере ID таймеров - числа, очищаем последние N таймеров
+      if (typeof testTimeout === 'number') {
+        const maxId = Math.min(testTimeout, 1000); // Ограничиваем для безопасности
+        for (let i = Math.max(0, testTimeout - 100); i <= maxId; i++) {
+          clearTimeout(i);
+        }
+      }
 
-    // Очищаем интервалы
-    const highestIntervalId = setInterval(() => {}, 0);
-    for (let i = 0; i < highestIntervalId; i++) {
-      clearInterval(i);
+      // Аналогично для интервалов
+      const testInterval = setInterval(() => {}, 0);
+      clearInterval(testInterval);
+      
+      if (typeof testInterval === 'number') {
+        const maxId = Math.min(testInterval, 1000);
+        for (let i = Math.max(0, testInterval - 100); i <= maxId; i++) {
+          clearInterval(i);
+        }
+      }
     }
   }
 

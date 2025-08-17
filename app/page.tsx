@@ -551,9 +551,15 @@ const HomePage: React.FC = () => {
       document.body.style.pointerEvents = '';
       
       // Очистка всех таймеров и интервалов (если есть)
-      const highestTimeoutId = setTimeout(() => {}, 0);
-      for (let i = 0; i < highestTimeoutId; i++) {
-        clearTimeout(i);
+      // В браузере setTimeout возвращает число, в Node.js - объект
+      const testTimeout = setTimeout(() => {}, 0);
+      clearTimeout(testTimeout);
+      
+      // Очищаем возможные зависшие таймеры (только для браузера)
+      if (typeof testTimeout === 'number') {
+        for (let i = 0; i < testTimeout; i++) {
+          clearTimeout(i);
+        }
       }
       
       // Сброс игрового состояния
