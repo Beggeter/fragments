@@ -101,135 +101,109 @@ const HomePage: React.FC = () => {
 
   // Инициализация: определяем контекст и показываем соответствующий экран
   useEffect(() => {
+    showToast("🚀 Старт инициализации приложения", "info");
     const initializeApp = async () => {
-      console.log('🚀 Starting app initialization...');
-      
+      showToast("⏳ Инициализация TMA SDK...", "info");
       try {
-        // Инициализируем TMA SDK (новый @telegram-apps/sdk)
+        showToast("✅ TMA SDK инициализирован", "success");
         await init();
       } catch (error) {
-        console.warn('Failed to initialize @telegram-apps/sdk:', error);
+        showToast("❌ Ошибка инициализации TMA SDK", "error");
       }
-      
-      // ✅ Инициализируем Telegram WebApp с улучшенной обработкой слабого интернета
-      console.log('🔄 Starting Telegram WebApp initialization...');
+      showToast("🔄 Инициализация Telegram WebApp...", "info");
       let telegramSuccess = false;
-      
       try {
-        // Детекция типа соединения для адаптивного таймаута
         const connection = (navigator as any)?.connection;
         const effectiveType = connection?.effectiveType;
         const isSlowConnection = effectiveType && ['slow-2g', '2g', '3g'].includes(effectiveType);
-        
-        // Адаптивный таймаут: больше времени для медленных соединений
         const timeoutMs = isSlowConnection ? 15000 : 10000;
-        console.log(`📶 Connection type: ${effectiveType || 'unknown'}, timeout: ${timeoutMs}ms`);
-        
+        showToast(`📶 Тип соединения: ${effectiveType || 'unknown'}, timeout: ${timeoutMs}мс`, "info");
         const initPromise = initializeTelegramWebApp();
         const timeoutPromise = new Promise<boolean>(resolve => 
           setTimeout(() => {
-            console.warn(`⏰ Telegram initialization timeout (${timeoutMs}ms), continuing with fallback`);
+            showToast(`⏰ Таймаут инициализации Telegram (${timeoutMs}мс), fallback`, "error");
             resolve(false);
           }, timeoutMs)
         );
-        
         telegramSuccess = await Promise.race([initPromise, timeoutPromise]);
-        console.log('📱 Telegram WebApp initialization:', telegramSuccess ? 'success' : 'failed/timeout');
+        showToast(`📱 Telegram WebApp: ${telegramSuccess ? 'успех' : 'неудача/таймаут'}`, telegramSuccess ? "success" : "error");
       } catch (error) {
-        console.error('❌ Error during Telegram initialization:', error);
+        showToast("❌ Ошибка инициализации Telegram WebApp", "error");
         telegramSuccess = false;
       }
-      
-      // Проверяем, что мы на клиенте
       if (typeof window === "undefined") {
+        showToast("⛔ Не клиент", "error");
         return;
       }
-
-      // Проверяем, есть ли уже авторизованный пользователь
       const existingSessionToken = safeLocalStorage.getItem("sessionToken");
       const existingAdminToken = safeLocalStorage.getItem("adminToken");
-
       if (existingSessionToken || existingAdminToken) {
+        showToast("🔑 Найден токен, пропуск авторизации", "success");
         setIsInitialized(true);
         return;
       }
-
-      // Определяем контекст: Telegram WebApp или браузер
       const isInTelegram = isLaunchedInTelegram();
-
+      showToast(`🌐 Контекст: ${isInTelegram ? 'Telegram' : 'Браузер'}`, "info");
       if (isInTelegram) {
-        // В Telegram: пытаемся автоматическую авторизацию
         setIsTelegramAutoAuth(true);
-
         const tg = window.Telegram?.WebApp;
         if (tg) {
-          // ✅ Проверяем готовность Telegram WebApp перед автоавторизацией
           if (!telegramSuccess) {
-            console.warn('⚠️ Telegram WebApp not fully initialized, proceeding with caution');
+            showToast('⚠️ Telegram WebApp не полностью инициализирован', "error");
           }
-          
           const user = tg.initDataUnsafe?.user;
           if (user) {
             try {
-              console.log('🔐 Starting Telegram auto-authentication for user:', user.id);
-              
+              showToast(`🔐 Telegram автоавторизация: ${user.id}`, "info");
               const initData = tg.initData || "";
               const urlParams = new URLSearchParams(initData);
               const hash = urlParams.get("hash");
               const authDate = urlParams.get("auth_date");
-
               if (hash) {
+                showToast("📡 Отправка запроса авторизации...", "info");
                 const authData = {
                   ...user,
                   hash: hash,
                   auth_date: authDate ? parseInt(authDate) : undefined,
                   initData: initData,
                 };
-
-                console.log('📡 Sending auth request to server...');
                 const response = await fetch("/api/auth/telegram", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify(authData),
                 });
-
                 const data = await response.json();
                 if (response.ok) {
-                  console.log('✅ Auto-auth successful, setting up session...');
+                  showToast("✅ Telegram автоавторизация успешна", "success");
                   safeLocalStorage.setItem("sessionToken", data.sessionToken);
                   safeLocalStorage.setItem("userData", JSON.stringify(data.user));
                   loginUser(data.user, data.sessionToken);
                   setAutoAuthCompleted(true);
-                  
-                  // ✅ Дополнительная задержка для стабилизации состояния
                   await new Promise(resolve => setTimeout(resolve, 300));
                   setCurrentScreen("main menu");
                   setIsInitialized(true);
                   return;
                 } else {
-                  console.error('❌ Auth server error:', data);
+                  showToast("❌ Ошибка сервера авторизации", "error");
                 }
               } else {
-                console.warn('⚠️ No hash found in Telegram initData');
+                showToast("⚠️ Нет hash в initData Telegram", "error");
               }
             } catch (error) {
-              console.error('Auto-auth failed:', error);
+              showToast("❌ Ошибка Telegram автоавторизации", "error");
             }
           }
         }
-
-        // Если автоматическая авторизация не удалась, показываем Telegram login
+        showToast("🔑 Telegram login экран", "info");
         setCurrentScreen("telegram login");
       } else {
-        // В браузере: сразу показываем админ-логин
+        showToast("🔑 Admin login экран", "info");
         setCurrentScreen("admin login");
       }
-
       setIsInitialized(true);
     };
-
     initializeApp();
-  }, []); // Запускаем только один раз при монтировании
+  }, [showToast]);
 
   useEffect(() => {
     showToast("App mounted", "info");
@@ -284,6 +258,7 @@ const HomePage: React.FC = () => {
 
   useEffect(() => {
     if (!resourcesLoaded) showToast("Загрузка ресурсов...", "info");
+    else showToast("✅ Ресурсы загружены", "success");
   }, [resourcesLoaded, showToast]);
 
   useEffect(() => {
