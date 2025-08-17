@@ -400,7 +400,7 @@ const HomePage: React.FC = () => {
       setCurrentScreenWithToast("classic mode");
       showToast('Экран classic mode', 'success');
     } catch (error) {
-      showToast('Ошибка в onStartClassic: ' + (error?.message || error), 'error');
+      showToast('Ошибка в onStartClassic: ' + String(error), 'error');
     } finally {
       setIsTransitioning(false);
       showToast('isTransitioning=false', 'info');
@@ -588,6 +588,14 @@ const HomePage: React.FC = () => {
     }
   }, [isAuthenticated, isAdmin, userLoading, isInitialized, showToast]);
 
+  // 5. Кнопка для сброса localStorage на MainMenu (только для отладки)
+  const handleDebugResetStorage = () => {
+    safeLocalStorage.removeItem('sessionToken');
+    safeLocalStorage.removeItem('userData');
+    showToast('localStorage очищен', 'success');
+    window.location.reload();
+  };
+
   if (!resourcesLoaded) {
     const allColors: BlockColor[] = [
       "red",
@@ -680,7 +688,7 @@ const HomePage: React.FC = () => {
         {currentScreen === "classic mode" && (
           <GameBoardWithToast
             onExitGame={handleGoToMenu}
-            onScoreUpdate={(newScore) => setScore(newScore)}
+            onScoreUpdate={(newScore: number) => setScore(newScore)}
             onGameOver={handleGameOver}
             onBoardRectChange={setBoardRect}
             clearedLine={clearedLine}
