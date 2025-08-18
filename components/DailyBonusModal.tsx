@@ -265,9 +265,8 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
           if (hasZenSubscription) {
             await claimBonus();
           } else {
-            // Если нет подписки, сначала открываем магазин (как в ZenAccessModal), затем закрываем модалку
+            // Если нет подписки — сразу открываем магазин; экран сменится и модалка размонтируется
             onOpenShop?.("zen");
-            onClose();
           }
         } else {
           // Для обычных карточек просто получаем бонус

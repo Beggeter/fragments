@@ -49,6 +49,7 @@ const HomePage: React.FC = () => {
   const [particlesInit, setParticlesInit] = useState(false);
   // Track where the shop was opened from
   const [shopReturnTo, setShopReturnTo] = useState<Screen | null>(null);
+  const [shopInitialTab, setShopInitialTab] = useState<"shards" | "boosters" | "zen">("shards");
   // Piece return animation state
   const [pieceReturnAnimation, setPieceReturnAnimation] = useState<{
     piece: any;
@@ -542,15 +543,15 @@ const HomePage: React.FC = () => {
 
   const handleOpenShop = useCallback(
     (initialTab?: string) => {
+      // Perf: measure time from click to ShopScreen mount
+      try { console.time && console.time("openShop"); } catch {}
       // Determine where to return after shop
       if (currentScreen === "classic mode" || currentScreen === "zen mode") {
         setShopReturnTo(currentScreen);
+        setShopInitialTab(initialTab === "zen" ? "zen" : "boosters");
       } else {
         setShopReturnTo("main menu");
-      }
-      // Если передан initialTab, сохраняем его для ShopScreen ДО маунта магазина
-      if (initialTab === "zen") {
-        setShopReturnTo("zen");
+        setShopInitialTab(initialTab === "zen" ? "zen" : "shards");
       }
       setCurrentScreen("shop");
     },
@@ -710,13 +711,7 @@ const HomePage: React.FC = () => {
       {currentScreen === "shop" && (
         <ShopScreen
           onBack={handleShopBack}
-          initialTab={
-            shopReturnTo === "zen"
-              ? "zen"
-              : shopReturnTo === "classic mode" || shopReturnTo === "zen mode"
-              ? "boosters"
-              : "shards"
-          }
+          initialTab={shopInitialTab}
         />
       )}
 

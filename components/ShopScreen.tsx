@@ -321,6 +321,10 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
   );
   const [isShardModalOpen, setIsShardModalOpen] = useState(false);
 
+  useEffect(() => {
+    try { console.timeEnd && console.timeEnd("openShop"); } catch {}
+  }, []);
+
   // Обработчик клика по пакету кристаллов
   const handleShardPackClick = async (pack: ShardPack) => {
     if (!user?.id) {
