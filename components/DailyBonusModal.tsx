@@ -105,54 +105,6 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
 
   const unlockAnimations = useUnlockAnimations(classicRewards);
 
-  // Если данные еще загружаются, показываем загрузку
-  if (isLoading) {
-    return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-        <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-md border border-white/20 p-8">
-          <div className="text-white text-center">Loading...</div>
-        </div>
-      </div>
-    );
-  }
-
-  // Если произошла ошибка, показываем её
-  if (error) {
-    return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-        <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-md border border-white/20 p-8">
-          <div className="text-white text-center">Error: {error}</div>
-          <button onClick={onClose} className="mt-4 text-blue-400">
-            Close
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  // Если нет данных, показываем загрузку
-  if (!bonusData) {
-    return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-        <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-md border border-white/20 p-8">
-          <div className="text-white text-center">Loading bonus data...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!currentWeekData) {
-    return (
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-        <div className="bg-white/10 backdrop-blur-xl rounded-3xl shadow-md border border-white/20 p-8">
-          <div className="text-white text-center">Week data not found</div>
-          <button onClick={onClose} className="mt-4 text-blue-400">
-            Close
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   const getStatusIcon = (reward: DailyReward) => {
     if (reward.status === "claimed") return "/tick.svg";
@@ -258,22 +210,18 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
     const isZenAd = isZen && !hasZenSubscription ? true : false;
     const baseGradient = isZen ? "gold-gradient" : "settings-gradient";
 
-    const handleClick = async () => {
-      if (reward.status === "available") {
-        if (isZen) {
-          // Для ZEN карточек проверяем подписку
-          if (hasZenSubscription) {
-            await claimBonus();
-          } else {
-            // Если нет подписки — сперва закрываем модалку, затем открываем магазин на следующем тике
-            onClose();
-            setTimeout(() => onOpenShop?.("zen"), 0);
-          }
+    const handleClick = () => {
+      if (reward.status !== "available") return;
+      if (isZen) {
+        if (hasZenSubscription) {
+          void claimBonus();
         } else {
-          // Для обычных карточек просто получаем бонус
-          await claimBonus();
+          onClose();
+          setTimeout(() => onOpenShop?.("zen"), 0);
         }
+        return;
       }
+      void claimBonus();
     };
 
     return (
