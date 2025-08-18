@@ -158,11 +158,12 @@ export const useDailyBonus = (opts?: { autoLoad?: boolean; autoRefreshOnClaim?: 
   // Проверяем, есть ли у пользователя Zen подписка
   const hasZenSubscription = user?.role === 'premium' || user?.role === 'admin' || user?.role === 'tester';
 
-  // Загружаем данные при изменении пользователя или админ-статуса
+  // Загружаем данные при изменении пользователя или админ-статуса, если разрешено
   useEffect(() => {
+    if (!autoLoad) return;
     const telegramId = getTelegramId();
-    if (autoLoad && telegramId) {
-      loadBonusData();
+    if (telegramId) {
+      void loadBonusData();
     }
   }, [user?.telegramId, sessionToken, isAdmin, autoLoad]);
 

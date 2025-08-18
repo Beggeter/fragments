@@ -36,7 +36,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
   if (!isOpen) return null;
 
   const { t } = useTranslation();
-  const { user } = useUser();
+  const { user, sessionToken } = useUser();
   const {
     bonusData,
     isLoading,
@@ -51,13 +51,12 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
 
   // Загружаем данные только при открытии модалки
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && user?.telegramId && sessionToken) {
       try {
-        // не блокируем UI вне компонента
         void loadBonusData();
       } catch {}
     }
-  }, [isOpen]);
+  }, [isOpen, user?.telegramId, sessionToken]);
 
   // Преобразуем данные из API в формат для компонента
   const transformRewards = (weekData: any): DailyReward[] => {
