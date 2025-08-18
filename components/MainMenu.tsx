@@ -47,7 +47,7 @@ const MainMenu: FC<MainMenuProps> = ({
   const [fadeIn, setFadeIn] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
   const [showZenAccessModal, setShowZenAccessModal] = useState(false);
-  const { user } = useUser();
+  const { user, isAuthenticated, isLoading: userLoading, sessionToken } = useUser();
   const { isAdmin } = useAdminAuth();
   const [showBonusModal, setShowBonusModal] = useState(false);
 
@@ -89,7 +89,14 @@ const MainMenu: FC<MainMenuProps> = ({
           <TopButtons
             onOpenShop={onOpenShop}
             onOpenLeaderboard={onOpenLeaderboard}
-            onOpenBonusModal={() => setShowBonusModal(true)}
+            onOpenBonusModal={() => {
+              const ready = isAuthenticated && !!user?.telegramId && !!sessionToken && !userLoading;
+              if (ready) setShowBonusModal(true);
+              else {
+                // Можно заменить на ваш тостер
+                console.warn('User not ready yet, delaying Daily Bonus open');
+              }
+            }}
           />
           <img
             src={logo.src}

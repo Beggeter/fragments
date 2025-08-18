@@ -141,11 +141,28 @@ const HomePage: React.FC = () => {
         return;
       }
 
-      // Проверяем, есть ли уже авторизованный пользователь
+      // Проверяем, есть ли уже авторизованный пользователь (валидный кеш)
       const existingSessionToken = safeLocalStorage.getItem("sessionToken");
       const existingAdminToken = safeLocalStorage.getItem("adminToken");
+      const cachedUser = safeLocalStorage.getItem("userData");
 
-      if (existingSessionToken || existingAdminToken) {
+      if (existingSessionToken && cachedUser) {
+        try {
+          const parsed = JSON.parse(cachedUser);
+          if (parsed && typeof parsed.telegramId !== 'undefined' && parsed.telegramId !== null) {
+            // Валидный кеш — считаем сессию готовой и показываем меню
+            setCurrentScreen("main menu");
+            setAppState('idle');
+            setIsInitialized(true);
+            return;
+          }
+        } catch {
+          // битый кеш — игнорируем, пойдём по обычному флоу
+        }
+      }
+      if (existingAdminToken) {
+        // Админ-токен есть — разрешаем сразу перейти в меню
+        setCurrentScreen("main menu");
         setAppState('idle');
         setIsInitialized(true);
         return;
@@ -345,6 +362,28 @@ const HomePage: React.FC = () => {
       }
     }
   }, [isAuthenticated, isAdmin, isInitialized, currentScreen]);
+
+  // Fail-safe watchdog: если через 3 секунды после инициализации экран не выбран — очищаем битую сессию и показываем логин
+  useEffect(() => {
+    if (!isInitialized) return;
+    const timer = setTimeout(() => {
+      if (!currentScreen) {
+        const hasToken = !!safeLocalStorage.getItem('sessionToken');
+        const hasUser = !!safeLocalStorage.getItem('userData');
+        // Если кеш неполный — очищаем
+        if (hasToken !== hasUser) {
+          safeLocalStorage.removeItem('sessionToken');
+          safeLocalStorage.removeItem('userData');
+        }
+        if (isLaunchedInTelegram()) {
+          setCurrentScreen('telegram login');
+        } else {
+          setCurrentScreen('admin login');
+        }
+      }
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [isInitialized, currentScreen]);
 
   // Dev-панель для ручного переключения экрана
   const isDev =

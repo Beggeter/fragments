@@ -57,11 +57,14 @@ export const useDailyBonus = () => {
   // Загружаем данные о бонусах
   const loadBonusData = async () => {
     const telegramId = getTelegramId();
-    
     if (!telegramId) {
       setError('User not authenticated');
       return;
     }
+
+    // AbortController для отмены при закрытии/переключении
+    const controller = new AbortController();
+    const signal = controller.signal;
 
     setIsLoading(true);
     setError(null);
@@ -75,7 +78,8 @@ export const useDailyBonus = () => {
       }
 
       const response = await fetch(`/api/users/${telegramId}/bonus`, {
-        headers
+        headers,
+        signal,
       });
 
       if (!response.ok) {
@@ -91,6 +95,7 @@ export const useDailyBonus = () => {
     } finally {
       setIsLoading(false);
     }
+    return () => controller.abort();
   };
 
   // Получаем бонус
