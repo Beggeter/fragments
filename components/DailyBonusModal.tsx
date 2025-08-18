@@ -265,11 +265,9 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
           if (hasZenSubscription) {
             await claimBonus();
           } else {
-            // Если нет подписки, открываем магазин
+            // Если нет подписки, сначала открываем магазин (как в ZenAccessModal), затем закрываем модалку
+            onOpenShop?.("zen");
             onClose();
-            setTimeout(() => {
-              onOpenShop?.("zen");
-            }, 100)
           }
         } else {
           // Для обычных карточек просто получаем бонус
@@ -452,8 +450,8 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
                     <ClickEffect>
                       <button
                         onClick={() => {
-                          onClose();
                           onOpenShop?.("zen");
+                          onClose();
                         }}
                         className="rounded-xl orange-gradient mx-auto w-[50%] font-figtree-mulish 
                       py-2 text-white font-bold text-lg relative z-10    "
