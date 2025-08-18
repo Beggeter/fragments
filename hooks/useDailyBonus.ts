@@ -38,8 +38,7 @@ interface DailyBonusResponse {
   todayReward: DailyBonusReward | null;
 }
 
-export const useDailyBonus = (opts?: { autoLoad?: boolean; autoRefreshOnClaim?: boolean }) => {
-  const { autoLoad = true, autoRefreshOnClaim = true } = opts ?? {};
+export const useDailyBonus = () => {
   const { user, sessionToken } = useUser();
   const { isAdmin } = useAdminAuth();
   const [bonusData, setBonusData] = useState<DailyBonusResponse | null>(null);
@@ -129,8 +128,8 @@ export const useDailyBonus = (opts?: { autoLoad?: boolean; autoRefreshOnClaim?: 
       const data = await response.json();
       
       // Обновляем локальное состояние после успешного получения бонуса
-      if (data.success && autoRefreshOnClaim) {
-        // Перезагружаем данные бонусов, если включено автообновление
+      if (bonusData && data.success) {
+        // Перезагружаем данные бонусов
         await loadBonusData();
       }
 
@@ -158,14 +157,13 @@ export const useDailyBonus = (opts?: { autoLoad?: boolean; autoRefreshOnClaim?: 
   // Проверяем, есть ли у пользователя Zen подписка
   const hasZenSubscription = user?.role === 'premium' || user?.role === 'admin' || user?.role === 'tester';
 
-  // Загружаем данные при изменении пользователя или админ-статуса, если разрешено
+  // Загружаем данные при изменении пользователя или админ-статуса
   useEffect(() => {
-    if (!autoLoad) return;
     const telegramId = getTelegramId();
     if (telegramId) {
-      void loadBonusData();
+      loadBonusData();
     }
-  }, [user?.telegramId, sessionToken, isAdmin, autoLoad]);
+  }, [user?.telegramId, sessionToken, isAdmin]);
 
   return {
     bonusData,

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import MenuButton from "./UI/MenuButton";
@@ -36,27 +36,17 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
   if (!isOpen) return null;
 
   const { t } = useTranslation();
-  const { user, sessionToken } = useUser();
+  const { user } = useUser();
   const {
     bonusData,
     isLoading,
     error,
     claimBonus,
-    loadBonusData,
     hasZenSubscription,
     currentWeek,
     currentDay,
     canClaimToday,
-  } = useDailyBonus({ autoLoad: false, autoRefreshOnClaim: false });
-
-  // Загружаем данные только при открытии модалки
-  useEffect(() => {
-    if (isOpen && user?.telegramId && sessionToken) {
-      try {
-        void loadBonusData();
-      } catch {}
-    }
-  }, [isOpen, user?.telegramId, sessionToken]);
+  } = useDailyBonus();
 
   // Преобразуем данные из API в формат для компонента
   const transformRewards = (weekData: any): DailyReward[] => {
@@ -268,19 +258,22 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
     const isZenAd = isZen && !hasZenSubscription ? true : false;
     const baseGradient = isZen ? "gold-gradient" : "settings-gradient";
 
-    const handleClick = () => {
-      if (reward.status !== "available") return;
-      if (isZen) {
-        if (hasZenSubscription) {
-          void claimBonus();
+    const handleClick = async () => {
+      if (reward.status === "available") {
+        if (isZen) {
+          // Для ZEN карточек проверяем подписку
+          if (hasZenSubscription) {
+            await claimBonus();
+          } else {
+            // Если нет подписки — сперва закрываем модалку, затем открываем магазин на следующем тике
+            onClose();
+            setTimeout(() => onOpenShop?.("zen"), 0);
+          }
         } else {
-          onOpenShop?.("zen");
-          onClose();
+          // Для обычных карточек просто получаем бонус
+          await claimBonus();
         }
-        return;
       }
-      // Обычные карточки: не блокируем UI ожиданием сети
-      void claimBonus();
     };
 
     return (
@@ -457,8 +450,9 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
                     <ClickEffect>
                       <button
                         onClick={() => {
-                          onOpenShop?.("zen");
+                          // Сначала закрываем модалку, затем открываем магазин на следующем тике
                           onClose();
+                          setTimeout(() => onOpenShop?.("zen"), 0);
                         }}
                         className="rounded-xl orange-gradient mx-auto w-[50%] font-figtree-mulish 
                       py-2 text-white font-bold text-lg relative z-10    "
