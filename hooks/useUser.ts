@@ -111,27 +111,43 @@ export const useUser = () => {
       // console.log("User data:", userData ? "exists" : "missing");
 
       if (sessionToken && userData) {
-        const user = JSON.parse(userData);
-        // console.log("Parsed user data:", user);
-        
+        let user: any = null;
+        try {
+          user = JSON.parse(userData);
+        } catch {
+          // Битый кеш — очищаемся и выходим в неавторизованное состояние
+          logout();
+          setUserState(prev => ({ ...prev, isLoading: false }));
+          return;
+        }
+
+        // Валидируем минимально необходимые поля кеша
+        if (!user || typeof user.telegramId === 'undefined' || user.telegramId === null) {
+          // Неконсистентные данные — сбрасываем сессию
+          logout();
+          setUserState(prev => ({ ...prev, isLoading: false }));
+          return;
+        }
+
         // Проверяем, не истек ли токен (простая проверка)
         const tokenData = JSON.parse(atob(sessionToken));
         const now = Math.floor(Date.now() / 1000);
-        
-        // console.log("Token expiry:", tokenData.exp, "Current time:", now);
-        
+
         if (tokenData.exp > now) {
-          // console.log("Token is valid, refreshing user data from server");
           // Всегда получаем свежие данные с сервера, особенно баланс
           await refreshUserData(user.telegramId, sessionToken);
           return;
         } else {
-          // console.log("Token expired, logging out");
           // Токен истек, очищаем данные
           logout();
         }
+      } else if (sessionToken && !userData) {
+        // Есть токен без данных пользователя — сбрасываем, чтобы избежать полубитого состояния
+        logout();
+        setUserState(prev => ({ ...prev, isLoading: false }));
+        return;
       } else {
-        // console.log("No session token or user data found");
+        // Нет сессии — идём дальше
       }
     } catch (error) {
       // console.error('Error checking user session:', error);
@@ -174,10 +190,20 @@ export const useUser = () => {
 
   const loginUser = (user: User, sessionToken: string) => {
     if (typeof window !== 'undefined') {
-      safeLocalStorage.setItem('sessionToken', sessionToken);
-      // Сохраняем данные пользователя БЕЗ баланса
-      const { currency, ...userDataForStorage } = user;
-      safeLocalStorage.setItem('userData', JSON.stringify(userDataForStorage));
+      try {
+        safeLocalStorage.setItem('sessionToken', sessionToken);
+        // Сохраняем данные пользователя БЕЗ баланса
+        const { currency, ...userDataForStorage } = user;
+        // Валидируем telegramId перед сохранением
+        if (typeof userDataForStorage.telegramId === 'undefined' || userDataForStorage.telegramId === null) {
+          throw new Error('Invalid userData: missing telegramId');
+        }
+        safeLocalStorage.setItem('userData', JSON.stringify(userDataForStorage));
+      } catch {
+        // На любой ошибке кеша — очищаемся, чтобы не оставить битое состояние
+        safeLocalStorage.removeItem('sessionToken');
+        safeLocalStorage.removeItem('userData');
+      }
     }
     
     setUserState({

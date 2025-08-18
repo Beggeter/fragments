@@ -381,14 +381,57 @@ const HomePage: React.FC = () => {
       logout();
     }
     setAutoAuthCompleted(false);
-    setIsTelegramAutoAuth(false);
-
-    // Показываем соответствующий экран в зависимости от контекста
+    
+    // Если мы внутри Telegram — пробуем автоматическую авторизацию сразу
     if (typeof window !== "undefined" && isLaunchedInTelegram()) {
+      const tg = (window as any).Telegram?.WebApp;
+      if (tg && tg.initDataUnsafe?.user) {
+        (async () => {
+          try {
+            setIsTelegramAutoAuth(true);
+            const user = tg.initDataUnsafe.user;
+            const initData = tg.initData || "";
+            const urlParams = new URLSearchParams(initData);
+            const hash = urlParams.get("hash");
+            const authDate = urlParams.get("auth_date");
+            if (hash) {
+              const authData = {
+                ...user,
+                hash: hash,
+                auth_date: authDate ? parseInt(authDate) : undefined,
+                initData: initData,
+              } as any;
+              const response = await fetch("/api/auth/telegram", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(authData),
+              });
+              const data = await response.json();
+              if (response.ok) {
+                // Сохраняем сессию и возвращаемся в меню
+                safeLocalStorage.setItem("sessionToken", data.sessionToken);
+                safeLocalStorage.setItem("userData", JSON.stringify(data.user));
+                loginUser(data.user, data.sessionToken);
+                setAutoAuthCompleted(true);
+                await new Promise((r) => setTimeout(r, 150));
+                setCurrentScreen("main menu");
+                return;
+              }
+            }
+          } catch {}
+          // Фолбек: показать экран логина Telegram
+          setIsTelegramAutoAuth(false);
+          setCurrentScreen("telegram login");
+        })();
+        return;
+      }
+      // Нет tg данных — показываем логин
       setCurrentScreen("telegram login");
-    } else {
-      setCurrentScreen("admin login");
+      return;
     }
+    // В браузере — админ логин
+    setIsTelegramAutoAuth(false);
+    setCurrentScreen("admin login");
   };
 
 
