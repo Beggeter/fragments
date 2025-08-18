@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import MenuButton from "./UI/MenuButton";
@@ -42,11 +42,22 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
     isLoading,
     error,
     claimBonus,
+    loadBonusData,
     hasZenSubscription,
     currentWeek,
     currentDay,
     canClaimToday,
-  } = useDailyBonus();
+  } = useDailyBonus({ autoLoad: false, autoRefreshOnClaim: false });
+
+  // Загружаем данные только при открытии модалки
+  useEffect(() => {
+    if (isOpen) {
+      try {
+        // не блокируем UI вне компонента
+        void loadBonusData();
+      } catch {}
+    }
+  }, [isOpen]);
 
   // Преобразуем данные из API в формат для компонента
   const transformRewards = (weekData: any): DailyReward[] => {
@@ -258,21 +269,19 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
     const isZenAd = isZen && !hasZenSubscription ? true : false;
     const baseGradient = isZen ? "gold-gradient" : "settings-gradient";
 
-    const handleClick = async () => {
-      if (reward.status === "available") {
-        if (isZen) {
-          // Для ZEN карточек проверяем подписку
-          if (hasZenSubscription) {
-            await claimBonus();
-          } else {
-            // Если нет подписки — сразу открываем магазин; экран сменится и модалка размонтируется
-            onOpenShop?.("zen");
-          }
+    const handleClick = () => {
+      if (reward.status !== "available") return;
+      if (isZen) {
+        if (hasZenSubscription) {
+          void claimBonus();
         } else {
-          // Для обычных карточек просто получаем бонус
-          await claimBonus();
+          onOpenShop?.("zen");
+          onClose();
         }
+        return;
       }
+      // Обычные карточки: не блокируем UI ожиданием сети
+      void claimBonus();
     };
 
     return (

@@ -38,7 +38,8 @@ interface DailyBonusResponse {
   todayReward: DailyBonusReward | null;
 }
 
-export const useDailyBonus = () => {
+export const useDailyBonus = (opts?: { autoLoad?: boolean; autoRefreshOnClaim?: boolean }) => {
+  const { autoLoad = true, autoRefreshOnClaim = true } = opts ?? {};
   const { user, sessionToken } = useUser();
   const { isAdmin } = useAdminAuth();
   const [bonusData, setBonusData] = useState<DailyBonusResponse | null>(null);
@@ -128,8 +129,8 @@ export const useDailyBonus = () => {
       const data = await response.json();
       
       // Обновляем локальное состояние после успешного получения бонуса
-      if (bonusData && data.success) {
-        // Перезагружаем данные бонусов
+      if (data.success && autoRefreshOnClaim) {
+        // Перезагружаем данные бонусов, если включено автообновление
         await loadBonusData();
       }
 
@@ -160,10 +161,10 @@ export const useDailyBonus = () => {
   // Загружаем данные при изменении пользователя или админ-статуса
   useEffect(() => {
     const telegramId = getTelegramId();
-    if (telegramId) {
+    if (autoLoad && telegramId) {
       loadBonusData();
     }
-  }, [user?.telegramId, sessionToken, isAdmin]);
+  }, [user?.telegramId, sessionToken, isAdmin, autoLoad]);
 
   return {
     bonusData,
