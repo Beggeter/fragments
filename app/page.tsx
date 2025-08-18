@@ -14,13 +14,9 @@ import { useGameStore } from "../lib/state/store";
 import { ResourceLoader } from "@/utils/ResourceLoader";
 import { BlockColor } from "@/lib/data/types";
 import { LoadingScreen } from "@/components/LoadingScreen";
-import LoadingSpinner from "../components/LoadingSpinner";
 import ShopScreen from "../components/ShopScreen";
 import LeaderboardScreen from "../components/LeaderboardScreen";
 import PieceReturnAnimation from "../components/board/PieceReturnAnimation";
-import TestStarsPayment from "../components/TestStarsPayment";
-import TestInvoiceSystem from "../components/TestInvoiceSystem";
-import InvoiceSupportInfo from "../components/InvoiceSupportInfo";
 import { initializeTelegramWebApp, isLaunchedInTelegram, safeLocalStorage } from "@/lib/utils/telegramSDK";
 
 type Screen =
@@ -72,63 +68,6 @@ const HomePage: React.FC = () => {
     setIsIntentionalRestart(false);
   }, []);
 
-  // --- tsparticles engine init ---
-
-  const particlesOptions = useMemo(
-    () => ({
-      particles: {
-        number: { value: 100 },
-        color: { value: "#f00" },
-        shape: { type: "square" },
-        size: { value: { min: 10, max: 20 } },
-        move: { enable: false },
-      },
-      detectRetina: true,
-      fullScreen: { enable: false },
-    }),
-    []
-  );
-
-  const handleLineBreakpoint = useCallback(
-    (lineIdx: number, rowIdx: number) => {
-      setClearedLine(rowIdx);
-      setClearedLines((prev) => new Set([...prev, rowIdx]));
-      // Сбросить после короткой задержки, чтобы не очищать повторно
-      setTimeout(() => setClearedLine(null), 100);
-    },
-    []
-  );
-
-  // функция для запуска спиннера
-  const handleShowSpinnerAnimation = useCallback(() => {
-    setShowSpinnerAnimation(true);
-    setClearedLines(new Set()); // Сбрасываем отслеживание линий
-  }, []);
-
-  // функция для завершения анимации спиннера
-  const handleSpinnerFinish = useCallback(() => {
-    setShowSpinnerAnimation(false);
-
-    // Гарантированно очищаем все линии, которые могли быть пропущены из-за лагов
-    if (clearedLines.size < 8) {
-      // Если не все линии были очищены, очищаем оставшиеся
-      const remainingLines = Array.from({ length: 8 }, (_, i) => i).filter(
-        (i) => !clearedLines.has(i)
-      );
-
-      remainingLines.forEach((lineIdx) => {
-        setTimeout(() => {
-          setClearedLine(lineIdx);
-          setTimeout(() => setClearedLine(null), 50);
-        }, lineIdx * 50); // Небольшая задержка между линиями
-      });
-    }
-
-    // Очищаем отслеживание линий
-    setTimeout(() => {
-      setClearedLines(new Set());
-    }, 500);
-  }, [clearedLines]);
 
   const {
     isAdmin,
@@ -451,12 +390,14 @@ const HomePage: React.FC = () => {
     }
   };
 
+
   // Кнопки активны только если appState === 'idle'
   const isMenuButtonActive = appState === 'idle';
 
   const handleStartClassic = useCallback(async () => {
     if (appState !== 'idle') return;
     setAppState('transitioning');
+
     try {
       // ✅ Защита от множественных кликов и проверка инициализации
       if (appState !== 'idle') {
@@ -480,7 +421,9 @@ const HomePage: React.FC = () => {
       console.error('❌ Failed to start Classic mode:', error);
       setAppState('error');
     }
+
   }, [appState]);
+
 
   const handleStartZen = useCallback(async () => {
     if (appState !== 'idle') return;
@@ -645,7 +588,6 @@ const HomePage: React.FC = () => {
     []
   );
 
-  // Показываем загрузку ресурсов если они еще не загружены
   if (!resourcesLoaded) {
     const allColors: BlockColor[] = [
       "red",
@@ -666,7 +608,6 @@ const HomePage: React.FC = () => {
     );
   }
 
-  // Показываем загрузку пока проверяем статус авторизации или инициализируем приложение
   if (
     !isInitialized ||
     ((adminLoading || userLoading) &&
@@ -689,30 +630,6 @@ const HomePage: React.FC = () => {
         overflow: "hidden",
       }}
     >
-      {/* Overlay spinner */}
-      {/* {showSpinnerAnimation && boardRect && (
-        <div
-          style={{
-            position: "fixed",
-            left: boardRect.left,
-            top: boardRect.top,
-            width: boardRect.width,
-            height: boardRect.height,
-            zIndex: 9999,
-            pointerEvents: "none",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <LoadingSpinner
-            width={boardRect.width}
-            height={boardRect.height}
-            onFinish={handleSpinnerFinish}
-            onLineBreakpoint={handleLineBreakpoint}
-          />
-        </div>
-      )} */}
 
       {/* Piece Return Animation */}
       {pieceReturnAnimation && boardRect && (
@@ -726,41 +643,6 @@ const HomePage: React.FC = () => {
           boardRect={boardRect}
         />
       )}
-
-      {/* подсветка краев для whirlwind перенесена в GameBoard  */}
-
-      {/* Dev-панель для ручного переключения экрана */}
-      {/* {isDev && (
-        <div
-          style={{
-            position: "fixed",
-            top: 10,
-            right: 10,
-            zIndex: 1000,
-            background: "#222",
-            color: "#fff",
-            padding: "8px 16px",
-            borderRadius: 8,
-            opacity: 0.95,
-          }}
-        >
-          <label>
-            Dev screen:&nbsp;
-            <select
-              value={devScreen}
-              onChange={(e) => setDevScreen(e.target.value as Screen)}
-              style={{ color: "#000" }}
-            >
-              <option value="">--</option>
-              {devScreens.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      )} */}
 
       {currentScreen === "admin login" && (
         <AdminLogin onLoginSuccess={handleAdminLoginSuccess} />
