@@ -99,7 +99,8 @@ const MenuButton: FC<MenuButtonProps> = ({
           "w-auto h-full object-contain max-h-[6vh]"
         }
         unoptimized={true}
-        priority={true}
+        priority={false}
+        loading="lazy"
       />
     );
   };

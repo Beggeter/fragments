@@ -711,6 +711,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
             <div
               ref={storeScrollRef}
               className="w-full max-h-[75dvh] overflow-y-auto store-scroll py-4 "
+              style={{ contentVisibility: 'auto', containIntrinsicSize: '1000px' }}
             >
               <div className="flex flex-col justify-center items-center w-full">
                 <ZenDescriptionCard

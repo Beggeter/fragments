@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import MenuButton from "./UI/MenuButton";
@@ -104,6 +104,22 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
   );
 
   const unlockAnimations = useUnlockAnimations(classicRewards);
+
+  // Prefetch heavy assets used by Zen shop to speed up transition
+  useEffect(() => {
+    if (!isOpen) return;
+    const assets = [
+      "/stars.svg",
+      "/boosters/bomb.svg",
+      "/boosters/whirlwind.svg",
+      "/boosters/back.png",
+      "/crystal.svg",
+    ];
+    assets.forEach((src) => {
+      const img = new Image();
+      img.src = src;
+    });
+  }, [isOpen]);
 
 
   const getStatusIcon = (reward: DailyReward) => {
