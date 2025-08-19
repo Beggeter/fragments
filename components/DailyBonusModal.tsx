@@ -101,8 +101,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
   );
 
   const unlockAnimations = useUnlockAnimations(classicRewards);
-
-  // Prefetch heavy assets used by Zen shop to speed up transition
+  
   useEffect(() => {
     if (!isOpen) return;
     const assets = [

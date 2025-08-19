@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useUser } from './useUser';
 import { useAdminAuth } from './useAdminAuth';
 
@@ -44,6 +44,18 @@ export const useDailyBonus = () => {
   const [bonusData, setBonusData] = useState<DailyBonusResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Guards against setState after unmount and cancels in-flight requests
+  const mountedRef = useRef(true);
+  const activeControllerRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      try { activeControllerRef.current?.abort(); } catch {}
+      activeControllerRef.current = null;
+    };
+  }, []);
 
   // Определяем telegramId для использования
   const getTelegramId = () => {
@@ -58,16 +70,20 @@ export const useDailyBonus = () => {
   const loadBonusData = async () => {
     const telegramId = getTelegramId();
     if (!telegramId) {
-      setError('User not authenticated');
+      if (mountedRef.current) setError('User not authenticated');
       return;
     }
 
-    // AbortController для отмены при закрытии/переключении
+    // Abort any previous request and create a new controller
+    try { activeControllerRef.current?.abort(); } catch {}
     const controller = new AbortController();
+    activeControllerRef.current = controller;
     const signal = controller.signal;
 
-    setIsLoading(true);
-    setError(null);
+    if (mountedRef.current && !signal.aborted) {
+      setIsLoading(true);
+      setError(null);
+    }
 
     try {
       const headers: HeadersInit = {};
@@ -88,14 +104,22 @@ export const useDailyBonus = () => {
 
       const data = await response.json();
       // console.log('Daily Bonus API Response:', data);
-      setBonusData(data);
+      if (mountedRef.current && !signal.aborted) {
+        setBonusData(data);
+      }
     } catch (err) {
       // console.error('Error loading bonus data:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load bonus data');
+      if (mountedRef.current && !signal.aborted) {
+        setError(err instanceof Error ? err.message : 'Failed to load bonus data');
+      }
     } finally {
-      setIsLoading(false);
+      if (mountedRef.current && !signal.aborted) {
+        setIsLoading(false);
+      }
+      if (activeControllerRef.current === controller) {
+        activeControllerRef.current = null;
+      }
     }
-    return () => controller.abort();
   };
 
   // Получаем бонус
@@ -103,12 +127,14 @@ export const useDailyBonus = () => {
     const telegramId = getTelegramId();
     
     if (!telegramId) {
-      setError('User not authenticated');
+      if (mountedRef.current) setError('User not authenticated');
       return false;
     }
 
-    setIsLoading(true);
-    setError(null);
+    if (mountedRef.current) {
+      setIsLoading(true);
+      setError(null);
+    }
 
     try {
       const headers: HeadersInit = {
@@ -133,18 +159,20 @@ export const useDailyBonus = () => {
       const data = await response.json();
       
       // Обновляем локальное состояние после успешного получения бонуса
-      if (bonusData && data.success) {
-        // Перезагружаем данные бонусов
-        await loadBonusData();
+      if (mountedRef.current && bonusData && data.success) {
+        // Перезагружаем данные бонусов (не блокируя текущий поток)
+        void loadBonusData();
       }
 
       return true;
     } catch (err) {
       // console.error('Error claiming bonus:', err);
-      setError(err instanceof Error ? err.message : 'Failed to claim bonus');
+      if (mountedRef.current) {
+        setError(err instanceof Error ? err.message : 'Failed to claim bonus');
+      }
       return false;
     } finally {
-      setIsLoading(false);
+      if (mountedRef.current) setIsLoading(false);
     }
   };
 
