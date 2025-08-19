@@ -349,6 +349,8 @@ const HomePage: React.FC = () => {
       currentScreen !== "leaderboard"
     ) {
       setCurrentScreen("main menu");
+      // Ensure menu buttons are interactive
+      setAppState('idle');
     }
 
     // Если пользователь не авторизован и приложение инициализировано,
@@ -357,8 +359,10 @@ const HomePage: React.FC = () => {
       const isInTelegram = isLaunchedInTelegram();
       if (isInTelegram) {
         setCurrentScreen("telegram login");
+        setAppState('idle');
       } else {
         setCurrentScreen("admin login");
+        setAppState('idle');
       }
     }
   }, [isAuthenticated, isAdmin, isInitialized, currentScreen]);
@@ -377,8 +381,10 @@ const HomePage: React.FC = () => {
         }
         if (isLaunchedInTelegram()) {
           setCurrentScreen('telegram login');
+          setAppState('idle');
         } else {
           setCurrentScreen('admin login');
+          setAppState('idle');
         }
       }
     }, 3000);
@@ -406,11 +412,13 @@ const HomePage: React.FC = () => {
   const handleAdminLoginSuccess = (adminToken: string, expiresAt: string) => {
     loginAsAdmin(adminToken, expiresAt);
     setCurrentScreen("main menu");
+    setAppState('idle');
   };
 
   const handleTelegramLoginSuccess = (user: any, sessionToken: string) => {
     loginUser(user, sessionToken);
     setCurrentScreen("main menu");
+    setAppState('idle');
   };
 
   const handleLogout = () => {
@@ -543,6 +551,13 @@ const HomePage: React.FC = () => {
     setCurrentScreen("main menu");
     setAppState('idle');
   }, [appState]);
+
+  // Ensure menu is always interactive when visible
+  useEffect(() => {
+    if (currentScreen === 'main menu' && appState !== 'idle') {
+      setAppState('idle');
+    }
+  }, [currentScreen, appState]);
 
   const handleGameOver = async () => {
     try {
