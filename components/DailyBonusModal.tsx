@@ -415,7 +415,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
                       <button
                         onClick={() => {
                           // Сначала закрываем модалку, затем открываем магазин на следующем тике
-                          onClose();
+                          // onClose();
                           setTimeout(() => onOpenShop?.("zen"), 0);
                         }}
                         className="rounded-xl orange-gradient mx-auto w-[50%] font-figtree-mulish 
