@@ -17,16 +17,16 @@ interface DailyBonusModalProps {
 
 export type DailyReward =
   | {
-    type: "currency";
-    amount: number;
-    status?: RewardStatus;
-  }
+      type: "currency";
+      amount: number;
+      status?: RewardStatus;
+    }
   | {
-    type: "booster";
-    amount: number;
-    boosterType: string;
-    status?: RewardStatus;
-  };
+      type: "booster";
+      amount: number;
+      boosterType: string;
+      status?: RewardStatus;
+    };
 
 export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
   isOpen,
@@ -121,7 +121,6 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
     });
   }, [isOpen]);
 
-
   const getStatusIcon = (reward: DailyReward) => {
     if (reward.status === "claimed") return "/tick.svg";
     if (reward.status === "skipped") return "/cross.svg";
@@ -143,10 +142,10 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
         reward.boosterType === "undo"
           ? "/boosters/back.png"
           : reward.boosterType === "bomb"
-            ? "/boosters/bomb.svg"
-            : reward.boosterType === "whirlwind"
-              ? "/boosters/whirlwind.svg"
-              : "/boosters/bomb.svg"; // fallback
+          ? "/boosters/bomb.svg"
+          : reward.boosterType === "whirlwind"
+          ? "/boosters/whirlwind.svg"
+          : "/boosters/bomb.svg"; // fallback
 
       return (
         <img
@@ -244,22 +243,26 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
       <ClickEffect
         onClick={handleClick}
         className={`relative flex flex-col items-center justify-between rounded-lg flex-1 h-full scale-active backdrop-blur-2xl shadow-lg text-white font-figtree-mulish  
-         ${!isZenAd
-            ? `${reward.status === "available"
-              ? `border-white/30 shimmer-effect ${baseGradient} cursor-pointer`
-              : "border-white/10 "
-            } ${reward.status === "claimed" || reward.status === "skipped"
-              ? "black-gradient opacity-80"
-              : ""
-            } ${reward.status === "locked" ? `${baseGradient} ` : ""}
+         ${
+           !isZenAd
+             ? `${
+                 reward.status === "available"
+                   ? `border-white/30 shimmer-effect ${baseGradient} cursor-pointer`
+                   : "border-white/10 "
+               } ${
+                 reward.status === "claimed" || reward.status === "skipped"
+                   ? "black-gradient opacity-80"
+                   : ""
+               } ${reward.status === "locked" ? `${baseGradient} ` : ""}
        `
-            : `${baseGradient}`
-          } ${size === "small" ? "p-2 gap-1" : "p-4 "} `}
+             : `${baseGradient}`
+         } ${size === "small" ? "p-2 gap-1" : "p-4 "} `}
       >
         {/* Day */}
         <div
-          className={`${size === "small" ? "text-xs" : "text-xl"
-            } text-white font-figtree-mulish font-bold text-nowrap `}
+          className={`${
+            size === "small" ? "text-xs" : "text-xl"
+          } text-white font-figtree-mulish font-bold text-nowrap `}
         >
           {day}
         </div>
@@ -269,16 +272,18 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
         </div>
         {/* Amount */}
         <div
-          className={`${size === "small" ? "text-sm" : "text-xl"
-            } font-bold font-figtree-mulish`}
+          className={`${
+            size === "small" ? "text-sm" : "text-xl"
+          } font-bold font-figtree-mulish`}
         >
           {reward.type === "currency" ? `+${reward.amount}` : reward.amount}
         </div>
         {/* Status */}
         {getStatusIcon(reward) && !isZenAd && (
           <img
-            className={`absolute bottom-1 right-1   ${size === "small" ? "w-[12px] h-[12px] text-xs" : "w-6 h-6 text-xl"
-              }`}
+            className={`absolute bottom-1 right-1   ${
+              size === "small" ? "w-[12px] h-[12px] text-xs" : "w-6 h-6 text-xl"
+            }`}
             src={getStatusIcon(reward)}
           ></img>
         )}
@@ -289,10 +294,11 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
             animate={animateUnlock ? { scale: 1.8, opacity: 0 } : false}
             transition={{ duration: 0.6, ease: "easeOut" }}
             src={"/lock.svg"}
-            className={`absolute bottom-1 right-1   ${size === "small"
+            className={`absolute bottom-1 right-1   ${
+              size === "small"
                 ? "text-xs w-[12px] h-[12px]"
                 : "text-xl w-[20px] h-[20px]"
-              }`}
+            }`}
           ></motion.img>
         )}
       </ClickEffect>
@@ -309,10 +315,11 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
           onClick={handleClaim}
           disabled={!canClaimToday || isLoading}
           className={`mx-auto mt-4 mb-4 block rounded-xl py-2 w-[50%] text-white text-lg font-bold
-                       bg-gradient-to-br green-gradient scale-active font-figtree-mulish ${canClaimToday && !isLoading
-              ? "shimmer-effect"
-              : "opacity-50"
-            }`}
+                       bg-gradient-to-br green-gradient scale-active font-figtree-mulish ${
+                         canClaimToday && !isLoading
+                           ? "shimmer-effect"
+                           : "opacity-50"
+                       }`}
         >
           {isLoading ? "Claiming..." : t("bonuses.claim")}
         </button>
@@ -416,7 +423,9 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
                         onClick={() => {
                           // Сначала закрываем модалку, затем открываем магазин на следующем тике
                           // onClose();
-                          setTimeout(() => onOpenShop?.("zen"), 0);
+                          // setTimeout(() => onOpenShop?.("zen"), 0);
+                          onOpenShop?.("zen");
+                          alert("open zen");
                         }}
                         className="rounded-xl orange-gradient mx-auto w-[50%] font-figtree-mulish 
                       py-2 text-white font-bold text-lg relative z-10    "
