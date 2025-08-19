@@ -1,13 +1,10 @@
 import React, { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import MenuButton from "./UI/MenuButton";
 import ClickEffect from "./ClickEffect";
-import CrownIcon from "./UI/CrownIcon";
-import { Booster, RewardStatus } from "@/types/components";
+import { RewardStatus } from "@/types/components";
 import { useUnlockAnimations } from "@/hooks/useUnlockAnimation";
 import { useDailyBonus } from "@/hooks/useDailyBonus";
-import { useUser } from "@/hooks/useUser";
 
 interface DailyBonusModalProps {
   isOpen: boolean;
@@ -36,7 +33,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
   if (!isOpen) return null;
 
   const { t } = useTranslation();
-  const { user } = useUser();
+
   const {
     bonusData,
     isLoading,
@@ -365,7 +362,6 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
 
         {/* === КОНТЕНТ === */}
         <div className=" overflow-x-hidden px-8 pt-4   justify-center ">
-
           {hasZenSubscription ? (
             <>
               {/* ZEN-подписка активна — отображаем только ZEN-блок */}
@@ -407,11 +403,11 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
                   </div>
 
                   <div className="relative text-center scale-active  mt-6">
-                    <ClickEffect sound="">
+                    {/* <ClickEffect sound=""> */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          e.preventDefault();
+
                           onOpenShop?.("zen");
                         }}
                         className="rounded-xl orange-gradient mx-auto w-[50%] font-figtree-mulish 
@@ -424,7 +420,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
                         alt="Stars"
                         className="absolute top-0  left-1/2 -translate-x-1/2 -translate-y-3/5 z-20 w-20 h-12"
                       />
-                    </ClickEffect>
+                    {/* </ClickEffect> */}
                   </div>
                 </div>
               </div>

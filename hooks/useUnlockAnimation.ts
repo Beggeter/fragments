@@ -4,7 +4,6 @@ import { RewardStatus } from "@/types/components";
 
 const LOCAL_KEY = "daily-bonus-statuses";
 
-
 interface StoredBonusState {
   date: string; // YYYY-MM-DD
   statuses: RewardStatus[];
