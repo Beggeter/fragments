@@ -365,17 +365,6 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
 
         {/* === КОНТЕНТ === */}
         <div className=" overflow-x-hidden px-8 pt-4   justify-center ">
-          {/* Надпись Неделя */}
-          {/* <div className="justify-center flex text-center w-full mt-4 mb-3">
-            <div className="inline-block relative">
-              <h1 className="absolute text-2xl font-bold tracking-wider text-blue-600/30 font-figtree-mulish px-8 transform translate-x-1 translate-y-1">
-                {t("bonuses.week", { week: currentWeek })}
-              </h1>
-              <h1 className="relative text-2xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-purple-300 to-indigo-300 font-figtree-mulish px-8">
-                {t("bonuses.week", { week: currentWeek })}
-              </h1>
-            </div>
-          </div> */}
 
           {hasZenSubscription ? (
             <>
@@ -418,14 +407,12 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
                   </div>
 
                   <div className="relative text-center scale-active  mt-6">
-                    <ClickEffect>
+                    <ClickEffect sound="">
                       <button
-                        onClick={() => {
-                          // Сначала закрываем модалку, затем открываем магазин на следующем тике
-                          // onClose();
-                          // setTimeout(() => onOpenShop?.("zen"), 0);
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
                           onOpenShop?.("zen");
-                          alert("open zen");
                         }}
                         className="rounded-xl orange-gradient mx-auto w-[50%] font-figtree-mulish 
                       py-2 text-white font-bold text-lg relative z-10    "
