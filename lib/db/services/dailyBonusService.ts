@@ -98,6 +98,12 @@ export class DailyBonusService {
 
           canClaimToday = true;
           todayReward = await this.getRewardForDay(userId, effectiveWeek, effectiveDay);
+        } else {
+          // На всякий случай fallback: бонус не получен сегодня, значит доступен
+          effectiveWeek = userBonus.currentWeek;
+          effectiveDay = userBonus.currentDay;
+          canClaimToday = true;
+          todayReward = await this.getRewardForDay(userId, effectiveWeek, effectiveDay);
         }
       }
     } else {
