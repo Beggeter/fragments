@@ -49,6 +49,8 @@ export class DailyBonusService {
     // Проверяем, можно ли получить бонус сегодня
     let canClaimToday = false;
     let todayReward: DailyBonusReward | null = null;
+    let effectiveWeek = userBonus.currentWeek;
+    let effectiveDay = userBonus.currentDay;
 
     if (userBonus.lastClaimDate) {
       const lastClaim = new Date(userBonus.lastClaimDate);
@@ -58,29 +60,47 @@ export class DailyBonusService {
       if (lastClaim.getTime() === today.getTime()) {
         canClaimToday = false;
       } else {
-        // Проверяем, не пропустил ли пользователь день
+        // Сколько дней прошло с последнего получения
         const daysDiff = Math.floor((today.getTime() - lastClaim.getTime()) / (1000 * 60 * 60 * 24));
-        
-                 if (daysDiff === 1) {
-           // Следующий день - можно получить бонус
-           canClaimToday = true;
-           todayReward = await this.getRewardForDay(userId, userBonus.currentWeek, userBonus.currentDay);
-         } else if (daysDiff > 1) {
-           // Пропустил день - сбрасываем к началу
-           await this.resetUserProgress(userId);
-           canClaimToday = true;
-           todayReward = await this.getRewardForDay(userId, 1, 1);
-         }
+
+        if (daysDiff >= 1) {
+          // Продвигаем прогресс вперед на количество пропущенных дней без сброса
+          // Период = количество недель * 7 дней
+          const totalWeeks = Array.isArray(config?.weeks) ? config.weeks.length : 4;
+          const daysInWeek = config?.weeks?.[0]?.days?.length || 7;
+          const totalDaysInPeriod = Math.max(1, totalWeeks) * Math.max(1, daysInWeek);
+
+          const currentPos = (userBonus.currentWeek - 1) * daysInWeek + (userBonus.currentDay - 1);
+          const advancedPos = (currentPos + daysDiff) % totalDaysInPeriod;
+          const newWeek = Math.floor(advancedPos / daysInWeek) + 1;
+          const newDay = (advancedPos % daysInWeek) + 1;
+
+          // Обновляем прогресс до сегодняшнего дня, но НЕ трогаем lastClaimDate
+          await db
+            .update(dailyBonuses)
+            .set({
+              currentWeek: newWeek,
+              currentDay: newDay,
+              updatedAt: new Date(),
+            })
+            .where(eq(dailyBonuses.userId, userId));
+
+          effectiveWeek = newWeek;
+          effectiveDay = newDay;
+
+          canClaimToday = true;
+          todayReward = await this.getRewardForDay(userId, newWeek, newDay);
+        }
       }
-         } else {
-       // Первый раз - можно получить бонус
-       canClaimToday = true;
-       todayReward = await this.getRewardForDay(userId, userBonus.currentWeek, userBonus.currentDay);
-     }
+    } else {
+      // Первый раз - можно получить бонус
+      canClaimToday = true;
+      todayReward = await this.getRewardForDay(userId, userBonus.currentWeek, userBonus.currentDay);
+    }
 
     return {
-      currentWeek: userBonus.currentWeek,
-      currentDay: userBonus.currentDay,
+      currentWeek: effectiveWeek,
+      currentDay: effectiveDay,
       lastClaimDate: userBonus.lastClaimDate?.toISOString() || null,
       canClaimToday,
       todayReward,

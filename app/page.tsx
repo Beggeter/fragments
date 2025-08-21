@@ -640,7 +640,6 @@ const HomePage: React.FC = () => {
 
   const handleOpenShop = useCallback(
     (initialTab?: string) => {
-      try { console.time && console.time("openShop"); } catch {}
       if (currentScreen === "classic mode" || currentScreen === "zen mode") {
         setShopReturnTo(currentScreen);
         setShopInitialTab(initialTab === "zen" ? "zen" : "boosters");
