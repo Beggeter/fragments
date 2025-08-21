@@ -325,7 +325,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
                    : "border-white/10 "
                } ${
                  reward.status === "claimed" || reward.status === "skipped"
-                   ? "black-gradient opacity-80"
+                   ? "black-gradient opacity-80 grayscale cursor-not-allowed"
                    : ""
                } ${reward.status === "locked" ? `${baseGradient} ` : ""}
        `
