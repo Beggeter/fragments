@@ -179,6 +179,39 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
 
   const unlockAnimations = useUnlockAnimations(classicRewards);
 
+  // Skeleton for reward grid to prevent layout shift while loading
+  const renderRewardGridSkeleton = (isZen = false) => (
+    <div className={`flex items-stretch gap-2 h-full`}>
+      <div className="flex flex-col gap-2 w-[60%]">
+        <div className="flex gap-2 h-1/2">
+          {[0,1,2].map((i) => (
+            <div key={i} className={`relative flex flex-col items-center justify-between rounded-lg flex-1 h-full backdrop-blur-2xl shadow-lg border-white/10 ${isZen ? 'gold-gradient' : 'settings-gradient'} opacity-40 animate-pulse`}>
+              <div className="text-xs text-transparent">00</div>
+              <div className="w-6 h-6 bg-white/30 rounded" />
+              <div className="text-sm text-transparent">00</div>
+            </div>
+          ))}
+        </div>
+        <div className="flex gap-2 h-1/2">
+          {[0,1,2].map((i) => (
+            <div key={i} className={`relative flex flex-col items-center justify-between rounded-lg flex-1 h-full backdrop-blur-2xl shadow-lg border-white/10 ${isZen ? 'gold-gradient' : 'settings-gradient'} opacity-40 animate-pulse`}>
+              <div className="text-xs text-transparent">00</div>
+              <div className="w-6 h-6 bg-white/30 rounded" />
+              <div className="text-sm text-transparent">00</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="flex-1">
+        <div className={`relative flex flex-col items-center justify-between rounded-lg h-full backdrop-blur-2xl shadow-lg border-white/10 ${isZen ? 'gold-gradient' : 'settings-gradient'} opacity-40 animate-pulse`}>
+          <div className="text-xl text-transparent">00</div>
+          <div className="w-12 h-12 bg-white/30 rounded" />
+          <div className="text-xl text-transparent">00</div>
+        </div>
+      </div>
+    </div>
+  );
+
   useEffect(() => {
     if (!isOpen) return;
     const assets = [
@@ -441,13 +474,17 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
           {hasZenSubscription ? (
             <>
               {/* ZEN-подписка активна — отображаем только ZEN-блок */}
-              {renderRewardGrid(zenRewards, true)}
+              <div className="min-h-[200px] sm:min-h-[240px]">
+                {bonusData && currentWeekData ? renderRewardGrid(zenRewards, true) : renderRewardGridSkeleton(true)}
+              </div>
               <ClaimButton />
             </>
           ) : (
             <>
               {/* ZEN-подписка не активна — отображаем Classic + затемнённую ZEN */}
-              {renderRewardGrid(classicRewards)}
+              <div className="min-h-[200px] sm:min-h-[240px]">
+                {bonusData && currentWeekData ? renderRewardGrid(classicRewards) : renderRewardGridSkeleton(false)}
+              </div>
               <ClaimButton />
               {/* Реклама ZEN */}
               <div className="relative mt-4 pt-2 pb-4">
@@ -463,8 +500,8 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
                       </h3>
                     </div>
                   </div>
-                  <div className="mb-6">
-                    {renderRewardGrid(zenRewards, true)}
+                  <div className="mb-6 min-h-[200px] sm:min-h-[240px]">
+                    {bonusData && currentWeekData ? renderRewardGrid(zenRewards, true) : renderRewardGridSkeleton(true)}
                   </div>
 
                   <div className="text-center text-sm text-yellow-100 font-figtree-mulish mb-6 leading-relaxed">
