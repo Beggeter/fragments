@@ -65,9 +65,17 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
     }
 
     // Абсолютная позиция последнего полученного дня
-    const posLastClaimAbs = lastClaimISO && daysDiff >= 0
-      ? (((posTodayAbs - daysDiff) % periodLength) + periodLength) % periodLength
-      : null;
+    let posLastClaimAbs: number | null = null;
+    if (lastClaimISO) {
+      if (daysDiff === 0) {
+        // сегодня уже получали → последний полученный = предыдущий относительно текущего дня
+        posLastClaimAbs = (((posTodayAbs - 1) % periodLength) + periodLength) % periodLength;
+      } else if (daysDiff > 0) {
+        posLastClaimAbs = (((posTodayAbs - daysDiff) % periodLength) + periodLength) % periodLength;
+      } else {
+        posLastClaimAbs = null;
+      }
+    }
 
     const isBetweenCircular = (from: number, to: number, x: number, mod: number) => {
       if (from === to) return false;
@@ -84,14 +92,11 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
       const isToday = index === currentDay - 1;
       if (isToday && canClaimToday) {
         status = "available";
-      } else if (posLastClaimAbs !== null && daysDiff >= 1) {
+      } else if (posLastClaimAbs !== null) {
         if (absIndex === posLastClaimAbs) {
           status = "claimed";
-        } else if (isBetweenCircular(posLastClaimAbs, posTodayAbs, absIndex, periodLength)) {
+        } else if (daysDiff >= 1 && isBetweenCircular(posLastClaimAbs, posTodayAbs, absIndex, periodLength)) {
           status = "skipped";
-        } else if (absIndex < posLastClaimAbs && Math.floor(absIndex / daysInWeek) === Math.floor(posLastClaimAbs / daysInWeek)) {
-          // В пределах той же недели до последнего полученного — считаем полученными визуально
-          status = "claimed";
         }
       }
 
@@ -117,9 +122,14 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
       const last = new Date(lastClaimISO); last.setHours(0,0,0,0);
       daysDiff = Math.floor((today.getTime() - last.getTime()) / (1000*60*60*24));
     }
-    const posLastClaimAbs = lastClaimISO && daysDiff >= 0
-      ? (((posTodayAbs - daysDiff) % periodLength) + periodLength) % periodLength
-      : null;
+    let posLastClaimAbs: number | null = null;
+    if (lastClaimISO) {
+      if (daysDiff === 0) {
+        posLastClaimAbs = (((posTodayAbs - 1) % periodLength) + periodLength) % periodLength;
+      } else if (daysDiff > 0) {
+        posLastClaimAbs = (((posTodayAbs - daysDiff) % periodLength) + periodLength) % periodLength;
+      }
+    }
     const isBetweenCircular = (from: number, to: number, x: number, mod: number) => {
       if (from === to) return false;
       const norm = (v: number) => ((v % mod) + mod) % mod;
@@ -135,13 +145,11 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
       const isToday = index === currentDay - 1;
       if (isToday && canClaimToday) {
         status = "available";
-      } else if (posLastClaimAbs !== null && daysDiff >= 1) {
+      } else if (posLastClaimAbs !== null) {
         if (absIndex === posLastClaimAbs) {
           status = "claimed";
-        } else if (isBetweenCircular(posLastClaimAbs, posTodayAbs, absIndex, periodLength)) {
+        } else if (daysDiff >= 1 && isBetweenCircular(posLastClaimAbs, posTodayAbs, absIndex, periodLength)) {
           status = "skipped";
-        } else if (absIndex < posLastClaimAbs && Math.floor(absIndex / daysInWeek) === Math.floor(posLastClaimAbs / daysInWeek)) {
-          status = "claimed";
         }
       }
 
