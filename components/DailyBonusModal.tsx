@@ -101,7 +101,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
   );
 
   const unlockAnimations = useUnlockAnimations(classicRewards);
-  
+
   useEffect(() => {
     if (!isOpen) return;
     const assets = [
@@ -401,24 +401,26 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
                     {t("bonuses.no_ads")}
                   </div>
 
-                  <div className="relative text-center scale-active  mt-6">
+                  <div
+                    className="relative text-center scale-active  mt-6"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onClose();
+                      setTimeout(() => onOpenShop?.("zen"), 0);
+                    }}
+                  >
                     {/* <ClickEffect sound=""> */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-
-                          onOpenShop?.("zen");
-                        }}
-                        className="rounded-xl orange-gradient mx-auto w-[50%] font-figtree-mulish 
+                    <button
+                      className="rounded-xl orange-gradient mx-auto w-[50%] font-figtree-mulish 
                       py-2 text-white font-bold text-lg relative z-10    "
-                      >
-                        {t("bonuses.zen_subscribe")}
-                      </button>
-                      <img
-                        src="/stars.svg"
-                        alt="Stars"
-                        className="absolute top-0  left-1/2 -translate-x-1/2 -translate-y-3/5 z-20 w-20 h-12"
-                      />
+                    >
+                      {t("bonuses.zen_subscribe")}
+                    </button>
+                    <img
+                      src="/stars.svg"
+                      alt="Stars"
+                      className="absolute top-0  left-1/2 -translate-x-1/2 -translate-y-3/5 z-20 w-20 h-12"
+                    />
                     {/* </ClickEffect> */}
                   </div>
                 </div>
