@@ -81,9 +81,6 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
 
       if (isToday && canClaimToday) {
         status = "available";
-      } else if (isToday && !canClaimToday && daysDiff === 0) {
-        // Только что полученный день: помечаем как claimed
-        status = "claimed";
       } else if (isFutureInWeek) {
         status = "locked";
       } else if (isPastInWeek) {
@@ -141,8 +138,6 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
 
       if (isToday && canClaimToday) {
         status = "available";
-      } else if (isToday && !canClaimToday && daysDiff === 0) {
-        status = "claimed";
       } else if (isFutureInWeek) {
         status = "locked";
       } else if (isPastInWeek) {
