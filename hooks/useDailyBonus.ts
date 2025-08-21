@@ -36,6 +36,7 @@ interface DailyBonusResponse {
   currentDay: number;
   canClaimToday: boolean;
   todayReward: DailyBonusReward | null;
+  lastClaimDate: string | null;
 }
 
 export const useDailyBonus = () => {

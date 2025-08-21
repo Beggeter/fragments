@@ -47,14 +47,53 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
 
   // Преобразуем данные из API в формат для компонента
   const transformRewards = (weekData: any): DailyReward[] => {
-    return weekData.days.map((day: any, index: number) => {
-      const isClaimed = index < currentDay - 1;
-      const isAvailable = index === currentDay - 1 && canClaimToday;
-      const isLocked = index > currentDay - 1;
+    const totalWeeks = bonusData?.weeks?.length ?? 4;
+    const daysInWeek = weekData?.days?.length ?? 7;
+    const periodLength = Math.max(1, totalWeeks) * Math.max(1, daysInWeek);
 
+    // Абсолютная позиция в периоде для удобства расчётов
+    const posTodayAbs = (currentWeek - 1) * daysInWeek + (currentDay - 1);
+
+    // Дней с момента последнего получения
+    const lastClaimISO = (bonusData as any)?.lastClaimDate as string | null;
+    const today = new Date(); today.setHours(0,0,0,0);
+    let daysDiff = 0;
+    if (lastClaimISO) {
+      const last = new Date(lastClaimISO);
+      last.setHours(0,0,0,0);
+      daysDiff = Math.floor((today.getTime() - last.getTime()) / (1000*60*60*24));
+    }
+
+    // Абсолютная позиция последнего полученного дня
+    const posLastClaimAbs = lastClaimISO && daysDiff >= 0
+      ? (((posTodayAbs - daysDiff) % periodLength) + periodLength) % periodLength
+      : null;
+
+    const isBetweenCircular = (from: number, to: number, x: number, mod: number) => {
+      if (from === to) return false;
+      const norm = (v: number) => ((v % mod) + mod) % mod;
+      const f = norm(from), t = norm(to), xv = norm(x);
+      if (f < t) return xv > f && xv < t;
+      return xv > f || xv < t;
+    };
+
+    return weekData.days.map((day: any, index: number) => {
+      const absIndex = (currentWeek - 1) * daysInWeek + index;
       let status: RewardStatus = "locked";
-      if (isClaimed) status = "claimed";
-      else if (isAvailable) status = "available";
+
+      const isToday = index === currentDay - 1;
+      if (isToday && canClaimToday) {
+        status = "available";
+      } else if (posLastClaimAbs !== null && daysDiff >= 1) {
+        if (absIndex === posLastClaimAbs) {
+          status = "claimed";
+        } else if (isBetweenCircular(posLastClaimAbs, posTodayAbs, absIndex, periodLength)) {
+          status = "skipped";
+        } else if (absIndex < posLastClaimAbs && Math.floor(absIndex / daysInWeek) === Math.floor(posLastClaimAbs / daysInWeek)) {
+          // В пределах той же недели до последнего полученного — считаем полученными визуально
+          status = "claimed";
+        }
+      }
 
       return {
         type: day.regular.type,
@@ -66,14 +105,45 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
   };
 
   const transformZenRewards = (weekData: any): DailyReward[] => {
-    return weekData.days.map((day: any, index: number) => {
-      const isClaimed = index < currentDay - 1;
-      const isAvailable = index === currentDay - 1 && canClaimToday;
-      const isLocked = index > currentDay - 1;
+    const totalWeeks = bonusData?.weeks?.length ?? 4;
+    const daysInWeek = weekData?.days?.length ?? 7;
+    const periodLength = Math.max(1, totalWeeks) * Math.max(1, daysInWeek);
 
+    const posTodayAbs = (currentWeek - 1) * daysInWeek + (currentDay - 1);
+    const lastClaimISO = (bonusData as any)?.lastClaimDate as string | null;
+    const today = new Date(); today.setHours(0,0,0,0);
+    let daysDiff = 0;
+    if (lastClaimISO) {
+      const last = new Date(lastClaimISO); last.setHours(0,0,0,0);
+      daysDiff = Math.floor((today.getTime() - last.getTime()) / (1000*60*60*24));
+    }
+    const posLastClaimAbs = lastClaimISO && daysDiff >= 0
+      ? (((posTodayAbs - daysDiff) % periodLength) + periodLength) % periodLength
+      : null;
+    const isBetweenCircular = (from: number, to: number, x: number, mod: number) => {
+      if (from === to) return false;
+      const norm = (v: number) => ((v % mod) + mod) % mod;
+      const f = norm(from), t = norm(to), xv = norm(x);
+      if (f < t) return xv > f && xv < t;
+      return xv > f || xv < t;
+    };
+
+    return weekData.days.map((day: any, index: number) => {
+      const absIndex = (currentWeek - 1) * daysInWeek + index;
       let status: RewardStatus = "locked";
-      if (isClaimed) status = "claimed";
-      else if (isAvailable) status = "available";
+
+      const isToday = index === currentDay - 1;
+      if (isToday && canClaimToday) {
+        status = "available";
+      } else if (posLastClaimAbs !== null && daysDiff >= 1) {
+        if (absIndex === posLastClaimAbs) {
+          status = "claimed";
+        } else if (isBetweenCircular(posLastClaimAbs, posTodayAbs, absIndex, periodLength)) {
+          status = "skipped";
+        } else if (absIndex < posLastClaimAbs && Math.floor(absIndex / daysInWeek) === Math.floor(posLastClaimAbs / daysInWeek)) {
+          status = "claimed";
+        }
+      }
 
       return {
         type: day.premium.type,

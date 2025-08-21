@@ -37,6 +37,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         currentDay: bonusState.currentDay,
         canClaimToday: bonusState.canClaimToday,
         todayReward: bonusState.todayReward,
+        // expose last claim date for UI to determine skipped days
+        // @ts-expect-error extend shape to include lastClaimDate
+        lastClaimDate: bonusState.lastClaimDate,
       };
 
       return res.status(200).json(response);
