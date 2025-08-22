@@ -159,10 +159,11 @@ export const useDailyBonus = () => {
 
       const data = await response.json();
       
-      // Обновляем локальное состояние после успешного получения бонуса
-      if (mountedRef.current && bonusData && data.success) {
-        // Перезагружаем данные бонусов (не блокируя текущий поток)
-        void loadBonusData();
+      if (mountedRef.current && data.success) {
+        // Оптимистично блокируем кнопку до перезагрузки данных
+        setBonusData(prev => prev ? { ...prev, canClaimToday: false } : prev);
+        // Дожидаемся обновлённых данных, чтобы не дать повторно кликнуть
+        await loadBonusData();
       }
 
       return true;
