@@ -54,17 +54,17 @@ export class DailyBonusService {
 
     if (userBonus.lastClaimDate) {
       const lastClaim = new Date(userBonus.lastClaimDate);
-      // Нормализуем к UTC-дням, чтобы избежать ошибок часовых поясов
-      const toUTCDateOnly = (d: Date) => Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
-      const todayUTC = toUTCDateOnly(today);
-      const lastUTC = toUTCDateOnly(lastClaim);
+      // Нормализуем к началу суток в локальном времени сервера
+      const norm = (d: Date) => { const c = new Date(d); c.setHours(0,0,0,0); return c.getTime(); };
+      const todayStart = norm(today);
+      const lastStart = norm(lastClaim);
 
-      if (lastUTC === todayUTC) {
+      if (lastStart === todayStart) {
         // Уже получено сегодня
         canClaimToday = false;
       } else {
-        // Сколько дней прошло с последнего получения (UTC-сутки)
-        const daysDiff = Math.floor((todayUTC - lastUTC) / (1000 * 60 * 60 * 24));
+        // Сколько полных суток прошло с последнего получения
+        const daysDiff = Math.floor((todayStart - lastStart) / (1000 * 60 * 60 * 24));
         if (daysDiff >= 1) {
           // Текущие поля в БД уже указывают на следующий день после последнего получения.
           // Поэтому продвигаем только на (daysDiff - 1).
@@ -99,11 +99,8 @@ export class DailyBonusService {
           canClaimToday = true;
           todayReward = await this.getRewardForDay(userId, effectiveWeek, effectiveDay);
         } else {
-          // На всякий случай fallback: бонус не получен сегодня, значит доступен
-          effectiveWeek = userBonus.currentWeek;
-          effectiveDay = userBonus.currentDay;
-          canClaimToday = true;
-          todayReward = await this.getRewardForDay(userId, effectiveWeek, effectiveDay);
+          // Безопасно: если вычислили отрицательный diff (неожиданно) — запретим получение
+          canClaimToday = false;
         }
       }
     } else {
