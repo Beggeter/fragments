@@ -422,7 +422,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
         <button
           onClick={handleClaim}
           disabled={!canClaimToday || isLoading}
-          className={`mx-auto mt-4 mb-4 block rounded-xl py-2 w-[50%] text-white text-lg font-bold
+          className={`mx-auto mt-1 mb-4 block rounded-xl py-2 w-[50%] text-white text-lg font-bold
                        bg-gradient-to-br green-gradient scale-active font-figtree-mulish ${
                          canClaimToday && !isLoading
                            ? "shimmer-effect"
@@ -476,7 +476,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
           {hasZenSubscription ? (
             <>
               {/* ZEN-подписка активна — отображаем только ZEN-блок */}
-              <div className="min-h-[200px] sm:min-h-[240px]">
+              <div className="min-h-[160px] sm:min-h-[200px]">
                 {bonusData && currentWeekData ? renderRewardGrid(zenRewards, true) : renderRewardGridSkeleton(true)}
               </div>
               <ClaimButton />
@@ -484,7 +484,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
           ) : (
             <>
               {/* ZEN-подписка не активна — отображаем Classic + затемнённую ZEN */}
-              <div className="min-h-[200px] sm:min-h-[240px]">
+              <div className="min-h-[160px] sm:min-h-[200px]">
                 {bonusData && currentWeekData ? renderRewardGrid(classicRewards) : renderRewardGridSkeleton(false)}
               </div>
               <ClaimButton />
