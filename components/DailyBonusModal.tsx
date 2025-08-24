@@ -438,14 +438,16 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
     <ClickEffect
       onClick={onClose}
       className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 overflow-hidden"
+      style={{ paddingTop: "max(1rem, env(safe-area-inset-top))", paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
     >
       <div
-        className="bg-white/10 backdrop-blur-xl rounded-3xl  shadow-md border border-white/20 overflow-hidden
-         max-w-lg w-full fade-in-animation-fast flex flex-col max-h-[90dvh] min-h-fit "
+        className="bg-white/10 backdrop-blur-xl rounded-3xl  shadow-md border border-white/20 overflow-y-auto
+         max-w-md sm:max-w-lg w-full fade-in-animation-fast flex flex-col max-h-[85dvh] sm:max-h-[90dvh] min-h-fit "
+        style={{ maxHeight: "min(84dvh, calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 24px))" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* === ШАПКА МОДАЛКИ === */}
-        <div className="flex justify-between items-center px-8 pt-4    ">
+        <div className="flex justify-between items-center px-6 sm:px-8 pt-4    ">
           <div className="flex flex-row gap-0 items-center justify-between  ">
             <img
               src={"/gift.svg"}
@@ -472,11 +474,11 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
         </div>
 
         {/* === КОНТЕНТ === */}
-        <div className=" overflow-x-hidden px-8 pt-4   justify-center ">
+        <div className=" overflow-x-hidden px-6 sm:px-8 pt-4   justify-center ">
           {hasZenSubscription ? (
             <>
               {/* ZEN-подписка активна — отображаем только ZEN-блок */}
-              <div className="min-h-[200px] sm:min-h-[240px]">
+              <div className="min-h-[180px] sm:min-h-[220px]">
                 {bonusData && currentWeekData ? renderRewardGrid(zenRewards, true) : renderRewardGridSkeleton(true)}
               </div>
               <ClaimButton />
@@ -484,14 +486,14 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
           ) : (
             <>
               {/* ZEN-подписка не активна — отображаем Classic + затемнённую ZEN */}
-              <div className="min-h-[200px] sm:min-h-[240px]">
+              <div className="min-h-[180px] sm:min-h-[220px]">
                 {bonusData && currentWeekData ? renderRewardGrid(classicRewards) : renderRewardGridSkeleton(false)}
               </div>
               <ClaimButton />
               {/* Реклама ZEN */}
               <div className="relative mt-4 pt-2 pb-4">
                 {/* Градиентный фон на всю ширину модалки */}
-                <div className="absolute inset-0 -mx-8  bg-gradient-to-br rounded-3xl from-[#ffe8b5]/10 via-[#ffd580]/10 to-[#f6c243]/10 backdrop-blur-md border-t border-b border-white/10 pointer-events-none" />
+                <div className="absolute inset-0 -mx-6 sm:-mx-8  bg-gradient-to-br rounded-3xl from-[#ffe8b5]/10 via-[#ffd580]/10 to-[#f6c243]/10 backdrop-blur-md border-t border-b border-white/10 pointer-events-none" />
 
                 {/* Контент поверх фона с внутренними отступами */}
                 <div className="relative z-10 ">
@@ -502,7 +504,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
                       </h3>
                     </div>
                   </div>
-                  <div className="mb-1 min-h-[200px] sm:min-h-[240px]">
+                  <div className="mb-1 min-h-[180px] sm:min-h-[220px]">
                     {bonusData && currentWeekData ? renderRewardGrid(zenRewards, true) : renderRewardGridSkeleton(true)}
                   </div>
 
