@@ -16,7 +16,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     switch (action) {
       case 'check_telegram_webapp':
-        console.log('📱 Checking Telegram WebApp data:', data);
+        ;
         res.status(200).json({
           success: true,
           message: 'Telegram WebApp data logged',
@@ -76,7 +76,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         break;
 
       default:
-        console.log('❓ Unknown debug action:', action);
+        ;
         res.status(400).json({ error: 'Unknown action' });
     }
 

@@ -1,0 +1,36 @@
+{
+  "tgWebAppData": {
+    "auth_date": "2025-09-04T05:47:58.000Z",
+    "hash": "6b3964394bac1d92c46384fff20361739438216518ff93dfdec24fcace6566e3",
+    "query_id": "AAE_JmokAAAAAD8maiQQGO1m",
+    "signature": "WrvijT9SKxj8znlI_Rhdvej_Udxq6ulVQN_dBLuL9Em-sKE5ET90OQ-FcwTo4vmKSmq0gBGh714EB9PH_tJLBA",
+    "user": {
+      "allows_write_to_pm": true,
+      "first_name": "Marat",
+      "id": 610936383,
+      "is_premium": true,
+      "last_name": "",
+      "language_code": "ru",
+      "photo_url": "https://t.me/i/userpic/320/QjYSV9A9mX7eiutd78nJmXL9d1ydG1208Gzj0Gl_gWo.svg",
+      "username": "NegimatzhanovM"
+    }
+  },
+  "tgWebAppPlatform": "weba",
+  "tgWebAppThemeParams": {
+    "bg_color": "#212121",
+    "text_color": "#ffffff",
+    "hint_color": "#aaaaaa",
+    "link_color": "#8774e1",
+    "button_color": "#8774e1",
+    "button_text_color": "#ffffff",
+    "secondary_bg_color": "#0f0f0f",
+    "header_bg_color": "#212121",
+    "accent_text_color": "#8774e1",
+    "section_bg_color": "#212121",
+    "section_header_text_color": "#aaaaaa",
+    "subtitle_text_color": "#aaaaaa",
+    "destructive_text_color": "#e53935"
+  },
+  "tgWebAppVersion": "9.1",
+  "V": "2"
+}

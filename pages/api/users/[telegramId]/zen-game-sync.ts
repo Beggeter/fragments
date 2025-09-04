@@ -81,7 +81,7 @@ export default async function handler(
         const userUpdateResult = await UserService.updateRecord(user[0].id, newRecord, 'zen');
         if (userUpdateResult) {
           updatedRecord = userUpdateResult.zenRecord;
-          console.log('✅ Zen record updated during auto-save');
+          ;
         }
       }
     } else {
@@ -98,7 +98,7 @@ export default async function handler(
         const userUpdateResult = await UserService.updateRecord(user[0].id, newRecord, 'zen');
         if (userUpdateResult) {
           updatedRecord = userUpdateResult.zenRecord;
-          console.log('✅ Zen record updated during auto-save');
+          ;
         }
       }
     }

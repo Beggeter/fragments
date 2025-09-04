@@ -103,7 +103,7 @@ export const useDailyBonus = () => {
       }
 
       const data = await response.json();
-      // console.log('Daily Bonus API Response:', data);
+      // ;
       if (mountedRef.current && !signal.aborted) {
         setBonusData(data);
       }

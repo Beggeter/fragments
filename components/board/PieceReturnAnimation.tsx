@@ -55,7 +55,7 @@ const PieceReturnAnimation: React.FC<PieceReturnAnimationProps> = ({
     );
     if (visiblePieces.length === 0) {
       targetContainer = container;
-      // console.log(`🎯 Найден пустой контейнер #${i}:`, container);
+      // ;
       break;
     }
   }
@@ -88,7 +88,7 @@ const PieceReturnAnimation: React.FC<PieceReturnAnimationProps> = ({
     targetX = targetRect ? targetRect.left + targetRect.width / 2 : startX;
     targetY = targetRect ? targetRect.top + targetRect.height * 0.3 : startY;
 
-    // console.log("🎯 Using fallback target:", { x: targetX, y: targetY });
+    // ;
   }
 
   // Размер фигуры уже определен выше
@@ -116,7 +116,7 @@ const PieceReturnAnimation: React.FC<PieceReturnAnimationProps> = ({
   // });
 
   // useEffect(() => {
-  //   console.log(boardRect);
+  //   ;
   // }, [boardRect]);
 
   useEffect(() => {

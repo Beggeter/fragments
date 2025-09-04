@@ -13,7 +13,7 @@ if (!passwordMatch || !expiresMatch) {
 const password = passwordMatch[1];
 const expiresAt = new Date(expiresMatch[1]);
 
-console.log('🔐 Добавляем пароль в активные:', { password, expiresAt: expiresAt.toISOString() });
+;
 
 // Отправляем запрос на сервер для генерации пароля
 const https = require('https');
@@ -37,8 +37,8 @@ const req = http.request(options, (res) => {
   });
   
   res.on('end', () => {
-    console.log('✅ Пароль добавлен на сервер');
-    console.log('📝 Ответ сервера:', data);
+    ;
+    ;
   });
 });
 

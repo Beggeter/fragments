@@ -11,7 +11,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const update = req.body;
-    console.log('📥 Telegram webhook received:', JSON.stringify(update, null, 2));
+    ;
 
     // Обрабатываем pre_checkout_query (обязательно для Telegram Stars)
     if (update.pre_checkout_query) {
@@ -30,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Отвечаем "OK" для подтверждения, что товар доступен
         await bot.answerPreCheckoutQuery(preCheckoutQuery.id, true);
         
-        console.log('✅ Pre-checkout query answered successfully');
+        ;
         return res.status(200).json({ ok: true });
       } catch (preCheckoutError) {
         console.error('❌ Error answering pre-checkout query:', preCheckoutError);
@@ -56,7 +56,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Обрабатываем успешные платежи
     const payment = update?.message?.successful_payment;
     if (!payment) {
-      console.log('ℹ️ No payment in update, skipping');
+      ;
       return res.status(200).json({ ok: true });
     }
 
@@ -88,7 +88,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         paymentPayload = parsedPayload;
       }
       
-      console.log('📋 Parsed payment payload:', paymentPayload);
+      ;
     } catch (parseError) {
       console.error('❌ Failed to parse payment payload:', parseError);
       
@@ -98,7 +98,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const userId = parseInt(match[1], 10);
         const shards = parseInt(match[2], 10);
         
-        console.log('🔄 Using legacy payload format:', { userId, shards });
+        ;
         
         const user = await UserService.getUserById(userId);
         if (!user) {
@@ -108,7 +108,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         await UserService.updateUser(userId, { currency: user.currency + shards });
         
-        console.log('✅ Legacy payment processed successfully:', { userId, shards });
+        ;
         return res.status(200).json({ ok: true });
       }
       

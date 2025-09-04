@@ -44,13 +44,13 @@ export const useUser = () => {
   useEffect(() => {
     const handleRecordUpdated = (event: CustomEvent) => {
       const { newRecord, gameMode = 'classic' } = event.detail;
-      // console.log('🎯 Received recordUpdated event:', newRecord, 'for gameMode:', gameMode);
+      // ;
       
       setUserState(prev => {
         if (prev.user) {
           const currentRecord = gameMode === 'zen' ? prev.user.zenRecord : prev.user.record;
           if (newRecord > currentRecord) {
-            // console.log(`📈 Updating local user ${gameMode} record from`, currentRecord, 'to', newRecord);
+            // ;
             return {
               ...prev,
               user: {
@@ -77,17 +77,17 @@ export const useUser = () => {
       return;
     }
 
-    // console.log("Checking user session...");
+    // ;
 
     // --- Admin mode (dev only) ---
     const adminMode = safeLocalStorage.getItem('adminMode');
-    // console.log("Admin mode:", adminMode, "NODE_ENV:", process.env.NODE_ENV);
+    // ;
     if (adminMode === 'true' && process.env.NODE_ENV === 'development') {
-      // console.log("Using admin mode, fetching user 610936383");
+      // ;
       try {
         const res = await fetch('/api/users/610936383');
         const user = await res.json();
-        // console.log("Admin user loaded:", user);
+        // ;
         
         setUserState({
           user,
@@ -107,8 +107,8 @@ export const useUser = () => {
       const sessionToken = safeLocalStorage.getItem('sessionToken');
       const userData = safeLocalStorage.getItem('userData');
       
-      // console.log("Session token:", sessionToken ? "exists" : "missing");
-      // console.log("User data:", userData ? "exists" : "missing");
+      // ;
+      // ;
 
       if (sessionToken && userData) {
         let user: any = null;
@@ -166,7 +166,7 @@ export const useUser = () => {
       });
       if (res.ok) {
         const freshUser = await res.json();
-        // console.log("Fresh user data loaded from server:", freshUser);
+        // ;
         
         // Обновляем localStorage БЕЗ currency - баланс всегда с сервера
         const { currency, ...userDataForStorage } = freshUser;

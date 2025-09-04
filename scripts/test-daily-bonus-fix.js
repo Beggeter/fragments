@@ -3,17 +3,17 @@ const BASE_URL = 'http://localhost:3000';
 const TEST_TELEGRAM_ID = '610936383';
 
 async function testDailyBonusFix() {
-  console.log('🧪 Testing Daily Bonus Fix...\n');
+  ;
 
   try {
     // Тест 1: Проверяем GET запрос
-    console.log('1. Testing GET /api/users/[telegramId]/bonus');
+    ;
     const getResponse = await fetch(`${BASE_URL}/api/users/${TEST_TELEGRAM_ID}/bonus`);
     const getData = await getResponse.json();
     
-    console.log('Status:', getResponse.status);
+    ;
     if (getResponse.ok) {
-      console.log('✅ GET request successful');
+      ;
       console.log('Response structure:', {
         hasWeeks: !!getData.weeks,
         hasCurrentWeek: typeof getData.currentWeek === 'number',
@@ -25,7 +25,7 @@ async function testDailyBonusFix() {
       
       // Проверяем структуру данных
       if (getData.weeks && Array.isArray(getData.weeks)) {
-        console.log('✅ Weeks array is valid');
+        ;
         if (getData.weeks.length > 0) {
           const firstWeek = getData.weeks[0];
           console.log('First week structure:', {
@@ -39,15 +39,15 @@ async function testDailyBonusFix() {
           });
         }
       } else {
-        console.log('❌ Weeks array is invalid');
+        ;
       }
     } else {
-      console.log('❌ GET request failed:', getData.error);
+      ;
     }
 
     // Тест 2: Проверяем POST запрос (если можно получить бонус)
     if (getResponse.ok && getData.canClaimToday) {
-      console.log('\n2. Testing POST /api/users/[telegramId]/bonus');
+      ;
       const postResponse = await fetch(`${BASE_URL}/api/users/${TEST_TELEGRAM_ID}/bonus`, {
         method: 'POST',
         headers: {
@@ -56,18 +56,18 @@ async function testDailyBonusFix() {
       });
       const postData = await postResponse.json();
       
-      console.log('Status:', postResponse.status);
+      ;
       if (postResponse.ok) {
-        console.log('✅ POST request successful');
-        console.log('Response:', postData);
+        ;
+        ;
       } else {
-        console.log('❌ POST request failed:', postData.error);
+        ;
       }
     } else {
-      console.log('\n2. Skipping POST test - cannot claim bonus today');
+      ;
     }
 
-    console.log('\n🎉 Daily Bonus Fix test completed!');
+    ;
 
   } catch (error) {
     console.error('❌ Test failed:', error.message);

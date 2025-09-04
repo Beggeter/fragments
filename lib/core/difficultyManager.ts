@@ -181,7 +181,7 @@ export class DifficultyManager {
     
     if (levelChanged) {
       this.currentLevel = newLevel;
-      // console.log(`Уровень сложности изменен: ${newLevel.name} (${newLevel.description})`);
+      // ;
     }
 
     return levelChanged;

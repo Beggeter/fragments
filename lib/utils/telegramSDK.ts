@@ -105,7 +105,7 @@ function waitForTelegramWebApp(maxAttempts = 40, interval = 250): Promise<boolea
     const checkTelegram = () => {
       // Сначала быстрая проверка
       if (window.Telegram?.WebApp) {
-        console.log('✅ Telegram WebApp API found!');
+        ;
         resolve(true);
         return;
       }
@@ -123,7 +123,7 @@ function waitForTelegramWebApp(maxAttempts = 40, interval = 250): Promise<boolea
       
       // Логируем каждые 5 попыток для отладки мобильных сетей
       if (attempts % 5 === 0) {
-        console.log(`🔄 Still waiting for Telegram API... (${attempts}/${maxAttempts})`);
+        ;
       }
       
       setTimeout(checkTelegram, currentInterval);
@@ -181,7 +181,7 @@ function setupFallbackViewport() {
 // Основная функция инициализации
 async function performInitialization(): Promise<boolean> {
   try {
-    console.log('🔄 Starting Telegram WebApp initialization...');
+    ;
     
     // Проверяем, что мы на клиенте
     if (typeof window === "undefined") {
@@ -195,17 +195,17 @@ async function performInitialization(): Promise<boolean> {
     // Дополнительная проверка сети
     const connectionType = (navigator as any)?.connection?.effectiveType;
     if (connectionType) {
-      console.log('📶 Network type detected:', connectionType);
+      ;
     }
     
     // Если не в Telegram, настраиваем fallback
     if (!isLaunchedInTelegram()) {
-      console.log('🌐 Not in Telegram, setting up fallback viewport');
+      ;
       setupFallbackViewport();
       return true; // Считаем успешной инициализацию для браузера
     }
     
-    console.log('📱 In Telegram environment, waiting for API...');
+    ;
     
     // Ждем загрузки Telegram WebApp API
     const isLoaded = await waitForTelegramWebApp();
@@ -216,7 +216,7 @@ async function performInitialization(): Promise<boolean> {
     }
     
     const tg = window.Telegram!.WebApp!;
-    console.log('✅ Telegram WebApp API loaded successfully');
+    ;
     
     // Базовая инициализация
     tg.ready();
@@ -244,7 +244,7 @@ async function performInitialization(): Promise<boolean> {
     // Сохраняем cleanup функцию для будущего использования
     (window as any).__telegramCleanup = cleanupViewport;
     
-    console.log('🎉 Telegram WebApp initialization completed successfully');
+    ;
     return true;
     
   } catch (error) {

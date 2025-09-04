@@ -26,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   });
 
   if (req.method !== 'POST') {
-    console.log('❌ TELEGRAM AUTH: Method not allowed', req.method);
+    ;
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
@@ -51,10 +51,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Rate limiting для предотвращения атак
     const clientIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
-    console.log('🌐 TELEGRAM AUTH: Client IP', clientIP);
+    ;
     
     if (!checkRateLimit(`telegram_auth_${clientIP}`, 5, 60 * 1000)) { // 5 попыток в минуту
-      console.log('⚠️ TELEGRAM AUTH: Rate limit exceeded for IP', clientIP);
+      ;
       return res.status(429).json({ error: 'Too many requests' });
     }
 
@@ -74,11 +74,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
 
       if (timeDiff > maxAge) {
-        console.log('❌ TELEGRAM AUTH: Authentication data is too old');
+        ;
         return res.status(401).json({ error: 'Authentication data is too old' });
       }
     } else {
-      console.log('⚠️ TELEGRAM AUTH: No auth_date provided, skipping time validation');
+      ;
     }
 
     // Проверяем подпись Telegram
@@ -99,15 +99,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let isValidSignature = false;
     
     // ВРЕМЕННО: Отключаем проверку подписи для тестирования
-    console.log('⚠️ TELEGRAM AUTH: SIGNATURE VERIFICATION TEMPORARILY DISABLED FOR TESTING');
+    ;
     isValidSignature = true; // Временно всегда возвращаем true
     
     /*
     if (authData.initData) {
-      console.log('🔐 TELEGRAM AUTH: Using initData for signature verification');
+      ;
       isValidSignature = verifyTelegramInitData(authData.initData, botToken);
     } else {
-      console.log('🔐 TELEGRAM AUTH: Using individual fields for signature verification');
+      ;
       isValidSignature = verifyTelegramSignature(authData, botToken);
     }
     */
@@ -124,7 +124,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Ищем пользователя в базе данных
-    console.log('🔍 TELEGRAM AUTH: Looking for user in database', authData.id);
+    ;
     let user = await db.select().from(users).where(eq(users.telegramId, authData.id.toString())).limit(1);
 
     if (user.length === 0) {
@@ -174,7 +174,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         })
         .where(eq(users.telegramId, authData.id.toString()));
       
-      console.log('✅ TELEGRAM AUTH: User updated successfully');
+      ;
     }
 
     // Генерируем JWT токен
@@ -220,25 +220,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 // Функция проверки подписи Telegram
 function verifyTelegramSignature(authData: TelegramAuthData, botToken: string): boolean {
   try {
-    console.log('🔐 TELEGRAM AUTH: Starting signature verification');
-    console.log('📊 TELEGRAM AUTH: All auth data fields:', Object.keys(authData));
+    ;
+    ;
     
     // Создаем строку для проверки (исключаем поля с undefined значениями и пустыми строками)
     const filteredKeys = Object.keys(authData).filter(key => {
       const value = authData[key as keyof TelegramAuthData];
       const isValid = key !== 'hash' && value !== undefined && value !== null && value !== '';
-      console.log(`🔍 TELEGRAM AUTH: Field ${key} = "${value}" (${typeof value}) - ${isValid ? 'INCLUDED' : 'EXCLUDED'}`);
+      ;
       return isValid;
     });
     
-    console.log('✅ TELEGRAM AUTH: Included fields:', filteredKeys);
+    ;
     
     const dataCheckString = filteredKeys
       .sort()
       .map(key => `${key}=${authData[key as keyof TelegramAuthData]}`)
       .join('\n');
 
-    console.log('📝 TELEGRAM AUTH: Data check string', dataCheckString);
+    ;
 
     // Создаем секретный ключ
     const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
@@ -263,14 +263,14 @@ function verifyTelegramSignature(authData: TelegramAuthData, botToken: string): 
 // Функция проверки подписи Telegram с использованием initData
 function verifyTelegramInitData(initData: string, botToken: string): boolean {
   try {
-    console.log('🔐 TELEGRAM AUTH: Starting initData verification');
+    ;
     
     // Парсим initData
     const urlParams = new URLSearchParams(initData);
     const signature = urlParams.get('signature');
     
     if (!signature) {
-      console.log('❌ TELEGRAM AUTH: No signature found in initData');
+      ;
       return false;
     }
     
@@ -281,7 +281,7 @@ function verifyTelegramInitData(initData: string, botToken: string): boolean {
       .map(([key, value]) => `${key}=${value}`)
       .join('\n');
 
-    console.log('📝 TELEGRAM AUTH: InitData check string', dataCheckString);
+    ;
 
     // Создаем секретный ключ
     const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();

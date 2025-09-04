@@ -51,7 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       botApiResponse: botInfo
     };
 
-    console.log('🔑 BOT TOKEN TEST:', result);
+    ;
     
     res.status(200).json(result);
 

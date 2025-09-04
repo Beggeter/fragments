@@ -2,7 +2,7 @@ const { db } = require('../lib/db');
 
 async function applyZenMigration() {
   try {
-    console.log('🔄 Applying ZEN subscription migration...');
+    ;
     
     // Добавляем поля для ZEN подписки
     await db.execute(`
@@ -11,7 +11,7 @@ async function applyZenMigration() {
       ADD COLUMN IF NOT EXISTS zen_subscription_end_date TIMESTAMP;
     `);
     
-    console.log('✅ ZEN subscription migration applied successfully!');
+    ;
   } catch (error) {
     console.error('❌ Error applying migration:', error);
   } finally {

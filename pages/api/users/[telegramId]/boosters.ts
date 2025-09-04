@@ -4,7 +4,7 @@ import { UserService, BoosterService, CurrencyService } from '@/lib/db/services'
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { telegramId } = req.query;
 
-  console.log("Boosters API called with telegramId:", telegramId);
+  ;
 
   if (!telegramId || typeof telegramId !== 'string') {
     return res.status(400).json({ error: 'Telegram ID is required' });
@@ -18,25 +18,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     effectiveTelegramId = telegramId;
   }
 
-  console.log("Effective telegram ID:", effectiveTelegramId, "isDev:", isDev, "adminMode:", adminMode);
+  ;
 
   try {
     const user = await UserService.getUserByTelegramId(effectiveTelegramId);
     if (!user) {
-      console.log("User not found for telegram ID:", effectiveTelegramId);
+      ;
       return res.status(404).json({ error: 'User not found' });
     }
-    console.log("User found:", user.id, user.telegramId, user.firstName);
+    ;
 
     switch (req.method) {
       case 'GET':
         // Получение бустеров пользователя
-        console.log("GET request for user boosters, user ID:", user.id);
+        ;
         const userBoosters = await BoosterService.getUserBoostersWithInfo(user.id);
         const availableBoosters = await BoosterService.getAllBoosterTypes();
         
-        console.log("User boosters:", userBoosters);
-        console.log("Available boosters:", availableBoosters);
+        ;
+        ;
         
         return res.status(200).json({
           userBoosters,

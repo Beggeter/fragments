@@ -95,7 +95,7 @@ export const createShardsInvoice = async (
       throw new Error(data.error || 'Failed to create invoice');
     }
 
-    console.log('📄 Invoice created, opening with URL:', data.invoice_url);
+    ;
 
     // 2. Открываем инвойс через TMA SDK v3
     const { invoice } = await import('@telegram-apps/sdk');
@@ -108,17 +108,17 @@ export const createShardsInvoice = async (
     // 3. Открываем инвойс с URL
     const status = await invoice.open(data.invoice_url, 'url');
     
-    console.log('💰 Payment status:', status);
+    ;
     
     // 4. Обрабатываем результат
     if (status === 'paid') {
-      console.log('✅ Payment successful');
+      ;
       return { success: true };
     } else if (status === 'cancelled') {
-      console.log('❌ Payment cancelled by user');
+      ;
       return { success: false, error: 'Payment cancelled' };
     } else {
-      console.log('❌ Payment failed:', status);
+      ;
       return { success: false, error: `Payment failed: ${status}` };
     }
 
@@ -172,7 +172,7 @@ export const createBoosterInvoice = async (
       throw new Error(data.error || 'Failed to create invoice');
     }
 
-    console.log('📄 Invoice created, opening with URL:', data.invoice_url);
+    ;
 
     // 2. Открываем инвойс через TMA SDK v3
     const { invoice } = await import('@telegram-apps/sdk');
@@ -185,17 +185,17 @@ export const createBoosterInvoice = async (
     // 3. Открываем инвойс с URL
     const status = await invoice.open(data.invoice_url, 'url');
     
-    console.log('💰 Payment status:', status);
+    ;
     
     // 4. Обрабатываем результат
     if (status === 'paid') {
-      console.log('✅ Payment successful');
+      ;
       return { success: true };
     } else if (status === 'cancelled') {
-      console.log('❌ Payment cancelled by user');
+      ;
       return { success: false, error: 'Payment cancelled' };
     } else {
-      console.log('❌ Payment failed:', status);
+      ;
       return { success: false, error: `Payment failed: ${status}` };
     }
 
@@ -245,7 +245,7 @@ export const createZenInvoice = async (
       throw new Error(data.error || 'Failed to create invoice');
     }
 
-    console.log('📄 ZEN invoice created, opening with URL:', data.invoice_url);
+    ;
 
     // 2. Открываем инвойс через TMA SDK v3
     const { invoice } = await import('@telegram-apps/sdk');
@@ -258,17 +258,17 @@ export const createZenInvoice = async (
     // 3. Открываем инвойс с URL
     const status = await invoice.open(data.invoice_url, 'url');
     
-    console.log('💰 ZEN payment status:', status);
+    ;
     
     // 4. Обрабатываем результат
     if (status === 'paid') {
-      console.log('✅ ZEN subscription payment successful');
+      ;
       return { success: true };
     } else if (status === 'cancelled') {
-      console.log('❌ ZEN payment cancelled by user');
+      ;
       return { success: false, error: 'Payment cancelled' };
     } else {
-      console.log('❌ ZEN payment failed:', status);
+      ;
       return { success: false, error: `Payment failed: ${status}` };
     }
 

@@ -11,7 +11,7 @@ const bot = new TelegramBot(botToken, { polling: false });
 
 async function testWebhook() {
   try {
-    console.log('🔍 Testing Stars webhook...');
+    ;
     
     // Получаем информацию о webhook
     const webhookInfo = await bot.getWebhookInfo();
@@ -24,17 +24,17 @@ async function testWebhook() {
     });
 
     if (webhookInfo.url) {
-      console.log('✅ Webhook is configured');
+      ;
       
       if (webhookInfo.pending_update_count > 0) {
-        console.log(`⚠️ There are ${webhookInfo.pending_update_count} pending updates`);
+        ;
       }
       
       if (webhookInfo.last_error_message) {
-        console.log(`❌ Last error: ${webhookInfo.last_error_message}`);
+        ;
       }
     } else {
-      console.log('❌ Webhook is not configured');
+      ;
     }
 
     // Проверяем информацию о боте

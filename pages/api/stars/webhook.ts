@@ -79,7 +79,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Обрабатываем pre-checkout query
     if (update.pre_checkout_query) {
       const query = update.pre_checkout_query;
-      console.log('🔍 Processing pre-checkout query:', query);
+      ;
 
       try {
         const paymentData = parseCompactPayload(query.invoice_payload);
@@ -95,7 +95,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         // Подтверждаем платеж через answerPreCheckoutQuery
-        console.log('✅ Pre-checkout query approved');
+        ;
         await bot.answerPreCheckoutQuery(query.id, true);
         return res.status(200).json({ ok: true });
 
@@ -111,7 +111,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Обрабатываем успешный платеж (Stars mini-app)
     if (update.successful_payment) {
       const payment = update.successful_payment;
-      console.log('💰 Processing successful payment (Stars):', payment);
+      ;
       await handleSuccessfulPayment(payment, res);
       return;
     }
@@ -119,7 +119,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Обрабатываем успешный платеж (обычный бот)
     if (update.message?.successful_payment) {
       const payment = update.message.successful_payment;
-      console.log('💰 Processing successful payment (message):', payment);
+      ;
       await handleSuccessfulPayment(payment, res);
       return;
     }
@@ -283,7 +283,7 @@ async function handleSuccessfulPayment(payment: any, res: NextApiResponse) {
         break;
       }
       case 'subscription': {
-        console.log('📅 Processing subscription purchase (Stars):', {
+        :', {
           userId: paymentData.userId,
           subscriptionId: paymentData.itemId,
           price: paymentData.price
@@ -309,7 +309,7 @@ async function handleSuccessfulPayment(payment: any, res: NextApiResponse) {
             zenSubscriptionEndDate: endDate
           });
 
-          console.log('✅ ZEN subscription activated successfully (Stars):', {
+          :', {
             userId: paymentData.userId,
             subscriptionPeriod: rawPeriod || 'month',
             endDate,

@@ -21,7 +21,7 @@ const playerBalance = 500; // Баланс игрока
 
 const handlePurchase = (quantity: number) => {
   // Логика покупки бустера
-  console.log(`Покупка ${quantity} бустеров`);
+  ;
 };
 
 <BoosterPurchaseModal

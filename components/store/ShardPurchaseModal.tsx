@@ -41,7 +41,7 @@ const ShardPurchaseModal: React.FC<ShardPurchaseModalProps> = ({ isOpen, onClose
       const result = await createShardsInvoice(userId, pack.amount, pack.price);
 
       if (result.success) {
-        // console.log('✅ Payment successful!');
+        // ;
         
         // Показываем уведомление пользователю
         showTelegramAlert('Оплата прошла успешно! Осколки начислены.');
@@ -91,7 +91,7 @@ const ShardPurchaseModal: React.FC<ShardPurchaseModalProps> = ({ isOpen, onClose
       });
       
       if (res.ok) {
-        // console.log('✅ Test purchase successful');
+        // ;
         onSuccess();
       } else {
         const errorData = await res.json();

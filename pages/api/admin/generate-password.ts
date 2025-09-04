@@ -15,11 +15,11 @@ export default function handler(req: NextApiRequest, res: NextApiResponse) {
     addActivePassword(password, expiresAt);
     
     // Выводим пароль в консоль сервера
-    console.log('='.repeat(50));
-    console.log('🔐 ADMIN PASSWORD GENERATED 🔐');
-    console.log('🔑 Password:', password);
-    console.log('⏰ Valid until:', expiresAt.toLocaleString());
-    console.log('='.repeat(50));
+    ;
+    ;
+    ;
+    ;
+    ;
     
     // Возвращаем успешный ответ без пароля
     res.status(200).json({ 

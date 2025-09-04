@@ -10,8 +10,8 @@ if (!botToken) {
 const webhookUrl = process.argv[2];
 if (!webhookUrl) {
   console.error('❌ Please provide webhook URL as argument');
-  console.log('Usage: node scripts/setup-stars-webhook.js <webhook_url>');
-  console.log('Example: node scripts/setup-stars-webhook.js https://your-domain.com/api/stars/webhook');
+  ;
+  ;
   process.exit(1);
 }
 
@@ -19,14 +19,14 @@ const bot = new TelegramBot(botToken, { polling: false });
 
 async function setupWebhook() {
   try {
-    console.log('🔧 Setting up Stars webhook...');
-    console.log('🌐 Webhook URL:', webhookUrl);
+    ;
+    ;
     
     // Устанавливаем webhook
     const result = await bot.setWebhook(webhookUrl);
     
     if (result) {
-      console.log('✅ Webhook set successfully!');
+      ;
       
       // Проверяем информацию о webhook
       const webhookInfo = await bot.getWebhookInfo();

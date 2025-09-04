@@ -93,10 +93,10 @@ export class UserService {
 
   // Получение позиции пользователя в рейтинге (быстрый способ)
   static async getUserPosition(userId: number, gameMode: 'classic' | 'zen' = 'classic'): Promise<number | null> {
-    // console.log('UserService.getUserPosition called with userId:', userId, 'gameMode:', gameMode);
+    // ;
     const user = await this.getUserById(userId);
     if (!user) {
-      // console.log('UserService.getUserPosition: user not found');
+      // ;
       return null;
     }
     
@@ -105,7 +105,7 @@ export class UserService {
     
     // Если у пользователя рекорд = 0, не показываем позицию
     if (userRecord === 0) {
-      // console.log('UserService.getUserPosition: user has no record (0)');
+      // ;
       return null;
     }
     
@@ -119,7 +119,7 @@ export class UserService {
       ));
     
     const position = (result.count || 0) + 1;
-    // console.log('UserService.getUserPosition calculated position:', position);
+    // ;
     return position;
   }
 

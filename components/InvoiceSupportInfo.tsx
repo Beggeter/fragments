@@ -15,7 +15,7 @@ const InvoiceSupportInfo: React.FC = () => {
           const { invoice } = await import('@telegram-apps/sdk');
           tmaSupported = invoice.isSupported();
         } catch (e) {
-          // console.log('TMA SDK not available');
+          // ;
         }
 
         const info = {

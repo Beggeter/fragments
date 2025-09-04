@@ -104,7 +104,7 @@ async function handleStartCommand(chatId: number, userId?: number) {
 
   await bot.sendMessage(chatId, welcomeMessage, options);
 
-  console.log('✅ Start command sent to:', { chatId, userId });
+  ;
 }
 
 // Обработчик команды /shop

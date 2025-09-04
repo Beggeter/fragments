@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Figtree, Geist, Geist_Mono, Manrope, Mulish } from "next/font/google";
 import "./globals.css";
-import Script from "next/script";
-import { I18nProvider } from "./i18n-provider";
+import Providers from "./Providers";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -58,19 +57,19 @@ export default function RootLayout({
       suppressHydrationWarning={true}
     >
       <head>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-        
-        {/* Предварительное подключение для ускорения загрузки через мобильные сети */}
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+        />
+
         <link rel="preconnect" href="https://telegram.org" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        
-        {/* Telegram Web App Script - оптимизированная загрузка для мобильных сетей */}
-        <Script
-          src="https://telegram.org/js/telegram-web-app.js"
-          strategy="beforeInteractive"
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin=""
         />
-                {/* Telegram WebApp initialization now handled in React components */}
+
         <link
           href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&family=Fredoka:wght@700&display=swap"
           rel="stylesheet"
@@ -81,7 +80,7 @@ export default function RootLayout({
         ></link>
       </head>
       <body>
-        <I18nProvider>{children}</I18nProvider>
+          <Providers>{children}</Providers>
       </body>
     </html>
   );
