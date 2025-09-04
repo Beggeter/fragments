@@ -12,20 +12,48 @@ export const useTelegram = () => {
   // Проверяем, запущено ли приложение в Telegram
   const isInTelegram = () => {
     if (typeof window === "undefined") return false;
-    return !!(window.Telegram && window.Telegram.WebApp);
+    
+    // Проверяем наличие Telegram WebApp объекта
+    const hasTelegramWebApp = !!(window.Telegram && window.Telegram.WebApp);
+    
+    // Проверяем наличие tgWebAppData в launchParams (более надежно)
+    const hasTgWebAppData = launchParams && launchParams.tgWebAppData;
+    
+    // Проверяем наличие tgWebAppData в URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasTgWebAppDataInUrl = urlParams.has("tgWebAppData");
+    
+    console.log('isInTelegram debug:', {
+      hasTelegramWebApp,
+      hasTgWebAppData,
+      hasTgWebAppDataInUrl,
+      launchParams: !!launchParams,
+      windowTelegram: !!window.Telegram
+    });
+    
+    return hasTelegramWebApp || hasTgWebAppData || hasTgWebAppDataInUrl;
   };
 
   // Получаем данные пользователя из Telegram
   const getTelegramUser = () => {
-    if (!isInTelegram() || !initData) return null;
+    if (!isInTelegram()) return null;
     
-    // initData уже готовый объект в v3
-    return initData.user || null;
+    // Сначала пробуем получить из initData
+    if (initData && initData.user) {
+      return initData.user;
+    }
+    
+    // Если initData нет, пробуем получить из launchParams
+    if (launchParams && launchParams.tgWebAppData && launchParams.tgWebAppData.user) {
+      return launchParams.tgWebAppData.user;
+    }
+    
+    return null;
   };
 
   // Автоматическая авторизация через Telegram
   const autoAuth = async () => {
-    if (!isInTelegram() || !initData || isAuthenticated || isAdmin) {
+    if (!isInTelegram() || isAuthenticated || isAdmin) {
       return false;
     }
 
@@ -33,13 +61,41 @@ export const useTelegram = () => {
     if (!user) return false;
 
     try {
+      console.log('autoAuth debug:', {
+        user,
+        initData: !!initData,
+        launchParams: !!launchParams,
+        tgWebAppData: !!(launchParams && launchParams.tgWebAppData)
+      });
+      
       // Подготавливаем данные для авторизации
-      const authData = {
-        ...user,
-        hash: initData.hash,
-        auth_date: initData.authDate,
-        initData: initData.raw,
-      };
+      let authData;
+      
+      if (initData && initData.hash) {
+        // Используем initData если доступен
+        console.log('Using initData for auth');
+        authData = {
+          ...user,
+          hash: initData.hash,
+          auth_date: initData.authDate,
+          initData: initData.raw,
+        };
+      } else if (launchParams && launchParams.tgWebAppData) {
+        // Используем launchParams если initData недоступен
+        console.log('Using launchParams for auth');
+        const tgData = launchParams.tgWebAppData;
+        authData = {
+          ...user,
+          hash: tgData.hash,
+          auth_date: tgData.auth_date,
+          initData: JSON.stringify(tgData),
+        };
+      } else {
+        console.error('No auth data available');
+        return false;
+      }
+      
+      console.log('Auth data prepared:', authData);
 
       // Отправляем запрос на сервер
       const response = await fetch("/api/auth/telegram", {
@@ -75,8 +131,8 @@ export const useTelegram = () => {
     
     // Данные
     telegramUser: getTelegramUser(),
-    initData,
-    launchParams,
+    initData: initData || null,
+    launchParams: launchParams || null,
     hasLaunchParams: launchParams && Object.keys(launchParams).length > 0,
     
     // Методы

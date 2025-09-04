@@ -12,8 +12,23 @@ export const AuthTest: React.FC = () => {
 
   // Автоматическая авторизация при готовности Telegram
   useEffect(() => {
+    console.log('AuthTest useEffect:', {
+      isTelegramReady,
+      isInTelegram,
+      isAuthenticated,
+      isAdmin,
+      telegramUser: !!telegramUser,
+      initData: !!initData,
+      launchParams: !!launchParams
+    });
+    
     if (isTelegramReady && isInTelegram && !isAuthenticated && !isAdmin) {
-      autoAuth();
+      console.log('Attempting autoAuth...');
+      autoAuth().then(result => {
+        console.log('AutoAuth result:', result);
+      }).catch(error => {
+        console.error('AutoAuth error:', error);
+      });
     }
   }, [isTelegramReady, isInTelegram, isAuthenticated, isAdmin, autoAuth]);
 
@@ -83,6 +98,24 @@ export const AuthTest: React.FC = () => {
         </div>
       </div>
 
+      {/* Кнопка для ручной авторизации */}
+      <div className="mt-4">
+        <button
+          onClick={() => {
+            console.log('Manual auth attempt...');
+            autoAuth().then(result => {
+              console.log('Manual auth result:', result);
+            }).catch(error => {
+              console.error('Manual auth error:', error);
+            });
+          }}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+          disabled={!isTelegramReady || !isInTelegram || isAuthenticated || isAdmin}
+        >
+          {isAuthenticated || isAdmin ? 'Уже авторизован' : 'Попробовать авторизацию'}
+        </button>
+      </div>
+
       {telegramUser && (
         <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
           <h4 className="font-medium text-blue-800">Telegram пользователь:</h4>
@@ -119,7 +152,7 @@ export const AuthTest: React.FC = () => {
         <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
           <h4 className="font-medium text-yellow-800">InitData:</h4>
           <p className="text-yellow-600">Hash: {initData.hash ? "✅" : "❌"}</p>
-          <p className="text-yellow-600">Auth Date: {initData.authDate || "N/A"}</p>
+          <p className="text-yellow-600">Auth Date: {initData.authDate ? String(initData.authDate) : "N/A"}</p>
           <p className="text-yellow-600">Raw: {initData.raw ? "✅" : "❌"}</p>
         </div>
       )}
