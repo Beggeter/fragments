@@ -1,10 +1,8 @@
 import { initData } from "@telegram-apps/sdk-react";
 import { apiFetch } from "./api";
 import type { TelegramAuthData } from "@/types/user";
-import { useAuthStore } from "@/store/authStore";
 
 export async function tgLogin(): Promise<TelegramAuthData | null> {
-  const { isAuthenticated, setIsAuthenticated, setUser } = useAuthStore();
 
   const user = initData.user?.();
   const hash = initData.hash?.();
@@ -30,17 +28,13 @@ export async function tgLogin(): Promise<TelegramAuthData | null> {
     initData: raw,
   };
 
-  if (isAuthenticated) {
-    return payload;
-  }
+
   try {
     const res = await apiFetch<TelegramAuthData>("/auth/tg-login", {
       method: "POST",
       body: JSON.stringify(payload),
     });
 
-    setIsAuthenticated(true);
-    setUser(res);
     return res;
   } catch (err) {
     console.error("TG login failed:", err);
