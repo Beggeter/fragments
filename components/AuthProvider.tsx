@@ -1,7 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { init, useLaunchParams, initData, miniApp } from "@telegram-apps/sdk-react";
+import { useLaunchParams, initData } from "@telegram-apps/sdk-react";
 import { useUserStore } from "@/store/user";
 import { safeLocalStorage } from "@/lib/utils/telegramSDK";
 
@@ -39,14 +39,15 @@ export const useAuth = () => {
 
 interface AuthProviderProps {
   children: React.ReactNode;
+  initError?: string | null;
 }
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children, initError }) => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isTelegramReady, setIsTelegramReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initError || null);
   
-  // Используем новые хуки Telegram SDK v3
+  // Используем новые хуки Telegram SDK v3 (теперь безопасно, так как init уже вызван)
   const launchParams = useLaunchParams();
 
   const {
@@ -60,22 +61,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     clearAuth,
   } = useUserStore();
 
-  // Инициализация Telegram SDK
+  // Инициализация (SDK уже инициализирован в Providers.tsx)
   useEffect(() => {
-    const initializeTelegram = async () => {
+    const initializeAuth = async () => {
       try {
         setLoading(true);
-        setError(null);
+        setError(initError || null);
 
-        // Инициализируем новый Telegram SDK v3
-        await init();
-        
-        // Правильное монтирование компонентов
-        if (miniApp.mountSync.isAvailable()) {
-          miniApp.mountSync();
-          console.log("MiniApp mounted:", miniApp.isMounted());
-        }
-        
+        // SDK уже инициализирован, просто проверяем готовность
         setIsTelegramReady(true);
         
         // Проверяем кешированную авторизацию
@@ -83,16 +76,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         setIsInitialized(true);
       } catch (err) {
-        console.error("Failed to initialize Telegram SDK:", err);
-        setError(err instanceof Error ? err.message : "Initialization failed");
-        setIsInitialized(true); // Продолжаем работу даже при ошибке
+        console.error("Failed to initialize auth:", err);
+        setError(err instanceof Error ? err.message : "Auth initialization failed");
+        setIsInitialized(true);
       } finally {
         setLoading(false);
       }
     };
 
-    initializeTelegram();
-  }, []);
+    initializeAuth();
+  }, [initError]);
 
   // Проверка кешированной авторизации
   const checkCachedAuth = async () => {
