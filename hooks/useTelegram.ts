@@ -36,18 +36,32 @@ export const useTelegram = () => {
 
   // Получаем данные пользователя из Telegram
   const getTelegramUser = () => {
-    if (!isInTelegram()) return null;
+    if (!isInTelegram()) {
+      console.log('getTelegramUser: not in Telegram');
+      return null;
+    }
+    
+    console.log('getTelegramUser debug:', {
+      initData: !!initData,
+      initDataUser: !!(initData && initData.user),
+      launchParams: !!launchParams,
+      tgWebAppData: !!(launchParams && launchParams.tgWebAppData),
+      tgWebAppDataUser: !!(launchParams && launchParams.tgWebAppData && launchParams.tgWebAppData.user)
+    });
     
     // Сначала пробуем получить из initData
     if (initData && initData.user) {
+      console.log('getTelegramUser: using initData.user');
       return initData.user;
     }
     
     // Если initData нет, пробуем получить из launchParams
     if (launchParams && launchParams.tgWebAppData && launchParams.tgWebAppData.user) {
+      console.log('getTelegramUser: using launchParams.tgWebAppData.user');
       return launchParams.tgWebAppData.user;
     }
     
+    console.log('getTelegramUser: no user data found');
     return null;
   };
 
@@ -76,9 +90,9 @@ export const useTelegram = () => {
         console.log('Using initData for auth');
         authData = {
           ...user,
-          hash: initData.hash,
-          auth_date: initData.authDate,
-          initData: initData.raw,
+          hash: String(initData.hash),
+          auth_date: initData.authDate ? new Date(initData.authDate).getTime() : undefined,
+          initData: String(initData.raw),
         };
       } else if (launchParams && launchParams.tgWebAppData) {
         // Используем launchParams если initData недоступен
@@ -86,8 +100,8 @@ export const useTelegram = () => {
         const tgData = launchParams.tgWebAppData;
         authData = {
           ...user,
-          hash: tgData.hash,
-          auth_date: tgData.auth_date,
+          hash: String(tgData.hash),
+          auth_date: new Date(tgData.auth_date).getTime(),
           initData: JSON.stringify(tgData),
         };
       } else {
@@ -96,6 +110,23 @@ export const useTelegram = () => {
       }
       
       console.log('Auth data prepared:', authData);
+      console.log('Auth data keys:', Object.keys(authData));
+      console.log('Auth data values:', {
+        id: authData.id,
+        first_name: authData.first_name,
+        hash: authData.hash,
+        auth_date: authData.auth_date
+      });
+
+      // Проверяем, что у нас есть все необходимые поля
+      if (!authData.id || !authData.first_name || !authData.hash) {
+        console.error('Missing required fields in authData:', {
+          hasId: !!authData.id,
+          hasFirstName: !!authData.first_name,
+          hasHash: !!authData.hash
+        });
+        return false;
+      }
 
       // Отправляем запрос на сервер
       const response = await fetch("/api/auth/telegram", {
@@ -105,6 +136,9 @@ export const useTelegram = () => {
         },
         body: JSON.stringify(authData),
       });
+      
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
 
       if (response.ok) {
         const data = await response.json();

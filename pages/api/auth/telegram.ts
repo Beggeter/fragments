@@ -4,7 +4,6 @@ import { db } from '@/lib/db';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { generateJWT, checkRateLimit } from '@/lib/utils/auth';
-import { boosterTypes, userBoosters } from '@/lib/db/schema'; // Исправлен импорт
 
 interface TelegramAuthData {
   id: number;

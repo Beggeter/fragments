@@ -19,7 +19,9 @@ export const AuthTest: React.FC = () => {
       isAdmin,
       telegramUser: !!telegramUser,
       initData: !!initData,
-      launchParams: !!launchParams
+      launchParams: !!launchParams,
+      launchParamsKeys: launchParams ? Object.keys(launchParams) : [],
+      tgWebAppData: !!(launchParams && launchParams.tgWebAppData)
     });
     
     if (isTelegramReady && isInTelegram && !isAuthenticated && !isAdmin) {
@@ -160,11 +162,25 @@ export const AuthTest: React.FC = () => {
       {launchParams && Object.keys(launchParams).length > 0 && (
         <div className="mt-4 p-3 bg-indigo-50 border border-indigo-200 rounded">
           <h4 className="font-medium text-indigo-800">Launch Params:</h4>
+          <p className="text-indigo-600 mb-2">Keys: {Object.keys(launchParams).join(', ')}</p>
           <pre className="text-indigo-600 text-xs overflow-auto">
             {JSON.stringify(launchParams, null, 2)}
           </pre>
         </div>
       )}
+
+      {/* Отображение сырых данных для отладки */}
+      <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded">
+        <h4 className="font-medium text-gray-800">Debug Info:</h4>
+        <p className="text-gray-600 text-sm">
+          isTelegramReady: {isTelegramReady ? '✅' : '❌'}<br/>
+          isInTelegram: {isInTelegram ? '✅' : '❌'}<br/>
+          telegramUser: {telegramUser ? '✅' : '❌'}<br/>
+          initData: {initData ? '✅' : '❌'}<br/>
+          launchParams: {launchParams ? '✅' : '❌'}<br/>
+          tgWebAppData: {launchParams && launchParams.tgWebAppData ? '✅' : '❌'}
+        </p>
+      </div>
     </div>
   );
 };
