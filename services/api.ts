@@ -1,18 +1,22 @@
-import axios from "axios";
-import { initData } from "@telegram-apps/sdk";
+const BASE_URL = "";
 
-const api = axios.create({
-  baseURL: "",
-  timeout: 10000,
-});
+interface FetchOptions extends Omit<RequestInit, "headers"> {
+  headers?: Record<string, string>;
+}
 
-api.interceptors.request.use((config) => {
-  if (typeof window !== "undefined" && (window as any).Telegram?.WebApp) {
-    const initData = (window as any).Telegram.WebApp.initData;
-    if (initData) {
-      config.headers["X-Telegram-InitData"] = initData;
-    }
+export async function apiFetch<T>(
+  path: string,
+  options: FetchOptions = {}
+): Promise<T> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
+  };
+
+  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text || "API request failed");
   }
-
-  return config;
-});
+  return res.json();
+}

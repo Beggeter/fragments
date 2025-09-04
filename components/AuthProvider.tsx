@@ -1,10 +1,12 @@
-import { useLaunchParams, initData } from "@telegram-apps/sdk-react";
+import { tgLogin } from "@/services/authService";
+import { useEffect } from "react";
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  console.log(initData);
-  console.log(useLaunchParams());
+  useEffect(() => {
+    tgLogin();
+  }, []);
 
   return <>{children}</>;
 };
