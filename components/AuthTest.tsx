@@ -1,186 +1,133 @@
+// Компонент для тестирования новой системы авторизации
 "use client";
 
-import React, { useEffect } from "react";
-import { useTelegram } from "@/hooks/useTelegram";
-import { useUserStore } from "@/store/user";
-import { useAuth } from "@/components/AuthProvider";
+import { useAuth } from "@/lib/auth/context";
+import { useTelegramAuth } from "@/lib/auth/hooks/useTelegramAuth";
+import { useUser } from "@/lib/auth/hooks/useUser";
 
-export const AuthTest: React.FC = () => {
-  const { isTelegramReady, isInTelegram, telegramUser, autoAuth, initData, launchParams, hasLaunchParams } = useTelegram();
-  const { user, admin, isAuthenticated, isAdmin, isLoading } = useUserStore();
-  const { isInitialized, error } = useAuth();
+export function AuthTest() {
+  const { isAuthenticated, user, isLoading, error, logout, clearError } = useAuth();
+  const { isInTelegram, isTelegramAvailable, telegramUser, loginWithTelegram } = useTelegramAuth();
+  const { updateCurrency, refreshBalance } = useUser();
 
-  // Автоматическая авторизация при готовности Telegram
-  useEffect(() => {
-    console.log('AuthTest useEffect:', {
-      isTelegramReady,
-      isInTelegram,
-      isAuthenticated,
-      isAdmin,
-      telegramUser: !!telegramUser,
-      initData: !!initData,
-      launchParams: !!launchParams,
-      launchParamsKeys: launchParams ? Object.keys(launchParams) : [],
-      tgWebAppData: !!(launchParams && launchParams.tgWebAppData)
-    });
-    
-    if (isTelegramReady && isInTelegram && !isAuthenticated && !isAdmin) {
-      console.log('Attempting autoAuth...');
-      autoAuth().then(result => {
-        console.log('AutoAuth result:', result);
-      }).catch(error => {
-        console.error('AutoAuth error:', error);
-      });
+  const handleTestCurrency = async () => {
+    if (user) {
+      // Тестируем обновление валюты
+      updateCurrency(user.currency + 100);
+      
+      // Тестируем обновление с сервера
+      setTimeout(async () => {
+        const newBalance = await refreshBalance();
+        console.log("New balance from server:", newBalance);
+      }, 2000);
     }
-  }, [isTelegramReady, isInTelegram, isAuthenticated, isAdmin, autoAuth]);
+  };
 
-  if (!isInitialized) {
-    return (
-      <div className="p-4 bg-blue-100 border border-blue-300 rounded">
-        <h3 className="font-bold text-blue-800">🔄 Инициализация...</h3>
-        <p className="text-blue-600">Загружаем систему авторизации...</p>
-      </div>
-    );
-  }
+  const handleTestLogin = async () => {
+    try {
+      await loginWithTelegram();
+    } catch (error) {
+      console.error("Login failed:", error);
+    }
+  };
 
-  if (error) {
+  if (isLoading) {
     return (
-      <div className="p-4 bg-red-100 border border-red-300 rounded">
-        <h3 className="font-bold text-red-800">❌ Ошибка инициализации</h3>
-        <p className="text-red-600">{error}</p>
+      <div className="p-4 border rounded-lg bg-blue-50">
+        <div className="text-blue-600">Загрузка авторизации...</div>
       </div>
     );
   }
 
   return (
-    <div className="p-4 bg-gray-100 border border-gray-300 rounded">
-      <h3 className="font-bold text-gray-800 mb-4">🔐 Статус авторизации</h3>
+    <div className="p-4 border rounded-lg bg-gray-50 space-y-4">
+      <h3 className="text-lg font-semibold">Тест авторизации</h3>
       
-      <div className="space-y-2 text-sm">
-        <div>
-          <span className="font-medium">Telegram готов:</span> 
-          <span className={isTelegramReady ? "text-green-600" : "text-red-600"}>
-            {isTelegramReady ? " ✅" : " ❌"}
-          </span>
+      {/* Статус авторизации */}
+      <div className="space-y-2">
+        <div className="text-sm">
+          <strong>Авторизован:</strong> {isAuthenticated ? "✅ Да" : "❌ Нет"}
         </div>
-        
-        <div>
-          <span className="font-medium">В Telegram:</span> 
-          <span className={isInTelegram ? "text-green-600" : "text-red-600"}>
-            {isInTelegram ? " ✅" : " ❌"}
-          </span>
+        <div className="text-sm">
+          <strong>В Telegram:</strong> {isInTelegram ? "✅ Да" : "❌ Нет"}
         </div>
-        
-        <div>
-          <span className="font-medium">Загрузка:</span> 
-          <span className={isLoading ? "text-yellow-600" : "text-green-600"}>
-            {isLoading ? " ⏳" : " ✅"}
-          </span>
-        </div>
-        
-        <div>
-          <span className="font-medium">Авторизован:</span> 
-          <span className={isAuthenticated ? "text-green-600" : "text-red-600"}>
-            {isAuthenticated ? " ✅" : " ❌"}
-          </span>
-        </div>
-        
-        <div>
-          <span className="font-medium">Админ:</span> 
-          <span className={isAdmin ? "text-green-600" : "text-red-600"}>
-            {isAdmin ? " ✅" : " ❌"}
-          </span>
-        </div>
-        
-        <div>
-          <span className="font-medium">Параметры запуска:</span> 
-          <span className={hasLaunchParams ? "text-green-600" : "text-red-600"}>
-            {hasLaunchParams ? " ✅" : " ❌"}
-          </span>
+        <div className="text-sm">
+          <strong>Данные Telegram доступны:</strong> {isTelegramAvailable ? "✅ Да" : "❌ Нет"}
         </div>
       </div>
 
-      {/* Кнопка для ручной авторизации */}
-      <div className="mt-4">
-        <button
-          onClick={() => {
-            console.log('Manual auth attempt...');
-            autoAuth().then(result => {
-              console.log('Manual auth result:', result);
-            }).catch(error => {
-              console.error('Manual auth error:', error);
-            });
-          }}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
-          disabled={!isTelegramReady || !isInTelegram || isAuthenticated || isAdmin}
-        >
-          {isAuthenticated || isAdmin ? 'Уже авторизован' : 'Попробовать авторизацию'}
-        </button>
-      </div>
-
-      {telegramUser && (
-        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded">
-          <h4 className="font-medium text-blue-800">Telegram пользователь:</h4>
-          <p className="text-blue-600">ID: {telegramUser.id}</p>
-          <p className="text-blue-600">Имя: {telegramUser.first_name}</p>
-          {telegramUser.username && (
-            <p className="text-blue-600">Username: @{telegramUser.username}</p>
-          )}
+      {/* Ошибки */}
+      {error && (
+        <div className="p-2 bg-red-100 border border-red-300 rounded text-red-700">
+          <div className="font-semibold">Ошибка:</div>
+          <div>{error}</div>
+          <button 
+            onClick={clearError}
+            className="mt-2 px-2 py-1 bg-red-200 rounded text-sm hover:bg-red-300"
+          >
+            Очистить ошибку
+          </button>
         </div>
       )}
 
+      {/* Данные пользователя */}
       {user && (
-        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
-          <h4 className="font-medium text-green-800">Пользователь:</h4>
-          <p className="text-green-600">ID: {user.id}</p>
-          <p className="text-green-600">Telegram ID: {user.telegramId}</p>
-          <p className="text-green-600">Имя: {user.firstName}</p>
-          <p className="text-green-600">Роль: {user.role}</p>
-          <p className="text-green-600">Валюта: {user.currency}</p>
+        <div className="p-3 bg-green-50 border border-green-200 rounded">
+          <div className="font-semibold text-green-800 mb-2">Данные пользователя:</div>
+          <div className="text-sm space-y-1">
+            <div><strong>ID:</strong> {user.id}</div>
+            <div><strong>Telegram ID:</strong> {user.telegramId}</div>
+            <div><strong>Имя:</strong> {user.firstName} {user.lastName}</div>
+            <div><strong>Username:</strong> {user.username || "Не указан"}</div>
+            <div><strong>Роль:</strong> {user.role}</div>
+            <div><strong>Валюта:</strong> {user.currency}</div>
+            <div><strong>Рекорд:</strong> {user.record}</div>
+            <div><strong>Zen рекорд:</strong> {user.zenRecord}</div>
+          </div>
         </div>
       )}
 
-      {admin && (
-        <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded">
-          <h4 className="font-medium text-purple-800">Админ:</h4>
-          <p className="text-purple-600">ID: {admin.id}</p>
-          <p className="text-purple-600">Telegram ID: {admin.telegramId}</p>
-          <p className="text-purple-600">Имя: {admin.firstName}</p>
-          <p className="text-purple-600">Истекает: {admin.expiresAt}</p>
+      {/* Данные Telegram */}
+      {telegramUser && (
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded">
+          <div className="font-semibold text-blue-800 mb-2">Данные Telegram:</div>
+          <div className="text-sm space-y-1">
+            <div><strong>ID:</strong> {telegramUser.id}</div>
+            <div><strong>Имя:</strong> {telegramUser.first_name} {telegramUser.last_name}</div>
+            <div><strong>Username:</strong> {telegramUser.username || "Не указан"}</div>
+          </div>
         </div>
       )}
 
-      {initData && (
-        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded">
-          <h4 className="font-medium text-yellow-800">InitData:</h4>
-          <p className="text-yellow-600">Hash: {initData.hash ? "✅" : "❌"}</p>
-          <p className="text-yellow-600">Auth Date: {initData.authDate ? String(initData.authDate) : "N/A"}</p>
-          <p className="text-yellow-600">Raw: {initData.raw ? "✅" : "❌"}</p>
-        </div>
-      )}
-
-      {launchParams && Object.keys(launchParams).length > 0 && (
-        <div className="mt-4 p-3 bg-indigo-50 border border-indigo-200 rounded">
-          <h4 className="font-medium text-indigo-800">Launch Params:</h4>
-          <p className="text-indigo-600 mb-2">Keys: {Object.keys(launchParams).join(', ')}</p>
-          <pre className="text-indigo-600 text-xs overflow-auto">
-            {JSON.stringify(launchParams, null, 2)}
-          </pre>
-        </div>
-      )}
-
-      {/* Отображение сырых данных для отладки */}
-      <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded">
-        <h4 className="font-medium text-gray-800">Debug Info:</h4>
-        <p className="text-gray-600 text-sm">
-          isTelegramReady: {isTelegramReady ? '✅' : '❌'}<br/>
-          isInTelegram: {isInTelegram ? '✅' : '❌'}<br/>
-          telegramUser: {telegramUser ? '✅' : '❌'}<br/>
-          initData: {initData ? '✅' : '❌'}<br/>
-          launchParams: {launchParams ? '✅' : '❌'}<br/>
-          tgWebAppData: {launchParams && launchParams.tgWebAppData ? '✅' : '❌'}
-        </p>
+      {/* Кнопки действий */}
+      <div className="space-y-2">
+        {!isAuthenticated && isTelegramAvailable && (
+          <button
+            onClick={handleTestLogin}
+            className="w-full px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          >
+            Войти через Telegram
+          </button>
+        )}
+        
+        {isAuthenticated && (
+          <>
+            <button
+              onClick={handleTestCurrency}
+              className="w-full px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+            >
+              Тест валюты (+100)
+            </button>
+            
+            <button
+              onClick={logout}
+              className="w-full px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+            >
+              Выйти
+            </button>
+          </>
+        )}
       </div>
     </div>
   );
-};
+}

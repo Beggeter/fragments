@@ -3,7 +3,6 @@ import { apiFetch } from "./api";
 import type { TelegramAuthData } from "@/types/user";
 
 export async function tgLogin(): Promise<TelegramAuthData | null> {
-
   const user = initData.user?.();
   const hash = initData.hash?.();
   const authDateRaw = initData.authDate?.();
@@ -28,8 +27,9 @@ export async function tgLogin(): Promise<TelegramAuthData | null> {
     initData: raw,
   };
 
-
   try {
+    console.log("TG login payload:", payload);
+
     const res = await apiFetch<TelegramAuthData>("/auth/tg-login", {
       method: "POST",
       body: JSON.stringify(payload),
