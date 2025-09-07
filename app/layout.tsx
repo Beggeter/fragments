@@ -64,12 +64,6 @@ export default function RootLayout({
         <link rel="preconnect" href="https://telegram.org" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        
-        {/* Telegram Web App Script - оптимизированная загрузка для мобильных сетей */}
-        <Script
-          src="https://telegram.org/js/telegram-web-app.js"
-          strategy="beforeInteractive"
-        />
                 {/* Telegram WebApp initialization now handled in React components */}
         <link
           href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&family=Fredoka:wght@700&display=swap"
