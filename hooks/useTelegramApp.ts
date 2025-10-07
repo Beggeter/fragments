@@ -247,22 +247,6 @@ export const useTelegramApp = (): UseTelegramAppResult => {
     });
   }, [cancelMilestoneTimer, clearSlowForStep]);
 
-  useEffect(() => {
-    loginUserRef.current = userState.loginUser;
-  }, [userState.loginUser]);
-
-  useEffect(() => {
-    logoutRef.current = userState.logout;
-  }, [userState.logout]);
-
-  useEffect(() => {
-    loginAsAdminRef.current = adminAuth.loginAsAdmin;
-  }, [adminAuth.loginAsAdmin]);
-
-  useEffect(() => {
-    logoutAdminRef.current = adminAuth.logoutAdmin;
-  }, [adminAuth.logoutAdmin]);
-
   const recomputeReadiness = useCallback(() => {
     const ready = docReadyRef.current && telegramReadyRef.current && appState === 'idle';
     setIsFullyReady(ready);
@@ -327,6 +311,22 @@ export const useTelegramApp = (): UseTelegramAppResult => {
       } catch {}
     };
   }, [recomputeReadiness]);
+
+  useEffect(() => {
+    loginUserRef.current = userState.loginUser;
+  }, [userState.loginUser]);
+
+  useEffect(() => {
+    logoutRef.current = userState.logout;
+  }, [userState.logout]);
+
+  useEffect(() => {
+    loginAsAdminRef.current = adminAuth.loginAsAdmin;
+  }, [adminAuth.loginAsAdmin]);
+
+  useEffect(() => {
+    logoutAdminRef.current = adminAuth.logoutAdmin;
+  }, [adminAuth.logoutAdmin]);
 
   const fallbackToLogin = useCallback(
     (screen?: HomeScreen) => {
