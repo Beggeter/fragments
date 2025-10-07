@@ -18,7 +18,7 @@ import { useTelegramApp } from "@/hooks/useTelegramApp";
 import { useDisableContextMenu } from "@/hooks/useDisableContextMenu";
 import { useWindowErrorLogger } from "@/hooks/useWindowErrorLogger";
 import { usePointerOverlayGuard } from "@/hooks/usePointerOverlayGuard";
-import { HomeScreen } from "@/types/home";
+import { AppStateStatus, HomeScreen } from "@/types/home";
 import { SlowStartupToast } from "@/components/UI/SlowStartupToast";
 
 const HomePage: React.FC = () => {
@@ -87,6 +87,30 @@ const HomePage: React.FC = () => {
     slowStartup.step && slowStepMessages[slowStartup.step]
       ? slowStepMessages[slowStartup.step]
       : "Подключаемся к сервису, это может занять немного больше времени.";
+
+  const appStateMessages: Record<AppStateStatus, string> = {
+    loading: 'Подключаем Telegram WebApp…',
+    transitioning: 'Готовим экран…',
+    idle: '',
+    error: 'Не удалось подготовить приложение. Попробуйте обновить.',
+  };
+
+  const appStateTitles: Partial<Record<AppStateStatus, string>> = {
+    loading: 'Подключаемся…',
+    transitioning: 'Почти готово…',
+    error: 'Ошибка запуска',
+  };
+
+  const isAppInteractive = appState === 'idle';
+  const interactionLabel = appState === 'transitioning' ? 'Переход…' : appState === 'error' ? 'Ошибка' : 'Загрузка…';
+  const toastActive = slowStartup.active || !isAppInteractive;
+  const toastTitle = slowStartup.active
+    ? 'Загрузка затянулась…'
+    : appStateTitles[appState] ?? 'Загрузка…';
+  const toastDescription = slowStartup.active
+    ? slowStartupDescription
+    : appStateMessages[appState] || slowStartupDescription;
+  const toastDismiss = slowStartup.active ? dismissSlowStartup : undefined;
 
   const ensureStorageAccessible = useCallback(() => {
     if (typeof window === "undefined") {
@@ -323,10 +347,10 @@ const HomePage: React.FC = () => {
     >
 
       <SlowStartupToast
-        active={slowStartup.active}
-        title="Загрузка затянулась…"
-        description={slowStartupDescription}
-        onDismiss={dismissSlowStartup}
+        active={toastActive}
+        title={toastTitle}
+        description={toastDescription}
+        onDismiss={toastDismiss}
       />
 
       {/* Piece Return Animation */}
@@ -359,8 +383,8 @@ const HomePage: React.FC = () => {
           onStartZen={handleStartZen}
           onOpenShop={handleOpenShop}
           onOpenLeaderboard={handleOpenLeaderboard}
-          isTransitioning={appState === 'transitioning'}
-          isInitialized={isInitialized}
+          isInteractive={isAppInteractive}
+          loadingLabel={interactionLabel}
         />
       )}
 

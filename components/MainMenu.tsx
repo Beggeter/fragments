@@ -22,8 +22,8 @@ interface MainMenuProps {
   onStartZen?: () => void;
   onOpenShop: (initialTab?: string) => void;
   onOpenLeaderboard?: () => void;
-  isTransitioning?: boolean;
-  isInitialized?: boolean;
+  isInteractive?: boolean;
+  loadingLabel?: string;
 }
 interface BottomButtonsProps {
   onStartClassic: () => void;
@@ -32,8 +32,8 @@ interface BottomButtonsProps {
   onShowZenAccessModal: () => void;
   onOpenShop: (initialTab?: string) => void;
   canAccessZen: boolean;
-  isTransitioning?: boolean;
-  isInitialized?: boolean;
+  isInteractive?: boolean;
+  loadingLabel: string;
 }
 
 const MainMenu: FC<MainMenuProps> = ({
@@ -41,8 +41,8 @@ const MainMenu: FC<MainMenuProps> = ({
   onStartZen,
   onOpenShop,
   onOpenLeaderboard,
-  isTransitioning = false,
-  isInitialized = true,
+  isInteractive = true,
+  loadingLabel = "Loading...",
 }) => {
   const [fadeIn, setFadeIn] = useState(false);
   const [showComingSoon, setShowComingSoon] = useState(false);
@@ -97,6 +97,7 @@ const MainMenu: FC<MainMenuProps> = ({
                 console.warn('User not ready yet, delaying Daily Bonus open');
               }
             }}
+            disabled={!isInteractive}
           />
           <img
             src={logo.src}
@@ -117,8 +118,8 @@ const MainMenu: FC<MainMenuProps> = ({
             onShowZenAccessModal={() => setShowZenAccessModal(true)}
             onOpenShop={onOpenShop}
             canAccessZen={canAccessZen}
-            isTransitioning={isTransitioning}
-            isInitialized={isInitialized}
+            isInteractive={isInteractive}
+            loadingLabel={loadingLabel}
           />
         </main>
       </div>
@@ -147,7 +148,8 @@ const TopButtons: FC<{
   onOpenShop: () => void;
   onOpenLeaderboard?: () => void;
   onOpenBonusModal?: () => void;
-}> = ({ onOpenShop, onOpenLeaderboard, onOpenBonusModal }) => {
+  disabled?: boolean;
+}> = ({ onOpenShop, onOpenLeaderboard, onOpenBonusModal, disabled = false }) => {
   return (
     <div
       className="flex flex-row justify-between items-start w-full z-[100]"
@@ -168,6 +170,7 @@ const TopButtons: FC<{
           className="min-w-[36vw]   rounded-r-2xl menu-button-static shimmer-effect"
           onClick={onOpenBonusModal}
           leftIcon={gift}
+          disabled={disabled}
           // notificationCount={1}
         />
         <MenuButton
@@ -176,6 +179,7 @@ const TopButtons: FC<{
           gradientClass="orange-gradient"
           className="min-w-[36vw]   rounded-r-2xl menu-button-static"
           onClick={onOpenShop}
+          disabled={disabled}
         />
       </div>
 
@@ -186,6 +190,7 @@ const TopButtons: FC<{
           gradientClass="orange-gradient"
           className="w-[25vw]  rounded-l-2xl menu-button-static"
           onClick={onOpenLeaderboard}
+          disabled={disabled}
         />
       )}
     </div>
@@ -199,16 +204,17 @@ const BottomButtons: FC<BottomButtonsProps> = ({
   onShowZenAccessModal,
   onOpenShop,
   canAccessZen,
-  isTransitioning = false,
-  isInitialized = true,
+  isInteractive = true,
+  loadingLabel,
 }) => {
-  // ✅ Вычисляем состояние блокировки кнопок
-  const isDisabled = isTransitioning || !isInitialized;
+  const isDisabled = !isInteractive;
+  const classicLabel = isDisabled ? loadingLabel : "Classic";
+  const zenLabel = isDisabled ? loadingLabel : "Zen";
   return (
     <div className="flex flex-col gap-4 items-center w-full z-100">
       {canAccessZen ? (
         <MenuButton
-          text={isTransitioning ? "Loading..." : "Zen"}
+          text={zenLabel}
           rightIcon={<CrownIcon className="h-[3rem] min-w-[3rem] drop-shadow-md" />}
           gradientClass="pink-gradient"
           className="rounded-3xl px-6 py-10 max-w-md w-[55vw] sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3"
@@ -219,7 +225,7 @@ const BottomButtons: FC<BottomButtonsProps> = ({
         />
       ) : (
         <MenuButton
-          text="Zen"
+          text={zenLabel}
           rightIcon={<CrownIcon className="h-[3rem] min-w-[3rem] drop-shadow-md" />}
           gradientClass="pink-gradient"
           className="rounded-3xl px-6 py-10 max-w-md w-[55vw] sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3"
@@ -230,7 +236,7 @@ const BottomButtons: FC<BottomButtonsProps> = ({
         />
       )}
       <MenuButton
-        text={isTransitioning ? "Loading..." : "Classic"}
+        text={classicLabel}
         rightIcon={infinity}
         gradientClass="green-gradient"
         className="rounded-3xl px-6 py-10 max-w-md w-[55vw] sm:w-3/4 md:w-2/3 lg:w-1/2 xl:w-1/3"
