@@ -342,7 +342,7 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
     );
   };
 
-  const showDevPanel = user?.telegramId === "610936383";
+  const showDevPanel = `${user?.telegramId ?? ''}` === '610936383';
 
   return (
     <ClickEffect
