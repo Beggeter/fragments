@@ -291,7 +291,15 @@ export const useTelegramApp = (): UseTelegramAppResult => {
           window.setTimeout(() => resolve(false), timeoutMs);
         });
 
-        telegramSuccess = await Promise.race([initPromise, timeoutPromise]);
+        const firstResult = await Promise.race([initPromise, timeoutPromise]);
+        if (!isMounted) return;
+
+        if (firstResult === false) {
+          console.warn('Telegram initialization timeout, awaiting completion…');
+          telegramSuccess = await initPromise;
+        } else {
+          telegramSuccess = firstResult;
+        }
       } catch (error) {
         console.error('Error during Telegram initialization:', error);
         completeMilestone('telegram-init');
