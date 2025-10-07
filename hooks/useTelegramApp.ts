@@ -118,6 +118,7 @@ export const useTelegramApp = (): UseTelegramAppResult => {
   const milestoneTimersRef = useRef<Partial<Record<StartupMilestone, number>>>({});
   const slowStateRef = useRef<SlowStartupState>({ active: false });
   const suppressedStepsRef = useRef<Set<StartupMilestone>>(new Set());
+  const suppressionTimersRef = useRef<Partial<Record<StartupMilestone, number>>>({});
 
   const persistMetrics = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -149,9 +150,20 @@ export const useTelegramApp = (): UseTelegramAppResult => {
     setSlowStartup({ active: false });
     slowStateRef.current = { active: false };
     if (current.step) {
-      suppressedStepsRef.current.add(current.step);
+      const step = current.step;
+      suppressedStepsRef.current.add(step);
+      if (suppressionTimersRef.current[step]) {
+        window.clearTimeout(suppressionTimersRef.current[step]);
+      }
+      suppressionTimersRef.current[step] = window.setTimeout(() => {
+        suppressedStepsRef.current.delete(step);
+        delete suppressionTimersRef.current[step];
+        if (milestoneStartRef.current[step]) {
+          triggerSlowForStep(step, current.threshold ?? DEFAULT_THRESHOLDS[step]);
+        }
+      }, 2000);
     }
-  }, []);
+  }, [triggerSlowForStep]);
 
   const clearSlowForStep = useCallback((step: StartupMilestone) => {
     if (slowStateRef.current.active && slowStateRef.current.step === step) {
@@ -435,6 +447,12 @@ export const useTelegramApp = (): UseTelegramAppResult => {
 
     return () => {
       isMounted = false;
+      (Object.values(suppressionTimersRef.current) as number[]).forEach((timerId) => {
+        if (timerId) {
+          window.clearTimeout(timerId);
+        }
+      });
+      suppressionTimersRef.current = {};
     };
   }, [fallbackToLogin]);
 
