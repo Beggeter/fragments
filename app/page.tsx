@@ -57,6 +57,8 @@ const HomePage: React.FC = () => {
     autoAuthCompleted,
     handleAdminLoginSuccess,
     handleTelegramLoginSuccess,
+    slowStartup,
+    dismissSlowStartup,
   } = useTelegramApp();
 
   const { isAdmin, isLoading: adminLoading } = adminAuth;
@@ -72,6 +74,13 @@ const HomePage: React.FC = () => {
   const handleRestartComplete = useCallback(() => {
     setIsIntentionalRestart(false);
   }, []);
+
+  const slowStepMessages: Record<string, string> = {
+    'sdk-init': 'Подключаем Telegram SDK…',
+    'telegram-init': 'Инициализируем Telegram WebApp…',
+    'session-restore': 'Восстанавливаем ваш сеанс…',
+    'auto-auth': 'Подтверждаем данные Telegram…',
+  };
 
   const ensureStorageAccessible = useCallback(() => {
     if (typeof window === "undefined") {
@@ -306,6 +315,29 @@ const HomePage: React.FC = () => {
         overflow: "hidden",
       }}
     >
+
+      {slowStartup.active && (
+        <div className="fixed inset-0 z-[4000] flex justify-center pt-16 pointer-events-none">
+          <div className="pointer-events-auto bg-black/85 text-white px-5 py-4 rounded-xl w-[min(90%,320px)] shadow-lg space-y-3">
+            <div className="flex items-center gap-3">
+              <span className="h-4 w-4 border-2 border-white/50 border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm font-semibold">Загрузка затянулась…</span>
+            </div>
+            <p className="text-xs leading-relaxed text-white/80">
+              {slowStartup.step && slowStepMessages[slowStartup.step]
+                ? slowStepMessages[slowStartup.step]
+                : "Подключаемся к сервису, это может занять немного больше времени."}
+            </p>
+            <button
+              type="button"
+              onClick={dismissSlowStartup}
+              className="text-xs text-white/70 hover:text-white transition"
+            >
+              Скрыть
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Piece Return Animation */}
       {pieceReturnAnimation && boardRect && (

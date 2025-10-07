@@ -4,6 +4,43 @@ import { users, userGames, currencyTransactions, recordHistory } from '../schema
 import type { User, NewUser, UserRole } from '../types';
 
 export class UserService {
+  private static async refreshZenSubscriptionStatus(user: User | null): Promise<User | null> {
+    if (!user) {
+      return null;
+    }
+
+    if (!user.hasZenSubscription || !user.zenSubscriptionEndDate) {
+      return user;
+    }
+
+    const endDate = new Date(user.zenSubscriptionEndDate);
+    const now = new Date();
+
+    if (Number.isNaN(endDate.getTime()) || endDate > now) {
+      return user;
+    }
+
+    const [updated] = await db
+      .update(users)
+      .set({
+        hasZenSubscription: false,
+        zenSubscriptionEndDate: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, user.id))
+      .returning();
+
+    if (updated) {
+      return updated;
+    }
+
+    return {
+      ...user,
+      hasZenSubscription: false,
+      zenSubscriptionEndDate: null,
+    };
+  }
+
   // Создание нового пользователя
   static async createUser(userData: Omit<NewUser, 'id' | 'createdAt' | 'updatedAt'>): Promise<User> {
     const [user] = await db.insert(users).values(userData).returning();
@@ -13,13 +50,13 @@ export class UserService {
   // Получение пользователя по Telegram ID
   static async getUserByTelegramId(telegramId: string): Promise<User | null> {
     const [user] = await db.select().from(users).where(eq(users.telegramId, telegramId));
-    return user || null;
+    return this.refreshZenSubscriptionStatus(user || null);
   }
 
   // Получение пользователя по ID
   static async getUserById(id: number): Promise<User | null> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || null;
+    return this.refreshZenSubscriptionStatus(user || null);
   }
 
   // Обновление пользователя

@@ -7,6 +7,27 @@ import { useUser } from './useUser';
 
 type ScreenState = HomeScreen | '';
 
+type StartupMilestone = 'sdk-init' | 'telegram-init' | 'session-restore' | 'auto-auth';
+
+interface SlowStartupState {
+  active: boolean;
+  step?: StartupMilestone;
+  since?: number;
+  threshold?: number;
+}
+
+type StartupMetrics = Record<StartupMilestone, number[]>;
+
+const STARTUP_METRICS_KEY = 'startupMetrics.v1';
+const METRIC_SAMPLE_SIZE = 20;
+
+const DEFAULT_THRESHOLDS: Record<StartupMilestone, number> = {
+  'sdk-init': 4000,
+  'telegram-init': 8000,
+  'session-restore': 3500,
+  'auto-auth': 7000,
+};
+
 interface UseTelegramAppResult {
   adminAuth: ReturnType<typeof useAdminAuth>;
   userState: ReturnType<typeof useUser>;
@@ -20,10 +41,62 @@ interface UseTelegramAppResult {
   handleAdminLoginSuccess: (token: string, expiresAt: string) => void;
   handleTelegramLoginSuccess: (user: any, sessionToken: string) => void;
   handleLogout: () => void;
+  slowStartup: SlowStartupState;
+  dismissSlowStartup: () => void;
 }
 
 const isGameScreen = (screen: ScreenState) =>
   screen === 'classic mode' || screen === 'zen mode' || screen === 'settings' || screen === 'gameover' || screen === 'shop' || screen === 'leaderboard';
+
+const loadStartupMetrics = (): StartupMetrics => {
+  if (typeof window === 'undefined') {
+    return {
+      'sdk-init': [],
+      'telegram-init': [],
+      'session-restore': [],
+      'auto-auth': [],
+    };
+  }
+
+  try {
+    const raw = safeLocalStorage.getItem(STARTUP_METRICS_KEY);
+    if (!raw) {
+      return {
+        'sdk-init': [],
+        'telegram-init': [],
+        'session-restore': [],
+        'auto-auth': [],
+      };
+    }
+    const parsed = JSON.parse(raw) as StartupMetrics;
+    return {
+      'sdk-init': parsed['sdk-init']?.slice?.(-METRIC_SAMPLE_SIZE) ?? [],
+      'telegram-init': parsed['telegram-init']?.slice?.(-METRIC_SAMPLE_SIZE) ?? [],
+      'session-restore': parsed['session-restore']?.slice?.(-METRIC_SAMPLE_SIZE) ?? [],
+      'auto-auth': parsed['auto-auth']?.slice?.(-METRIC_SAMPLE_SIZE) ?? [],
+    };
+  } catch {
+    return {
+      'sdk-init': [],
+      'telegram-init': [],
+      'session-restore': [],
+      'auto-auth': [],
+    };
+  }
+};
+
+const computeThreshold = (metric: StartupMilestone, samples: number[]): number => {
+  if (!samples.length) {
+    return DEFAULT_THRESHOLDS[metric];
+  }
+
+  const mean = samples.reduce((acc, value) => acc + value, 0) / samples.length;
+  const variance = samples.reduce((acc, value) => acc + Math.pow(value - mean, 2), 0) / samples.length;
+  const std = Math.sqrt(variance);
+
+  const adaptive = mean + std * 2;
+  return Math.max(DEFAULT_THRESHOLDS[metric], Math.min(adaptive, DEFAULT_THRESHOLDS[metric] * 4));
+};
 
 export const useTelegramApp = (): UseTelegramAppResult => {
   const adminAuth = useAdminAuth();
@@ -34,11 +107,125 @@ export const useTelegramApp = (): UseTelegramAppResult => {
   const [isTelegramAutoAuth, setIsTelegramAutoAuth] = useState(false);
   const [autoAuthCompleted, setAutoAuthCompleted] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [slowStartup, setSlowStartup] = useState<SlowStartupState>({ active: false });
 
   const loginUserRef = useRef(userState.loginUser);
   const logoutRef = useRef(userState.logout);
   const loginAsAdminRef = useRef(adminAuth.loginAsAdmin);
   const logoutAdminRef = useRef(adminAuth.logoutAdmin);
+  const metricsRef = useRef<StartupMetrics>(loadStartupMetrics());
+  const milestoneStartRef = useRef<Partial<Record<StartupMilestone, number>>>({});
+  const milestoneTimersRef = useRef<Partial<Record<StartupMilestone, number>>>({});
+  const slowStateRef = useRef<SlowStartupState>({ active: false });
+  const suppressedStepsRef = useRef<Set<StartupMilestone>>(new Set());
+
+  const persistMetrics = useCallback(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const snapshot = JSON.stringify(metricsRef.current);
+      window.setTimeout(() => {
+        safeLocalStorage.setItem(STARTUP_METRICS_KEY, snapshot);
+      }, 0);
+    } catch {
+      // ignore storage errors
+    }
+  }, []);
+
+  const updateMetrics = useCallback(
+    (step: StartupMilestone, duration: number) => {
+      const samples = metricsRef.current[step] ?? [];
+      samples.push(duration);
+      if (samples.length > METRIC_SAMPLE_SIZE) {
+        samples.splice(0, samples.length - METRIC_SAMPLE_SIZE);
+      }
+      metricsRef.current[step] = samples;
+      persistMetrics();
+    },
+    [persistMetrics],
+  );
+
+  const dismissSlowStartup = useCallback(() => {
+    const current = slowStateRef.current;
+    setSlowStartup({ active: false });
+    slowStateRef.current = { active: false };
+    if (current.step) {
+      suppressedStepsRef.current.add(current.step);
+    }
+  }, []);
+
+  const clearSlowForStep = useCallback((step: StartupMilestone) => {
+    if (slowStateRef.current.active && slowStateRef.current.step === step) {
+      slowStateRef.current = { active: false };
+      setSlowStartup({ active: false });
+    }
+    suppressedStepsRef.current.delete(step);
+  }, []);
+
+  const triggerSlowForStep = useCallback(
+    (step: StartupMilestone, threshold: number) => {
+      if (suppressedStepsRef.current.has(step)) {
+        return;
+      }
+      const info: SlowStartupState = {
+        active: true,
+        step,
+        since: Date.now(),
+        threshold,
+      };
+      slowStateRef.current = info;
+      setSlowStartup(info);
+    },
+    [],
+  );
+
+  const cancelMilestoneTimer = useCallback((step: StartupMilestone) => {
+    const timer = milestoneTimersRef.current[step];
+    if (timer) {
+      window.clearTimeout(timer);
+      delete milestoneTimersRef.current[step];
+    }
+  }, []);
+
+  const startMilestone = useCallback(
+    (step: StartupMilestone) => {
+      const now = Date.now();
+      milestoneStartRef.current[step] = now;
+      cancelMilestoneTimer(step);
+
+      const samples = metricsRef.current[step] ?? [];
+      const threshold = computeThreshold(step, samples);
+      milestoneTimersRef.current[step] = window.setTimeout(() => {
+        triggerSlowForStep(step, threshold);
+      }, threshold);
+    },
+    [cancelMilestoneTimer, triggerSlowForStep],
+  );
+
+  const completeMilestone = useCallback(
+    (step: StartupMilestone) => {
+      const start = milestoneStartRef.current[step];
+      if (!start) {
+        cancelMilestoneTimer(step);
+        clearSlowForStep(step);
+        return;
+      }
+
+      const duration = Date.now() - start;
+      updateMetrics(step, duration);
+      delete milestoneStartRef.current[step];
+      cancelMilestoneTimer(step);
+      clearSlowForStep(step);
+    },
+    [cancelMilestoneTimer, updateMetrics, clearSlowForStep],
+  );
+
+  const cancelAllMilestones = useCallback(() => {
+    (Object.keys(milestoneStartRef.current) as StartupMilestone[]).forEach((step) => {
+      cancelMilestoneTimer(step);
+      delete milestoneStartRef.current[step];
+      clearSlowForStep(step);
+    });
+  }, [cancelMilestoneTimer, clearSlowForStep]);
 
   useEffect(() => {
     loginUserRef.current = userState.loginUser;
@@ -58,6 +245,7 @@ export const useTelegramApp = (): UseTelegramAppResult => {
 
   const fallbackToLogin = useCallback(
     (screen?: HomeScreen) => {
+      cancelAllMilestones();
       const targetScreen = screen ?? (isLaunchedInTelegram() ? 'telegram login' : 'admin login');
       if (targetScreen === 'telegram login') {
         setIsTelegramAutoAuth(false);
@@ -76,10 +264,13 @@ export const useTelegramApp = (): UseTelegramAppResult => {
     setAppState('loading');
 
     const initializeApp = async () => {
+      startMilestone('sdk-init');
       try {
         await init();
+        completeMilestone('sdk-init');
       } catch (error) {
         console.warn('Failed to initialize @telegram-apps/sdk:', error);
+        completeMilestone('sdk-init');
         if (!isMounted) return;
         fallbackToLogin();
         return;
@@ -87,6 +278,7 @@ export const useTelegramApp = (): UseTelegramAppResult => {
 
       if (!isMounted) return;
 
+      startMilestone('telegram-init');
       let telegramSuccess = false;
       try {
         const connection = (navigator as any)?.connection;
@@ -102,10 +294,13 @@ export const useTelegramApp = (): UseTelegramAppResult => {
         telegramSuccess = await Promise.race([initPromise, timeoutPromise]);
       } catch (error) {
         console.error('Error during Telegram initialization:', error);
+        completeMilestone('telegram-init');
         if (!isMounted) return;
         fallbackToLogin();
         return;
       }
+
+      completeMilestone('telegram-init');
 
       if (!isMounted) return;
 
@@ -114,6 +309,7 @@ export const useTelegramApp = (): UseTelegramAppResult => {
         return;
       }
 
+      startMilestone('session-restore');
       const existingSessionToken = safeLocalStorage.getItem('sessionToken');
       const existingAdminToken = safeLocalStorage.getItem('adminToken');
       const cachedUser = safeLocalStorage.getItem('userData');
@@ -122,6 +318,7 @@ export const useTelegramApp = (): UseTelegramAppResult => {
         try {
           const parsed = JSON.parse(cachedUser);
           if (parsed && typeof parsed.telegramId !== 'undefined' && parsed.telegramId !== null) {
+            completeMilestone('session-restore');
             setCurrentScreen('main menu');
             setAppState('idle');
             setIsInitialized(true);
@@ -133,11 +330,14 @@ export const useTelegramApp = (): UseTelegramAppResult => {
       }
 
       if (existingAdminToken) {
+        completeMilestone('session-restore');
         setCurrentScreen('main menu');
         setAppState('idle');
         setIsInitialized(true);
         return;
       }
+
+      completeMilestone('session-restore');
 
       const inTelegram = isLaunchedInTelegram();
 
@@ -152,6 +352,7 @@ export const useTelegramApp = (): UseTelegramAppResult => {
 
           const tgUser = tg.initDataUnsafe?.user;
           if (tgUser) {
+            startMilestone('auto-auth');
             try {
               const initData = tg.initData || '';
               const urlParams = new URLSearchParams(initData);
@@ -178,6 +379,7 @@ export const useTelegramApp = (): UseTelegramAppResult => {
                   safeLocalStorage.setItem('userData', JSON.stringify(data.user));
                   loginUserRef.current(data.user, data.sessionToken);
                   setAutoAuthCompleted(true);
+                  completeMilestone('auto-auth');
                   await new Promise((resolve) => setTimeout(resolve, 300));
                   if (!isMounted) return;
                   setCurrentScreen('main menu');
@@ -187,17 +389,20 @@ export const useTelegramApp = (): UseTelegramAppResult => {
                 }
 
                 console.error('Auth server error:', data);
+                completeMilestone('auto-auth');
                 if (!isMounted) return;
                 fallbackToLogin('telegram login');
                 return;
               }
 
               console.warn('No hash found in Telegram initData');
+              completeMilestone('auto-auth');
               if (!isMounted) return;
               fallbackToLogin('telegram login');
               return;
             } catch (error) {
               console.error('Auto-auth failed:', error);
+              completeMilestone('auto-auth');
               if (!isMounted) return;
               fallbackToLogin('telegram login');
               return;
@@ -205,12 +410,14 @@ export const useTelegramApp = (): UseTelegramAppResult => {
           }
         }
 
+        clearSlowForStep('auto-auth');
         setCurrentScreen('telegram login');
         setAppState('idle');
         setIsInitialized(true);
         return;
       }
 
+      clearSlowForStep('auto-auth');
       setCurrentScreen('admin login');
       setAppState('idle');
       setIsInitialized(true);
@@ -289,8 +496,9 @@ export const useTelegramApp = (): UseTelegramAppResult => {
       loginUserRef.current(user, sessionToken);
       setCurrentScreen('main menu');
       setAppState('idle');
+      clearSlowForStep('session-restore');
     },
-    [],
+    [clearSlowForStep],
   );
 
   const handleLogout = useCallback(() => {
@@ -366,5 +574,7 @@ export const useTelegramApp = (): UseTelegramAppResult => {
     handleAdminLoginSuccess,
     handleTelegramLoginSuccess,
     handleLogout,
+    slowStartup,
+    dismissSlowStartup,
   };
 };
