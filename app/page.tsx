@@ -510,7 +510,20 @@ const HomePage: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 150));
       
       // Проверка готовности хранилища
-      if (typeof window !== 'undefined' && !window.localStorage) {
+      let hasLocalStorage = true;
+      if (typeof window !== 'undefined') {
+        try {
+          const testKey = '__storage_test__';
+          window.localStorage?.setItem(testKey, '1');
+          window.localStorage?.removeItem(testKey);
+        } catch (storageError) {
+          hasLocalStorage = false;
+        }
+      } else {
+        hasLocalStorage = false;
+      }
+
+      if (!hasLocalStorage) {
         console.warn('⚠️ LocalStorage not available, using fallback');
       }
       
@@ -518,7 +531,7 @@ const HomePage: React.FC = () => {
       setAppState('idle');
     } catch (error) {
       console.error('❌ Failed to start Classic mode:', error);
-      setAppState('error');
+      setAppState('idle');
     }
 
   }, [appState]);
@@ -540,7 +553,20 @@ const HomePage: React.FC = () => {
       await new Promise(resolve => setTimeout(resolve, 150));
       
       // Проверка готовности хранилища
-      if (typeof window !== 'undefined' && !window.localStorage) {
+      let hasLocalStorage = true;
+      if (typeof window !== 'undefined') {
+        try {
+          const testKey = '__storage_test__';
+          window.localStorage?.setItem(testKey, '1');
+          window.localStorage?.removeItem(testKey);
+        } catch (storageError) {
+          hasLocalStorage = false;
+        }
+      } else {
+        hasLocalStorage = false;
+      }
+
+      if (!hasLocalStorage) {
         console.warn('⚠️ LocalStorage not available, using fallback');
       }
       
@@ -548,7 +574,7 @@ const HomePage: React.FC = () => {
       setAppState('idle');
     } catch (error) {
       console.error('❌ Failed to start Zen mode:', error);
-      setAppState('error');
+      setAppState('idle');
     }
   }, [appState]);
 
