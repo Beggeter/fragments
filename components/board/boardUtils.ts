@@ -1,5 +1,6 @@
 import { Block, Position } from "../../lib/data/types";
 import { placeBlock } from "../../lib/core/engine";
+import { HandlePiecePlacementArgs } from "../game-board/types";
 
 export function calculatePotentialClearLines(
   board: any[][],
@@ -68,33 +69,13 @@ export function handlePiecePlacement({
   hoverCell,
   width,
   placePiece,
-  setClearingHorizontalLines,
-  setClearingVerticalLines,
-  setIsAnimating,
   boardRect,
   dynamicCellSize,
-  GAP_SIZE_PX,
+  gapSizePx,
   useGameStore,
   onAfterPlacement,
   addClearAnimations,
-}: {
-  x: number;
-  y: number;
-  board: any[][];
-  draggedPiece: any;
-  hoverCell: any;
-  width: number;
-  placePiece: (x: number, y: number) => void;
-  setClearingHorizontalLines: (lines: number[]) => void;
-  setClearingVerticalLines: (lines: number[]) => void;
-  setIsAnimating: (anim: boolean) => void;
-  boardRect: DOMRect | null;
-  dynamicCellSize: number;
-  GAP_SIZE_PX: number;
-  useGameStore: any;
-  onAfterPlacement?: (clearedCells: boolean[][], placedPiecePosition: Position, placedPiece: Block) => void;
-  addClearAnimations?: (board: any[][], cellsToClear: boolean[][], placedPieceColor?: import("../../lib/data/types").BlockColor) => void;
-}) {
+}: HandlePiecePlacementArgs) {
   if (draggedPiece && hoverCell) {
     const getCellsToClear = require("@/lib/core/engine").getCellsToClear;
     // Сначала размещаем фигуру на временной доске
@@ -116,8 +97,8 @@ export function handlePiecePlacement({
         dynamicCellSize &&
         hoverCell
       ) {
-        const pixelX = hoverCell.x * (dynamicCellSize + GAP_SIZE_PX);
-        const pixelY = hoverCell.y * (dynamicCellSize + GAP_SIZE_PX);
+        const pixelX = hoverCell.x * (dynamicCellSize + gapSizePx);
+        const pixelY = hoverCell.y * (dynamicCellSize + gapSizePx);
         lastScoreResult.pixelPosition = { x: pixelX, y: pixelY };
         useGameStore.setState({ lastScoreResult: { ...lastScoreResult } });
       }
