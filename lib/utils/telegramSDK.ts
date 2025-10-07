@@ -3,6 +3,8 @@
 interface TelegramWebApp {
   ready: () => void;
   expand: () => void;
+  onEvent?: (eventType: string, callback: () => void) => void;
+  offEvent?: (eventType: string, callback: () => void) => void;
   disableClosingConfirmation?: () => void;
   enableClosingConfirmation?: () => void;
   setHeaderColor?: (color: string) => void;
@@ -61,7 +63,7 @@ export const safeLocalStorage = {
       return null;
     }
   },
-  
+
   setItem: (key: string, value: string): boolean => {
     if (typeof window === "undefined") return false;
     try {
@@ -71,7 +73,7 @@ export const safeLocalStorage = {
       return false;
     }
   },
-  
+
   removeItem: (key: string): boolean => {
     if (typeof window === "undefined") return false;
     try {
@@ -86,14 +88,14 @@ export const safeLocalStorage = {
 // Проверка, запущено ли приложение в Telegram
 export function isLaunchedInTelegram(): boolean {
   if (typeof window === "undefined") return false;
-  
+
   // Проверяем наличие Telegram WebApp объекта
   const hasTelegramWebApp = !!(window.Telegram && window.Telegram.WebApp);
-  
+
   // Проверяем наличие tgWebAppData в URL
   const urlParams = new URLSearchParams(window.location.search);
   const hasTgWebAppData = urlParams.has("tgWebAppData");
-  
+
   return hasTelegramWebApp || hasTgWebAppData;
 }
 
@@ -101,7 +103,7 @@ export function isLaunchedInTelegram(): boolean {
 function waitForTelegramWebApp(maxAttempts = 40, interval = 250): Promise<boolean> {
   return new Promise((resolve) => {
     let attempts = 0;
-    
+
     const checkTelegram = () => {
       // Сначала быстрая проверка
       if (window.Telegram?.WebApp) {
@@ -109,26 +111,26 @@ function waitForTelegramWebApp(maxAttempts = 40, interval = 250): Promise<boolea
         resolve(true);
         return;
       }
-      
+
       attempts++;
-      
+
       // Увеличиваем интервал для мобильных сетей после 10 попыток
       const currentInterval = attempts > 10 ? interval * 2 : interval;
-      
+
       if (attempts >= maxAttempts) {
         console.warn(`❌ Telegram WebApp API not loaded after ${maxAttempts} attempts`);
         resolve(false);
         return;
       }
-      
+
       // Логируем каждые 5 попыток для отладки мобильных сетей
       if (attempts % 5 === 0) {
         console.log(`🔄 Still waiting for Telegram API... (${attempts}/${maxAttempts})`);
       }
-      
+
       setTimeout(checkTelegram, currentInterval);
     };
-    
+
     checkTelegram();
   });
 }
@@ -138,10 +140,10 @@ function setupViewport(tg: TelegramWebApp) {
   const root = document.documentElement;
   const height = tg.viewportHeight || window.innerHeight;
   const stableHeight = tg.viewportStableHeight || window.innerHeight;
-  
+
   root.style.setProperty('--tg-viewport-height', height + 'px');
   root.style.setProperty('--tg-viewport-stable-height', stableHeight + 'px');
-  
+
   // Обновляем viewport при изменении размера
   const updateViewport = () => {
     const newHeight = tg.viewportHeight || window.innerHeight;
@@ -149,11 +151,11 @@ function setupViewport(tg: TelegramWebApp) {
     root.style.setProperty('--tg-viewport-height', newHeight + 'px');
     root.style.setProperty('--tg-viewport-stable-height', newStableHeight + 'px');
   };
-  
+
   // Используем AbortController для корректной очистки
   const controller = new AbortController();
   window.addEventListener('resize', updateViewport, { signal: controller.signal });
-  
+
   return () => controller.abort();
 }
 
@@ -162,7 +164,7 @@ function setupFullscreen(tg: TelegramWebApp) {
   try {
     const fullscreenEnabled = safeLocalStorage.getItem('fullscreenEnabled');
     const shouldEnableFullscreen = fullscreenEnabled !== 'false'; // По умолчанию включен
-    
+
     if (tg.requestFullscreen && shouldEnableFullscreen && !tg.isFullscreen) {
       tg.requestFullscreen();
     }
@@ -182,31 +184,31 @@ function setupFallbackViewport() {
 async function performInitialization(): Promise<boolean> {
   try {
     console.log('🔄 Starting Telegram WebApp initialization...');
-    
+
     // Проверяем, что мы на клиенте
     if (typeof window === "undefined") {
       console.warn('❌ Window is undefined, cannot initialize Telegram WebApp');
       return false;
     }
-    
+
     // Задержка для стабильности (увеличена для мобильных сетей)
     await new Promise(resolve => setTimeout(resolve, 200));
-    
+
     // Дополнительная проверка сети
     const connectionType = (navigator as any)?.connection?.effectiveType;
     if (connectionType) {
       console.log('📶 Network type detected:', connectionType);
     }
-    
+
     // Если не в Telegram, настраиваем fallback
     if (!isLaunchedInTelegram()) {
       console.log('🌐 Not in Telegram, setting up fallback viewport');
       setupFallbackViewport();
       return true; // Считаем успешной инициализацию для браузера
     }
-    
+
     console.log('📱 In Telegram environment, waiting for API...');
-    
+
     // Ждем загрузки Telegram WebApp API
     const isLoaded = await waitForTelegramWebApp();
     if (!isLoaded) {
@@ -214,18 +216,18 @@ async function performInitialization(): Promise<boolean> {
       setupFallbackViewport();
       return false;
     }
-    
+
     const tg = window.Telegram!.WebApp!;
     console.log('✅ Telegram WebApp API loaded successfully');
-    
+
     // Базовая инициализация
     tg.ready();
     tg.expand();
-    
+
     if (tg.disableClosingConfirmation) {
       tg.disableClosingConfirmation();
     }
-    
+
     // Устанавливаем цвет header
     if (tg.setHeaderColor) {
       try {
@@ -234,19 +236,19 @@ async function performInitialization(): Promise<boolean> {
         console.warn('Failed to set header color:', error);
       }
     }
-    
+
     // Настраиваем viewport
     const cleanupViewport = setupViewport(tg);
-    
+
     // Настраиваем полноэкранный режим
     setupFullscreen(tg);
-    
+
     // Сохраняем cleanup функцию для будущего использования
     (window as any).__telegramCleanup = cleanupViewport;
-    
+
     console.log('🎉 Telegram WebApp initialization completed successfully');
     return true;
-    
+
   } catch (error) {
     console.error('❌ Telegram WebApp initialization failed:', error);
     setupFallbackViewport();
@@ -260,21 +262,21 @@ export async function initializeTelegramWebApp(): Promise<boolean> {
   if (isInitialized) {
     return true;
   }
-  
+
   // Если инициализация в процессе, ждем её завершения
   if (isInitializing && initPromise) {
     return initPromise;
   }
-  
+
   // Начинаем инициализацию
   isInitializing = true;
   initPromise = performInitialization();
-  
+
   try {
     const success = await initPromise;
     isInitialized = success;
     isInitializing = false;
-    
+
     // Уведомляем всех подписчиков
     initCallbacks.forEach(callback => {
       try {
@@ -283,7 +285,7 @@ export async function initializeTelegramWebApp(): Promise<boolean> {
         console.error('Error in init callback:', error);
       }
     });
-    
+
     return success;
   } catch (error) {
     isInitializing = false;
@@ -302,7 +304,7 @@ export function onTelegramWebAppReady(callback: (success: boolean) => void): () 
     // Добавляем в очередь
     initCallbacks.push(callback);
   }
-  
+
   // Возвращаем функцию отписки
   return () => {
     const index = initCallbacks.indexOf(callback);

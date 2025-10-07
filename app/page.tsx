@@ -27,6 +27,7 @@ const HomePage: React.FC = () => {
   const [devScreen, setDevScreen] = useState<HomeScreen | "">("");
   const [resourcesLoaded, setResourcesLoaded] = useState(false);
   const [boardRect, setBoardRect] = useState<DOMRect | null>(null);
+
   // Track where the shop was opened from
   const [shopReturnTo, setShopReturnTo] = useState<HomeScreen | null>(null);
   const [shopInitialTab, setShopInitialTab] = useState<"shards" | "boosters" | "zen">("shards");
@@ -141,6 +142,18 @@ const HomePage: React.FC = () => {
       setAppState("idle");
     }
   }, [currentScreen, setAppState]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (currentScreen !== "main menu") return;
+
+    const tg = window.Telegram?.WebApp;
+    try {
+      tg?.ready?.();
+    } catch (error) {
+      console.warn('Telegram ready() call failed:', error);
+    }
+  }, [currentScreen]);
 
   const handleStartClassic = useCallback(async () => {
     if (appState !== "idle") return;
@@ -335,11 +348,10 @@ const HomePage: React.FC = () => {
 
   return (
     <div
-      className={`${
-        currentScreen === "classic mode" || currentScreen === "zen mode"
+      className={`${currentScreen === "classic mode" || currentScreen === "zen mode"
           ? "bg-[var(--game-background)]"
           : "menu-bg"
-      } min-h-screen `}
+        } min-h-screen `}
       style={{
         paddingTop: "var(--tg-content-safe-area-inset-top)",
         overflow: "hidden",
