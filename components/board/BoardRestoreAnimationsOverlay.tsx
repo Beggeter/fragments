@@ -91,22 +91,6 @@ const RestoreCell: React.FC<{
   const [dx, dy] = restoreVectors[vectorIndex];
   const startX = dx * cellSize;
   const startY = dy * cellSize;
-  
-  const animationName = `restoreCell_${cell.id}`;
-  const keyframes = `@keyframes ${animationName} {
-    0% { 
-      opacity: 0; 
-      transform: translate(${startX}px, ${startY}px) scale(0.3) rotate(180deg);
-    }
-    30% { 
-      opacity: 1; 
-      transform: translate(${startX * 0.5}px, ${startY * 0.5}px) scale(0.6) rotate(90deg);
-    }
-    100% { 
-      opacity: 1; 
-      transform: translate(0px, 0px) scale(1) rotate(0deg);
-    }
-  }`;
 
   return (
     <div
@@ -123,20 +107,15 @@ const RestoreCell: React.FC<{
       }}
     >
       <div
+        className="board-restore-cell"
         style={{
-          width: cellSize,
-          height: cellSize,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          animation: `${animationName} ${ANIMATION_DURATION}s ease-out forwards`,
-          animationDelay: cell.delay ? `${cell.delay}s` : undefined,
-          willChange: 'transform, opacity',
-        }}
+          "--board-restore-delay": cell.delay ? `${cell.delay}s` : undefined,
+          "--restore-start-x": `${startX}px`,
+          "--restore-start-y": `${startY}px`,
+        } as React.CSSProperties}
       >
         <Piece color={cell.color} size={cellSize} />
       </div>
-      <style>{keyframes}</style>
     </div>
   );
 };
