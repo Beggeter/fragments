@@ -28,6 +28,30 @@ interface UserState {
   isAuthenticated: boolean;
 }
 
+const decodeTokenExpiry = (token: string): number | null => {
+  try {
+    if (!token) {
+      return null;
+    }
+
+    if (token.includes('.')) {
+      const [, payloadPart] = token.split('.');
+      if (!payloadPart) {
+        return null;
+      }
+      const normalized = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+      const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=');
+      const payload = JSON.parse(atob(padded));
+      return typeof payload.exp === 'number' ? payload.exp : null;
+    }
+
+    const decoded = JSON.parse(atob(token));
+    return typeof decoded.exp === 'number' ? decoded.exp : null;
+  } catch {
+    return null;
+  }
+};
+
 export const useUser = () => {
   const [userState, setUserState] = useState<UserState>({
     user: null,
@@ -130,10 +154,11 @@ export const useUser = () => {
         }
 
         // Проверяем, не истек ли токен (простая проверка)
-        const tokenData = JSON.parse(atob(sessionToken));
         const now = Math.floor(Date.now() / 1000);
 
-        if (tokenData.exp > now) {
+        const tokenExpiry = decodeTokenExpiry(sessionToken);
+
+        if (!tokenExpiry || tokenExpiry > now) {
           // Всегда получаем свежие данные с сервера, особенно баланс
           await refreshUserData(user.telegramId, sessionToken);
           return;

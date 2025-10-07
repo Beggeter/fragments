@@ -64,6 +64,17 @@ const HomePage: React.FC = () => {
   // Вместо isTransitioning и isInitialized:
   const [appState, setAppState] = useState<'idle' | 'transitioning' | 'error' | 'loading'>('loading');
 
+  const fallbackToLogin = useCallback((screen?: Screen) => {
+    const targetScreen = screen ?? (isLaunchedInTelegram() ? "telegram login" : "admin login");
+    if (targetScreen === "telegram login") {
+      setIsTelegramAutoAuth(false);
+    }
+    setAutoAuthCompleted(false);
+    setCurrentScreen(targetScreen);
+    setAppState('idle');
+    setIsInitialized(true);
+  }, []);
+
   // Создаем стабильную функцию для завершения перезапуска
   const handleRestartComplete = useCallback(() => {
     setIsIntentionalRestart(false);
@@ -100,7 +111,7 @@ const HomePage: React.FC = () => {
         await init();
       } catch (error) {
         console.warn('Failed to initialize @telegram-apps/sdk:', error);
-        setAppState('error');
+        fallbackToLogin();
         return;
       }
       
@@ -131,13 +142,13 @@ const HomePage: React.FC = () => {
       } catch (error) {
         console.error('❌ Error during Telegram initialization:', error);
         telegramSuccess = false;
-        setAppState('error');
+        fallbackToLogin();
         return;
       }
       
       // Проверяем, что мы на клиенте
       if (typeof window === "undefined") {
-        setAppState('error');
+        fallbackToLogin();
         return;
       }
 
@@ -223,17 +234,17 @@ const HomePage: React.FC = () => {
                   return;
                 } else {
                   console.error('❌ Auth server error:', data);
-                  setAppState('error');
+                  fallbackToLogin("telegram login");
                   return;
                 }
               } else {
                 console.warn('⚠️ No hash found in Telegram initData');
-                setAppState('error');
+                fallbackToLogin("telegram login");
                 return;
               }
             } catch (error) {
               console.error('Auto-auth failed:', error);
-              setAppState('error');
+              fallbackToLogin("telegram login");
               return;
             }
           }
@@ -252,7 +263,7 @@ const HomePage: React.FC = () => {
     };
 
     initializeApp();
-  }, []); // Запускаем только один раз при монтировании
+  }, [fallbackToLogin]); // Запускаем только один раз при монтировании
 
   useEffect(() => {
     const preventContextMenu = (e: MouseEvent | TouchEvent) => {
