@@ -1,9 +1,14 @@
-export interface DailyBonusReward {
-  type: 'currency' | 'booster';
-  amount?: number;
-  name?: string;
-  quantity?: number;
-}
+export type DailyBonusReward =
+  | {
+      type: 'currency';
+      amount: number;
+    }
+  | {
+      type: 'booster';
+      name: string;
+      quantity: number;
+      amount?: number;
+    };
 
 export interface DailyBonusDay {
   day: number;
@@ -23,8 +28,11 @@ export interface DailyBonusConfig {
 export interface DailyBonusState {
   currentWeek: number;
   currentDay: number;
-  lastClaimDate: string | null;
   canClaimToday: boolean;
+  isClaimedToday: boolean;
+  lastClaimDate: string | null;
+  nextClaimAvailableAt: string | null;
+  streakLength: number;
   todayReward: DailyBonusReward | null;
 }
 
@@ -33,5 +41,9 @@ export interface DailyBonusResponse {
   currentWeek: number;
   currentDay: number;
   canClaimToday: boolean;
+  isClaimedToday: boolean;
+  streakLength: number;
+  lastClaimDate: string | null;
+  nextClaimAvailableAt: string | null;
   todayReward: DailyBonusReward | null;
 } 

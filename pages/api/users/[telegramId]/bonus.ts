@@ -36,6 +36,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         currentWeek: bonusState.currentWeek,
         currentDay: bonusState.currentDay,
         canClaimToday: bonusState.canClaimToday,
+        isClaimedToday: bonusState.isClaimedToday,
+        streakLength: bonusState.streakLength,
+        lastClaimDate: bonusState.lastClaimDate,
+        nextClaimAvailableAt: bonusState.nextClaimAvailableAt,
         todayReward: bonusState.todayReward,
       };
 
@@ -44,11 +48,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // POST - получаем бонус
       try {
         const reward = await DailyBonusService.claimBonus(userId);
+        const updatedState = await DailyBonusService.getUserBonusState(userId);
         
         return res.status(200).json({
           success: true,
           reward,
           message: 'Bonus claimed successfully',
+          state: {
+            currentWeek: updatedState.currentWeek,
+            currentDay: updatedState.currentDay,
+            canClaimToday: updatedState.canClaimToday,
+            isClaimedToday: updatedState.isClaimedToday,
+            streakLength: updatedState.streakLength,
+            lastClaimDate: updatedState.lastClaimDate,
+            nextClaimAvailableAt: updatedState.nextClaimAvailableAt,
+            todayReward: updatedState.todayReward,
+          },
         });
       } catch (error) {
         if (error instanceof Error) {

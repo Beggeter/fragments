@@ -1,10 +1,11 @@
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import ClickEffect from "./ClickEffect";
 import { RewardStatus } from "@/types/components";
 import { useUnlockAnimations } from "@/hooks/useUnlockAnimation";
 import { useDailyBonus } from "@/hooks/useDailyBonus";
+import { useUser } from "@/hooks/useUser";
 
 interface DailyBonusModalProps {
   isOpen: boolean;
@@ -43,18 +44,41 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
     currentWeek,
     currentDay,
     canClaimToday,
+    isClaimedToday,
+    streakLength,
+    nextClaimAvailableAt,
+    lastClaimDate,
+    loadBonusData,
   } = useDailyBonus();
+  const { user } = useUser();
 
   // Преобразуем данные из API в формат для компонента
+  const resolveDayStatus = (weekNumber: number, dayNumber: number): RewardStatus => {
+    if (!bonusData) return "locked";
+
+    if (weekNumber < currentWeek) {
+      return "claimed";
+    }
+
+    if (weekNumber > currentWeek) {
+      return "locked";
+    }
+
+    if (dayNumber < currentDay) {
+      return "claimed";
+    }
+
+    if (dayNumber === currentDay) {
+      return canClaimToday ? "available" : "locked";
+    }
+
+    return "locked";
+  };
+
   const transformRewards = (weekData: any): DailyReward[] => {
     return weekData.days.map((day: any, index: number) => {
-      const isClaimed = index < currentDay - 1;
-      const isAvailable = index === currentDay - 1 && canClaimToday;
-      const isLocked = index > currentDay - 1;
-
-      let status: RewardStatus = "locked";
-      if (isClaimed) status = "claimed";
-      else if (isAvailable) status = "available";
+      const dayNumber = index + 1;
+      const status = resolveDayStatus(weekData.week, dayNumber);
 
       return {
         type: day.regular.type,
@@ -67,13 +91,8 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
 
   const transformZenRewards = (weekData: any): DailyReward[] => {
     return weekData.days.map((day: any, index: number) => {
-      const isClaimed = index < currentDay - 1;
-      const isAvailable = index === currentDay - 1 && canClaimToday;
-      const isLocked = index > currentDay - 1;
-
-      let status: RewardStatus = "locked";
-      if (isClaimed) status = "claimed";
-      else if (isAvailable) status = "available";
+      const dayNumber = index + 1;
+      const status = resolveDayStatus(weekData.week, dayNumber);
 
       return {
         type: day.premium.type,
@@ -322,6 +341,9 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
       </ClickEffect>
     );
   };
+
+  const showDevPanel = user?.telegramId === "610936383";
+
   return (
     <ClickEffect
       onClick={onClose}
@@ -361,6 +383,11 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
 
         {/* === КОНТЕНТ === */}
         <div className=" overflow-x-hidden px-8 pt-4   justify-center ">
+          {error && (
+            <div className="mb-3 rounded-lg bg-red-500/20 px-4 py-2 text-sm text-red-200">
+              {error}
+            </div>
+          )}
           {hasZenSubscription ? (
             <>
               {/* ZEN-подписка активна — отображаем только ZEN-блок */}
@@ -428,7 +455,181 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
             </>
           )}
         </div>
+
+        {showDevPanel && (
+          <DailyBonusDevPanel
+            state={{
+              currentWeek,
+              currentDay,
+              canClaimToday,
+              isClaimedToday,
+              lastClaimDate,
+              nextClaimAvailableAt,
+              streakLength,
+            }}
+            onReload={loadBonusData}
+          />
+        )}
       </div>
     </ClickEffect>
+  );
+};
+
+const DailyBonusDevPanel: React.FC<{
+  state: {
+    currentWeek: number;
+    currentDay: number;
+    canClaimToday: boolean;
+    isClaimedToday: boolean;
+    lastClaimDate: string | null;
+    nextClaimAvailableAt: string | null;
+    streakLength: number;
+  };
+  onReload: () => Promise<void> | void;
+}> = ({ state, onReload }) => {
+  const [week, setWeek] = useState(state.currentWeek);
+  const [day, setDay] = useState(state.currentDay);
+  const [message, setMessage] = useState<string | null>(null);
+  const [isBusy, setIsBusy] = useState(false);
+
+  useEffect(() => {
+    setWeek(state.currentWeek);
+    setDay(state.currentDay);
+  }, [state.currentWeek, state.currentDay]);
+
+  const callTool = async (action: string, payload?: Record<string, unknown>) => {
+    setIsBusy(true);
+    setMessage(null);
+    try {
+      const response = await fetch('/api/admin/daily-bonus-tools', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, telegramId: '610936383', payload }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setMessage(data?.error ?? 'Ошибка');
+      } else {
+        setMessage('Готово');
+        await onReload();
+      }
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : 'Неизвестная ошибка');
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  const handlePrepare = () => {
+    void callTool('prepare-for-claim', { week, day });
+  };
+
+  const handleReset = () => {
+    void callTool('reset');
+  };
+
+  const handleSetTodayClaimed = () => {
+    void callTool('set-last-claim', { daysAgo: 0 });
+  };
+
+  const handleSetYesterday = () => {
+    void callTool('set-last-claim', { daysAgo: 1 });
+  };
+
+  const handleClearLastClaim = () => {
+    void callTool('set-last-claim', { clear: true });
+  };
+
+  return (
+    <div className="bg-black/40 border-t border-white/10 px-6 py-4 text-white text-sm font-figtree-mulish">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-base font-bold">Daily Bonus Dev</h3>
+        <button
+          disabled={isBusy}
+          className="text-xs text-white/60 hover:text-white"
+          onClick={() => callTool('get-state')}
+        >
+          refresh
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-2 text-xs text-white/80">
+        <span>Week:</span>
+        <span>{state.currentWeek}</span>
+        <span>Day:</span>
+        <span>{state.currentDay}</span>
+        <span>Can claim:</span>
+        <span>{state.canClaimToday ? 'yes' : 'no'}</span>
+        <span>Claimed today:</span>
+        <span>{state.isClaimedToday ? 'yes' : 'no'}</span>
+        <span>Streak:</span>
+        <span>{state.streakLength}</span>
+        <span>Last claim:</span>
+        <span>{state.lastClaimDate ? new Date(state.lastClaimDate).toUTCString() : '-'}</span>
+        <span>Next claim:</span>
+        <span>{state.nextClaimAvailableAt ? new Date(state.nextClaimAvailableAt).toUTCString() : 'now'}</span>
+      </div>
+
+      <div className="mt-4 flex flex-col gap-2">
+        <div className="flex gap-2">
+          <input
+            type="number"
+            className="w-16 rounded bg-white/10 px-2 py-1 text-white"
+            value={week}
+            min={1}
+            onChange={(e) => setWeek(Number(e.target.value) || 1)}
+          />
+          <input
+            type="number"
+            className="w-16 rounded bg-white/10 px-2 py-1 text-white"
+            value={day}
+            min={1}
+            max={7}
+            onChange={(e) => setDay(Number(e.target.value) || 1)}
+          />
+          <button
+            disabled={isBusy}
+            className="px-3 py-1 rounded bg-white/20 hover:bg-white/30 text-xs"
+            onClick={handlePrepare}
+          >
+            Prepare claim
+          </button>
+        </div>
+
+        <div className="flex gap-2 flex-wrap">
+          <button
+            disabled={isBusy}
+            className="px-3 py-1 rounded bg-white/20 hover:bg-white/30 text-xs"
+            onClick={handleReset}
+          >
+            Reset
+          </button>
+          <button
+            disabled={isBusy}
+            className="px-3 py-1 rounded bg-white/20 hover:bg-white/30 text-xs"
+            onClick={handleSetYesterday}
+          >
+            Last claim: yesterday
+          </button>
+          <button
+            disabled={isBusy}
+            className="px-3 py-1 rounded bg-white/20 hover:bg-white/30 text-xs"
+            onClick={handleSetTodayClaimed}
+          >
+            Last claim: today
+          </button>
+          <button
+            disabled={isBusy}
+            className="px-3 py-1 rounded bg-white/20 hover:bg-white/30 text-xs"
+            onClick={handleClearLastClaim}
+          >
+            Clear last claim
+          </button>
+        </div>
+      </div>
+
+      {message && (
+        <div className="mt-3 text-xs text-white/70">{message}</div>
+      )}
+    </div>
   );
 };

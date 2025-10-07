@@ -1,6 +1,6 @@
 import { db } from '../index';
-import { dailyBonuses, users, userBoosters, boosterTypes } from '../schema';
-import { eq, and } from 'drizzle-orm';
+import { dailyBonuses, users } from '../schema';
+import { eq } from 'drizzle-orm';
 import dailyBonusConfig from '../../data/dailyBonusConfig.json';
 import { DailyBonusConfig, DailyBonusState, DailyBonusReward } from '../../data/dailyBonusTypes';
 import { CurrencyService } from './currencyService';
@@ -8,6 +8,53 @@ import { BoosterService } from './boosterService';
 import { CurrencyTransactionType } from '../types';
 
 const config = dailyBonusConfig as DailyBonusConfig;
+
+const startOfUtcDay = (date: Date): Date => {
+  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+};
+
+const diffInDaysUtc = (from: Date, to: Date): number => {
+  const oneDayMs = 24 * 60 * 60 * 1000;
+  return Math.floor((to.getTime() - from.getTime()) / oneDayMs);
+};
+
+const totalClaimedDaysFromProgress = (week: number, day: number): number => {
+  if (week < 1 || day < 1) return 0;
+  return (week - 1) * 7 + (day - 1);
+};
+
+const normalizeRewardConfig = (rewardConfig: any): DailyBonusReward => {
+  if (!rewardConfig) {
+    throw new Error('Invalid reward configuration');
+  }
+
+  if (rewardConfig.type === 'currency') {
+    const amount = Number(rewardConfig.amount ?? rewardConfig.quantity ?? 0);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      throw new Error('Invalid currency reward configuration');
+    }
+    return {
+      type: 'currency',
+      amount: Math.floor(amount),
+    } as const;
+  }
+
+  if (rewardConfig.type === 'booster') {
+    const name = rewardConfig.name;
+    const quantity = Number(rewardConfig.quantity ?? rewardConfig.amount ?? 1);
+    if (!name) {
+      throw new Error('Booster reward is missing name');
+    }
+    return {
+      type: 'booster',
+      name,
+      quantity: Math.max(1, Math.floor(quantity)),
+      amount: Math.max(1, Math.floor(quantity)),
+    } as const;
+  }
+
+  throw new Error(`Unsupported reward type: ${rewardConfig.type}`);
+};
 
 export class DailyBonusService {
   /**
@@ -43,46 +90,55 @@ export class DailyBonusService {
    */
   static async getUserBonusState(userId: number): Promise<DailyBonusState> {
     const userBonus = await this.getOrCreateUserBonus(userId);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    let { currentWeek, currentDay, lastClaimDate } = userBonus;
 
-    // Проверяем, можно ли получить бонус сегодня
-    let canClaimToday = false;
-    let todayReward: DailyBonusReward | null = null;
+    const now = new Date();
+    const todayUtc = startOfUtcDay(now);
 
-    if (userBonus.lastClaimDate) {
-      const lastClaim = new Date(userBonus.lastClaimDate);
-      lastClaim.setHours(0, 0, 0, 0);
+    let lastClaimUtc: Date | null = lastClaimDate ? startOfUtcDay(new Date(lastClaimDate)) : null;
+    let canClaimToday = true;
+    let isClaimedToday = false;
 
-      // Если последний бонус был получен сегодня, то нельзя получить еще раз
-      if (lastClaim.getTime() === today.getTime()) {
+    if (lastClaimUtc) {
+      const diff = diffInDaysUtc(lastClaimUtc, todayUtc);
+
+      if (diff === 0) {
         canClaimToday = false;
-      } else {
-        // Проверяем, не пропустил ли пользователь день
-        const daysDiff = Math.floor((today.getTime() - lastClaim.getTime()) / (1000 * 60 * 60 * 24));
-        
-                 if (daysDiff === 1) {
-           // Следующий день - можно получить бонус
-           canClaimToday = true;
-           todayReward = await this.getRewardForDay(userId, userBonus.currentWeek, userBonus.currentDay);
-         } else if (daysDiff > 1) {
-           // Пропустил день - сбрасываем к началу
-           await this.resetUserProgress(userId);
-           canClaimToday = true;
-           todayReward = await this.getRewardForDay(userId, 1, 1);
-         }
+        isClaimedToday = true;
+      } else if (diff === 1) {
+        canClaimToday = true;
+      } else if (diff > 1) {
+        // Пропуск дня — сбрасываем прогресс
+        currentWeek = 1;
+        currentDay = 1;
+        lastClaimUtc = null;
+        lastClaimDate = null;
+        await db
+          .update(dailyBonuses)
+          .set({
+            currentWeek,
+            currentDay,
+            lastClaimDate: null,
+            updatedAt: new Date(),
+          })
+          .where(eq(dailyBonuses.userId, userId));
       }
-         } else {
-       // Первый раз - можно получить бонус
-       canClaimToday = true;
-       todayReward = await this.getRewardForDay(userId, userBonus.currentWeek, userBonus.currentDay);
-     }
+    }
+
+    const todayReward = await this.getRewardForDay(userId, currentWeek, currentDay);
+    const nextClaimAvailableAt = isClaimedToday
+      ? new Date(todayUtc.getTime() + 24 * 60 * 60 * 1000).toISOString()
+      : null;
+    const streakLength = Math.max(0, totalClaimedDaysFromProgress(currentWeek, currentDay));
 
     return {
-      currentWeek: userBonus.currentWeek,
-      currentDay: userBonus.currentDay,
-      lastClaimDate: userBonus.lastClaimDate?.toISOString() || null,
+      currentWeek,
+      currentDay,
       canClaimToday,
+      isClaimedToday,
+      lastClaimDate: lastClaimUtc ? lastClaimUtc.toISOString() : null,
+      nextClaimAvailableAt,
+      streakLength,
       todayReward,
     };
   }
@@ -101,7 +157,8 @@ export class DailyBonusService {
       throw new Error('User not found');
     }
 
-    const isPremium = ['premium', 'admin', 'tester'].includes(user[0].role);
+    const isPremium =
+      user[0].hasZenSubscription || ['premium', 'admin', 'tester'].includes(user[0].role);
     const weekConfig = config.weeks.find(w => w.week === week);
     
     if (!weekConfig) {
@@ -113,7 +170,7 @@ export class DailyBonusService {
       throw new Error(`Day ${day} not found in week ${week}`);
     }
 
-    return isPremium ? dayConfig.premium : dayConfig.regular;
+    return normalizeRewardConfig(isPremium ? dayConfig.premium : dayConfig.regular);
   }
 
   /**
@@ -125,6 +182,7 @@ export class DailyBonusService {
       .set({
         currentWeek: 1,
         currentDay: 1,
+        lastClaimDate: null,
         updatedAt: new Date(),
       })
       .where(eq(dailyBonuses.userId, userId));
@@ -146,7 +204,7 @@ export class DailyBonusService {
     }
 
     // Если неделя больше 4, начинаем сначала
-    if (newWeek > 4) {
+    if (newWeek > config.weeks.length) {
       newWeek = 1;
       newDay = 1;
     }
@@ -166,7 +224,7 @@ export class DailyBonusService {
    * Выдать бонус пользователю
    */
   static async claimBonus(userId: number): Promise<DailyBonusReward> {
-    const userBonus = await this.getOrCreateUserBonus(userId);
+    await this.getOrCreateUserBonus(userId);
     const state = await this.getUserBonusState(userId);
 
     if (!state.canClaimToday) {
@@ -180,11 +238,17 @@ export class DailyBonusService {
 
     // Выдаем награду
     if (reward.type === 'currency' && reward.amount) {
-      await CurrencyService.addCurrency(userId, reward.amount, CurrencyTransactionType.DAILY_BONUS, `Daily bonus week ${userBonus.currentWeek} day ${userBonus.currentDay}`, {
-        week: userBonus.currentWeek,
-        day: userBonus.currentDay,
-      });
-    } else if (reward.type === 'booster' && reward.name && reward.quantity) {
+      await CurrencyService.addCurrency(
+        userId,
+        reward.amount,
+        CurrencyTransactionType.DAILY_BONUS,
+        `Daily bonus week ${state.currentWeek} day ${state.currentDay}`,
+        {
+          week: state.currentWeek,
+          day: state.currentDay,
+        },
+      );
+    } else if (reward.type === 'booster') {
       // Сначала получаем ID бустера по имени
       const boosterType = await BoosterService.getBoosterTypeByName(reward.name);
       if (boosterType) {
@@ -207,5 +271,62 @@ export class DailyBonusService {
    */
   static getBonusConfig() {
     return config;
+  }
+
+  /**
+   * Принудительно установить прогресс пользователя (для отладки)
+   */
+  static async setProgress(userId: number, week: number, day: number) {
+    const weeksCount = config.weeks.length;
+    const normalizedWeek = Math.min(Math.max(1, week), weeksCount);
+    const normalizedDay = Math.min(Math.max(1, day), 7);
+
+    await db
+      .update(dailyBonuses)
+      .set({
+        currentWeek: normalizedWeek,
+        currentDay: normalizedDay,
+        lastClaimDate: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(dailyBonuses.userId, userId));
+  }
+
+  /**
+   * Принудительно задать дату последнего получения бонуса (UTC начало дня)
+   */
+  static async setLastClaimDate(userId: number, date: Date | null) {
+    await db
+      .update(dailyBonuses)
+      .set({
+        lastClaimDate: date ? startOfUtcDay(date) : null,
+        updatedAt: new Date(),
+      })
+      .where(eq(dailyBonuses.userId, userId));
+  }
+
+  /**
+   * Полный сброс прогресса (для отладки)
+   */
+  static async forceReset(userId: number) {
+    await db
+      .update(dailyBonuses)
+      .set({
+        currentWeek: 1,
+        currentDay: 1,
+        lastClaimDate: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(dailyBonuses.userId, userId));
+  }
+
+  /**
+   * Подготовить пользователя к получению конкретного бонуса (week/day) сегодня
+   */
+  static async prepareForClaim(userId: number, week: number, day: number) {
+    await this.setProgress(userId, week, day);
+    const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const yesterdayUtc = startOfUtcDay(yesterday);
+    await this.setLastClaimDate(userId, yesterdayUtc);
   }
 } 

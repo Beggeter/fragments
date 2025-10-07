@@ -1,42 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useUser } from './useUser';
 import { useAdminAuth } from './useAdminAuth';
-
-interface DailyBonusReward {
-  type: 'currency' | 'booster';
-  amount: number;
-  boosterType?: string;
-}
-
-interface DailyBonusDay {
-  day: number;
-  regular: DailyBonusReward;
-  premium: DailyBonusReward;
-}
-
-interface DailyBonusWeek {
-  week: number;
-  days: DailyBonusDay[];
-}
-
-interface DailyBonusConfig {
-  weeks: DailyBonusWeek[];
-}
-
-interface DailyBonusState {
-  currentWeek: number;
-  currentDay: number;
-  canClaimToday: boolean;
-  lastClaimDate: string | null;
-}
-
-interface DailyBonusResponse {
-  weeks: DailyBonusWeek[];
-  currentWeek: number;
-  currentDay: number;
-  canClaimToday: boolean;
-  todayReward: DailyBonusReward | null;
-}
+import { DailyBonusResponse } from '@/lib/data/dailyBonusTypes';
 
 export const useDailyBonus = () => {
   const { user, sessionToken } = useUser();
@@ -183,12 +148,12 @@ export const useDailyBonus = () => {
     const currentWeek = bonusData.weeks.find(w => w.week === bonusData.currentWeek);
     if (!currentWeek) return null;
 
-    const currentDay = currentWeek.days.find(d => d.day === bonusData.currentDay);
-    return currentDay;
+    return currentWeek.days.find(d => d.day === bonusData.currentDay) ?? null;
   };
 
   // Проверяем, есть ли у пользователя Zen подписка
-  const hasZenSubscription = user?.role === 'premium' || user?.role === 'admin' || user?.role === 'tester';
+  const hasZenSubscription =
+    user?.hasZenSubscription || user?.role === 'premium' || user?.role === 'admin' || user?.role === 'tester';
 
   // Загружаем данные при изменении пользователя или админ-статуса
   useEffect(() => {
@@ -209,5 +174,9 @@ export const useDailyBonus = () => {
     currentWeek: bonusData?.currentWeek ?? 1,
     currentDay: bonusData?.currentDay ?? 1,
     canClaimToday: bonusData?.canClaimToday ?? false,
+    isClaimedToday: bonusData?.isClaimedToday ?? false,
+    streakLength: bonusData?.streakLength ?? 0,
+    nextClaimAvailableAt: bonusData?.nextClaimAvailableAt ?? null,
+    lastClaimDate: bonusData?.lastClaimDate ?? null,
   };
 }; 
