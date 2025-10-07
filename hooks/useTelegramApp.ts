@@ -36,6 +36,7 @@ interface UseTelegramAppResult {
   currentScreen: ScreenState;
   setCurrentScreen: React.Dispatch<React.SetStateAction<ScreenState>>;
   isInitialized: boolean;
+  isFullyReady: boolean;
   isTelegramAutoAuth: boolean;
   autoAuthCompleted: boolean;
   handleAdminLoginSuccess: (token: string, expiresAt: string) => void;
@@ -108,6 +109,9 @@ export const useTelegramApp = (): UseTelegramAppResult => {
   const [autoAuthCompleted, setAutoAuthCompleted] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
   const [slowStartup, setSlowStartup] = useState<SlowStartupState>({ active: false });
+  const [isFullyReady, setIsFullyReady] = useState(false);
+  const docReadyRef = useRef(typeof document !== 'undefined' ? document.readyState === 'complete' : false);
+  const telegramReadyRef = useRef(false);
 
   const loginUserRef = useRef(userState.loginUser);
   const logoutRef = useRef(userState.logout);
@@ -227,8 +231,12 @@ export const useTelegramApp = (): UseTelegramAppResult => {
       delete milestoneStartRef.current[step];
       cancelMilestoneTimer(step);
       clearSlowForStep(step);
+      if (step === 'telegram-init') {
+        telegramReadyRef.current = true;
+        recomputeReadiness();
+      }
     },
-    [cancelMilestoneTimer, updateMetrics, clearSlowForStep],
+    [cancelMilestoneTimer, updateMetrics, clearSlowForStep, recomputeReadiness],
   );
 
   const cancelAllMilestones = useCallback(() => {
@@ -254,6 +262,71 @@ export const useTelegramApp = (): UseTelegramAppResult => {
   useEffect(() => {
     logoutAdminRef.current = adminAuth.logoutAdmin;
   }, [adminAuth.logoutAdmin]);
+
+  const recomputeReadiness = useCallback(() => {
+    const ready = docReadyRef.current && telegramReadyRef.current && appState === 'idle';
+    setIsFullyReady(ready);
+  }, [appState]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (document.readyState === 'complete') {
+      docReadyRef.current = true;
+      recomputeReadiness();
+      return;
+    }
+
+    const handleReadyState = () => {
+      if (document.readyState === 'complete') {
+        docReadyRef.current = true;
+        recomputeReadiness();
+        document.removeEventListener('readystatechange', handleReadyState);
+        window.removeEventListener('load', handleLoad);
+      }
+    };
+
+    const handleLoad = () => {
+      docReadyRef.current = true;
+      recomputeReadiness();
+      document.removeEventListener('readystatechange', handleReadyState);
+      window.removeEventListener('load', handleLoad);
+    };
+
+    document.addEventListener('readystatechange', handleReadyState);
+    window.addEventListener('load', handleLoad);
+
+    return () => {
+      document.removeEventListener('readystatechange', handleReadyState);
+      window.removeEventListener('load', handleLoad);
+    };
+  }, [recomputeReadiness]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.Telegram?.WebApp) return;
+
+    const onReady = () => {
+      telegramReadyRef.current = true;
+      recomputeReadiness();
+    };
+
+    try {
+      window.Telegram.WebApp.onEvent?.('web_app_ready', onReady);
+    } catch (error) {
+      console.warn('Failed to bind web_app_ready event', error);
+    }
+
+    if (window.Telegram.WebApp?.isExpanded || window.Telegram.WebApp?.initData) {
+      telegramReadyRef.current = true;
+      recomputeReadiness();
+    }
+
+    return () => {
+      try {
+        window.Telegram?.WebApp?.offEvent?.('web_app_ready', onReady);
+      } catch {}
+    };
+  }, [recomputeReadiness]);
 
   const fallbackToLogin = useCallback(
     (screen?: HomeScreen) => {
@@ -595,6 +668,7 @@ export const useTelegramApp = (): UseTelegramAppResult => {
     currentScreen,
     setCurrentScreen,
     isInitialized,
+    isFullyReady,
     isTelegramAutoAuth,
     autoAuthCompleted,
     handleAdminLoginSuccess,

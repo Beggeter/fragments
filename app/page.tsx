@@ -55,6 +55,7 @@ const HomePage: React.FC = () => {
     currentScreen,
     setCurrentScreen,
     isInitialized,
+    isFullyReady,
     isTelegramAutoAuth,
     autoAuthCompleted,
     handleAdminLoginSuccess,
@@ -102,15 +103,26 @@ const HomePage: React.FC = () => {
     error: 'Ошибка запуска',
   };
 
-  const isAppInteractive = appState === 'idle';
-  const interactionLabel = appState === 'transitioning' ? 'Переход…' : appState === 'error' ? 'Ошибка' : 'Загрузка…';
-  const toastActive = slowStartup.active || !isAppInteractive;
+  const isAppInteractive = isFullyReady && appState === 'idle';
+  const interactionLabel = !isFullyReady
+    ? 'Загрузка…'
+    : appState === 'transitioning'
+      ? 'Переход…'
+      : appState === 'error'
+        ? 'Ошибка'
+        : 'Загрузка…';
+
+  const toastActive = slowStartup.active || !isFullyReady;
   const toastTitle = slowStartup.active
     ? 'Загрузка затянулась…'
-    : appStateTitles[appState] ?? 'Загрузка…';
+    : !isFullyReady
+      ? 'Подготавливаем приложение…'
+      : appStateTitles[appState] ?? 'Загрузка…';
   const toastDescription = slowStartup.active
     ? slowStartupDescription
-    : appStateMessages[appState] || slowStartupDescription;
+    : !isFullyReady
+      ? 'Ждём полной загрузки приложения и подключения Telegram.'
+      : appStateMessages[appState] || slowStartupDescription;
   const toastDismiss = slowStartup.active ? dismissSlowStartup : undefined;
 
   const ensureStorageAccessible = useCallback(() => {
