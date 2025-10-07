@@ -145,26 +145,6 @@ export const useTelegramApp = (): UseTelegramAppResult => {
     [persistMetrics],
   );
 
-  const dismissSlowStartup = useCallback(() => {
-    const current = slowStateRef.current;
-    setSlowStartup({ active: false });
-    slowStateRef.current = { active: false };
-    if (current.step) {
-      const step = current.step;
-      suppressedStepsRef.current.add(step);
-      if (suppressionTimersRef.current[step]) {
-        window.clearTimeout(suppressionTimersRef.current[step]);
-      }
-      suppressionTimersRef.current[step] = window.setTimeout(() => {
-        suppressedStepsRef.current.delete(step);
-        delete suppressionTimersRef.current[step];
-        if (milestoneStartRef.current[step]) {
-          triggerSlowForStep(step, current.threshold ?? DEFAULT_THRESHOLDS[step]);
-        }
-      }, 2000);
-    }
-  }, [triggerSlowForStep]);
-
   const clearSlowForStep = useCallback((step: StartupMilestone) => {
     if (slowStateRef.current.active && slowStateRef.current.step === step) {
       slowStateRef.current = { active: false };
@@ -189,6 +169,26 @@ export const useTelegramApp = (): UseTelegramAppResult => {
     },
     [],
   );
+
+  const dismissSlowStartup = useCallback(() => {
+    const current = slowStateRef.current;
+    setSlowStartup({ active: false });
+    slowStateRef.current = { active: false };
+    if (current.step) {
+      const step = current.step;
+      suppressedStepsRef.current.add(step);
+      if (suppressionTimersRef.current[step]) {
+        window.clearTimeout(suppressionTimersRef.current[step]);
+      }
+      suppressionTimersRef.current[step] = window.setTimeout(() => {
+        suppressedStepsRef.current.delete(step);
+        delete suppressionTimersRef.current[step];
+        if (milestoneStartRef.current[step]) {
+          triggerSlowForStep(step, current.threshold ?? DEFAULT_THRESHOLDS[step]);
+        }
+      }, 2000);
+    }
+  }, [triggerSlowForStep]);
 
   const cancelMilestoneTimer = useCallback((step: StartupMilestone) => {
     const timer = milestoneTimersRef.current[step];
