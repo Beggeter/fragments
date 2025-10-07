@@ -493,9 +493,6 @@ const HomePage: React.FC = () => {
   };
 
 
-  // Кнопки активны только если appState === 'idle'
-  const isMenuButtonActive = appState === 'idle';
-
   const handleStartClassic = useCallback(async () => {
     if (appState !== 'idle') return;
     setAppState('transitioning');
@@ -565,10 +562,10 @@ const HomePage: React.FC = () => {
 
   // Ensure menu is always interactive when visible
   useEffect(() => {
-    if (currentScreen === 'main menu' && appState !== 'idle') {
+    if (currentScreen === 'main menu') {
       setAppState('idle');
     }
-  }, [currentScreen, appState]);
+  }, [currentScreen]);
 
   const handleGameOver = async () => {
     try {
@@ -768,7 +765,7 @@ const HomePage: React.FC = () => {
           onStartZen={handleStartZen}
           onOpenShop={handleOpenShop}
           onOpenLeaderboard={handleOpenLeaderboard}
-          isTransitioning={appState !== 'idle'}
+          isTransitioning={appState === 'transitioning'}
           isInitialized={isInitialized}
         />
       )}
