@@ -21,7 +21,7 @@ function getMainMenu() {
     [{ text: "🧩 Fragments channel", url: "https://t.me/Fragments_Games" }],
     [{ text: "🛠 Поддержка (RU)", callback_data: "support_ru" }],
     [{ text: "🛠 Support (EN)", callback_data: "support_en" }],
-    [{ text: "📄 Условия", callback_data: "terms" }],
+    // [{ text: "📄 Условия", callback_data: "terms" }],
   ].filter(row => row.length > 0); // удаляем пустые строки
 
   return {
