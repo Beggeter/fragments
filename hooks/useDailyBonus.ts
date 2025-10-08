@@ -68,12 +68,10 @@ export const useDailyBonus = () => {
       }
 
       const data = await response.json();
-      // console.log('Daily Bonus API Response:', data);
       if (mountedRef.current && !signal.aborted) {
         setBonusData(data);
       }
     } catch (err) {
-      // console.error('Error loading bonus data:', err);
       if (mountedRef.current && !signal.aborted) {
         setError(err instanceof Error ? err.message : 'Failed to load bonus data');
       }
@@ -131,7 +129,6 @@ export const useDailyBonus = () => {
 
       return true;
     } catch (err) {
-      // console.error('Error claiming bonus:', err);
       if (mountedRef.current) {
         setError(err instanceof Error ? err.message : 'Failed to claim bonus');
       }

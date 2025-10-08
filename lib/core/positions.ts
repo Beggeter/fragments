@@ -73,7 +73,6 @@ export function findAllValidPositions(board: Matrix, block: Block): Position[] {
     !block.matrix[0] ||
     !block.matrix[0].length
   ) {
-    // console.warn("Invalid block matrix:", block);
     return [];
   }
 

@@ -23,7 +23,6 @@ export const DraggablePiece: React.FC<DraggablePieceProps> = ({
   onTransitionEnd,
   animateAppear = false,
 }) => {
-  // console.log('🔍 DraggablePiece render:', {
   //   pieceId: piece?.id,
   //   pieceUniqueId: piece?.uniqueId,
   //   hasMatrix: !!piece?.matrix,
@@ -32,7 +31,6 @@ export const DraggablePiece: React.FC<DraggablePieceProps> = ({
   // });
   
   if (!piece || !piece.matrix) {
-    // console.warn('DraggablePiece: missing piece or matrix', { piece });
     return null;
   }
 
@@ -40,7 +38,6 @@ export const DraggablePiece: React.FC<DraggablePieceProps> = ({
   const pieceColor = piece.color || 'red';
 
   // Отладочная информация
-  // console.log('DraggablePiece rendering:', {
   //   pieceId: piece.id,
   //   pieceColor,
   //   matrixSize: `${piece.matrix.length}x${piece.matrix[0]?.length}`,

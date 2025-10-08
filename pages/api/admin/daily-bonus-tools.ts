@@ -92,7 +92,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(400).json({ error: `Unknown action: ${action}` });
     }
   } catch (error) {
-    console.error('Daily bonus tools error:', error);
+    
     return res.status(500).json({ error: 'Internal server error' });
   }
 }

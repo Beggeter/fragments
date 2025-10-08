@@ -3,10 +3,10 @@ import { sql } from 'drizzle-orm';
 
 async function applyMigration() {
   try {
-    console.log('🚀 Applying daily bonus migration...');
+    
     
     // Создаем таблицу daily_bonuses
-    console.log('📝 Creating daily_bonuses table...');
+    
     await db.execute(sql`
       CREATE TABLE IF NOT EXISTS "daily_bonuses" (
         "id" integer PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
@@ -19,10 +19,10 @@ async function applyMigration() {
       );
     `);
     
-    console.log('✅ Table created successfully');
+    
     
     // Создаем индексы
-    console.log('🔍 Creating indexes...');
+    
     await db.execute(sql`
       CREATE INDEX IF NOT EXISTS "daily_bonus_user_id_idx" ON "daily_bonuses" ("user_id");
     `);
@@ -36,10 +36,10 @@ async function applyMigration() {
       CREATE UNIQUE INDEX IF NOT EXISTS "daily_bonus_user_unique_idx" ON "daily_bonuses" ("user_id");
     `);
     
-    console.log('✅ Indexes created successfully');
+    
     
     // Проверяем, что таблица создалась
-    console.log('🔍 Verifying table creation...');
+    
     const result = await db.execute(sql`
       SELECT EXISTS (
         SELECT FROM information_schema.tables 
@@ -49,15 +49,15 @@ async function applyMigration() {
     `);
     
     if (result.rows[0]?.exists) {
-      console.log('✅ Daily bonuses table created successfully!');
+      
     } else {
-      console.log('❌ Daily bonuses table was not created!');
+      
     }
     
-    console.log('🎉 Daily bonus migration completed successfully!');
+    
     
   } catch (error) {
-    console.error('❌ Error applying migration:', error);
+    
     process.exit(1);
   } finally {
     await closeConnection();
@@ -66,10 +66,10 @@ async function applyMigration() {
 
 applyMigration()
   .then(() => {
-    console.log('✅ Migration script completed');
+    
     process.exit(0);
   })
   .catch((error) => {
-    console.error('❌ Migration script failed:', error);
+    
     process.exit(1);
   }); 

@@ -81,7 +81,7 @@ export default async function handler(
         const userUpdateResult = await UserService.updateRecord(user[0].id, newRecord, 'classic');
         if (userUpdateResult) {
           updatedRecord = userUpdateResult.record;
-          console.log('✅ Classic record updated during auto-save');
+          
         }
       }
     } else {
@@ -98,7 +98,7 @@ export default async function handler(
         const userUpdateResult = await UserService.updateRecord(user[0].id, newRecord, 'classic');
         if (userUpdateResult) {
           updatedRecord = userUpdateResult.record;
-          console.log('✅ Classic record updated during auto-save');
+          
         }
       }
     }
@@ -109,7 +109,7 @@ export default async function handler(
       newRecord: updatedRecord
     });
   } catch (error) {
-    console.error('Error syncing Classic game:', error);
+    
     return res.status(500).json({ error: 'Internal server error' });
   }
 } 

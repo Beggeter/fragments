@@ -168,14 +168,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     const payloadString = JSON.stringify(paymentPayload);
     const payloadSize = Buffer.byteLength(payloadString, 'utf8');
     
-    console.log('📦 Payload info:', {
-      payload: payloadString,
-      size: payloadSize,
-      maxSize: 128
-    });
+    
 
     if (payloadSize > 128) {
-      console.error('❌ Payload too large:', { size: payloadSize, payload: payloadString });
+      
       return res.status(400).json({ 
         success: false, 
         error: `Payload too large: ${payloadSize} bytes (max 128 bytes)` 
@@ -195,16 +191,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       );
 
       if (!invoice_url) {
-        console.error('❌ Failed to create invoice link');
+        
         throw new Error('Failed to create invoice URL');
       }
 
-      console.log('✅ Invoice created successfully:', {
-        userId,
-        itemType: item.type,
-        itemId: item.itemId,
-        invoice_url
-      });
+      
 
       return res.status(200).json({
         success: true,
@@ -212,7 +203,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       });
 
     } catch (telegramError: any) {
-      console.error('❌ Error creating invoice:', telegramError);
+      
       return res.status(500).json({
         success: false,
         error: `Failed to create invoice: ${telegramError.message}`
@@ -220,7 +211,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
     }
 
   } catch (error: any) {
-    console.error('❌ Error in create-invoice API:', error);
+    
     return res.status(500).json({
       success: false,
       error: 'Internal server error'

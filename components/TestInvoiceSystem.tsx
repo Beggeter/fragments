@@ -27,7 +27,7 @@ const TestInvoiceSystem: React.FC = () => {
         return;
       }
 
-      console.log('🧪 Testing shards purchase with new invoice system...');
+      
       const response = await createShardsInvoice(userId, 100, 50);
 
       if (response.success) {
@@ -60,7 +60,7 @@ const TestInvoiceSystem: React.FC = () => {
         return;
       }
 
-      console.log('🧪 Testing booster purchase with new invoice system...');
+      
       const response = await createBoosterInvoice(userId, 'undo', 'Undo', 1, 20);
 
       if (response.success) {

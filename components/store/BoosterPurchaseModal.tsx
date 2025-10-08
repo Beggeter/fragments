@@ -92,7 +92,6 @@ const BoosterPurchaseModal: React.FC<BoosterPurchaseModalProps> = ({
         return;
       }
 
-      // console.log("🚀 Creating Telegram Stars booster invoice:", {
       //   userId,
       //   boosterId: booster.id,
       //   boosterName: booster.name,

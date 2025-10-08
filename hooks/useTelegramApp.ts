@@ -173,7 +173,7 @@ export const useTelegramApp = (): UseTelegramAppResult => {
     try {
       window.Telegram.WebApp.onEvent?.('web_app_ready', onReady);
     } catch (error) {
-      console.warn('Failed to bind web_app_ready event', error);
+      
     }
 
     if (window.Telegram.WebApp?.isExpanded || window.Telegram.WebApp?.initData) {
@@ -353,7 +353,7 @@ export const useTelegramApp = (): UseTelegramAppResult => {
         await init();
         completeMilestone('sdk-init');
       } catch (error) {
-        console.warn('Failed to initialize @telegram-apps/sdk:', error);
+        
         completeMilestone('sdk-init');
         if (!isMounted) return;
         fallbackToLogin();
@@ -379,13 +379,13 @@ export const useTelegramApp = (): UseTelegramAppResult => {
         if (!isMounted) return;
 
         if (firstResult === false) {
-          console.warn('Telegram initialization timeout, awaiting completion…');
+          
           telegramSuccess = await initPromise;
         } else {
           telegramSuccess = firstResult;
         }
       } catch (error) {
-        console.error('Error during Telegram initialization:', error);
+        
         completeMilestone('telegram-init');
         if (!isMounted) return;
         fallbackToLogin();
@@ -439,7 +439,7 @@ export const useTelegramApp = (): UseTelegramAppResult => {
         const tg = window.Telegram?.WebApp;
         if (tg) {
           if (!telegramSuccess) {
-            console.warn('Telegram WebApp not fully initialized, proceeding with caution');
+            
           }
 
           const tgUser = tg.initDataUnsafe?.user;
@@ -480,20 +480,20 @@ export const useTelegramApp = (): UseTelegramAppResult => {
                   return;
                 }
 
-                console.error('Auth server error:', data);
+                
                 completeMilestone('auto-auth');
                 if (!isMounted) return;
                 fallbackToLogin('telegram login');
                 return;
               }
 
-              console.warn('No hash found in Telegram initData');
+              
               completeMilestone('auto-auth');
               if (!isMounted) return;
               fallbackToLogin('telegram login');
               return;
             } catch (error) {
-              console.error('Auto-auth failed:', error);
+              
               completeMilestone('auto-auth');
               if (!isMounted) return;
               fallbackToLogin('telegram login');

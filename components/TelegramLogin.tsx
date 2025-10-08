@@ -33,7 +33,6 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess, seamless 
         body: JSON.stringify({ action, data })
       });
     } catch (err) {
-      // console.error('Failed to send debug log:', err);
     }
   };
 
@@ -46,7 +45,6 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess, seamless 
 
       // Проверяем, не авторизован ли уже пользователь
       if (typeof window !== 'undefined' && localStorage.getItem('sessionToken')) {
-        // console.log('✅ TELEGRAM LOGIN: User already authenticated, skipping');
         return;
       }
 
@@ -75,7 +73,6 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess, seamless 
         const tg = window.Telegram?.WebApp;
         
         if (!tg) {
-          // console.log('❌ TELEGRAM LOGIN: WebApp not found');
           return;
         }
         
@@ -89,7 +86,6 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess, seamless 
           
           // В бесшовном режиме автоматически авторизуемся только если пользователь еще не авторизован
           if (seamless && typeof window !== 'undefined' && !localStorage.getItem('sessionToken')) {
-            // console.log('🚀 SEAMLESS MODE: Auto-authorizing user');
             handleTelegramLogin();
           }
         }
@@ -119,13 +115,11 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess, seamless 
 
     // Проверяем, не авторизован ли уже пользователь
     if (typeof window !== 'undefined' && localStorage.getItem('sessionToken')) {
-      // console.log('✅ TELEGRAM LOGIN: User already authenticated, skipping login');
       return;
     }
 
     // Проверяем, не выполняется ли уже авторизация
     if (isLoading) {
-      // console.log('⏳ TELEGRAM LOGIN: Authorization already in progress, skipping');
       return;
     }
 
@@ -148,11 +142,8 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess, seamless 
       const hash = urlParams.get('hash');
       const authDate = urlParams.get('auth_date');
       
-      // console.log('🔐 Hash from initData:', hash);
-      // console.log('⏰ Auth date from initData:', authDate);
       
       if (!hash) {
-        // console.error('❌ Hash not found in initData');
         throw new Error('Hash не найден в данных Telegram');
       }
 
@@ -212,7 +203,6 @@ const TelegramLogin: React.FC<TelegramLoginProps> = ({ onLoginSuccess, seamless 
         setError(data.error || 'Ошибка авторизации');
       }
     } catch (err) {
-      // console.error('Telegram login error:', err);
       await sendDebugLog('auth_error', {
         error: 'Network error',
         telegramId: telegramUser?.id,

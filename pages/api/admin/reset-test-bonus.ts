@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    console.log('🔄 Resetting test user bonus state...');
+    
 
     // Находим тестового пользователя
     const testUser = await db
@@ -28,7 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const userId = testUser[0].id;
-    console.log('✅ Test user found, ID:', userId);
+    
 
     // Сбрасываем состояние daily bonus
     await db
@@ -41,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       })
       .where(eq(dailyBonuses.userId, userId));
 
-    console.log('✅ Test user bonus state reset successfully');
+    
 
     return res.status(200).json({ 
       success: true, 
@@ -49,7 +49,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       userId
     });
   } catch (error) {
-    console.error('❌ Error resetting bonus state:', error);
+    
     return res.status(500).json({ 
       error: 'Failed to reset bonus state',
       details: error

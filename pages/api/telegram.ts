@@ -20,12 +20,7 @@ export default async function handler(
     const messageText = body.message?.text;
     const userId = body.message?.from?.id;
 
-    console.log('🤖 Bot received message:', {
-      chatId,
-      userId,
-      messageText,
-      timestamp: new Date().toISOString()
-    });
+    
 
     // Обрабатываем команды
     if (messageText && chatId) {
@@ -60,7 +55,7 @@ export default async function handler(
 
     return res.status(200).json({ ok: true });
   } catch (error) {
-    console.error("Error in Telegram bot handler: ", error);
+    
     return res.status(500).json({ error: "Internal Server Error" });
   }
 }
@@ -104,7 +99,7 @@ async function handleStartCommand(chatId: number, userId?: number) {
 
   await bot.sendMessage(chatId, welcomeMessage, options);
 
-  console.log('✅ Start command sent to:', { chatId, userId });
+  
 }
 
 // Обработчик команды /shop
@@ -198,7 +193,7 @@ async function handleBalanceCommand(chatId: number, userId?: number) {
       await bot.sendMessage(chatId, "❌ Пользователь не найден. Запустите игру для создания аккаунта.");
     }
   } catch (error) {
-    console.error('Error fetching balance:', error);
+    
     await bot.sendMessage(chatId, "❌ Ошибка при получении баланса. Попробуйте позже.");
   }
 }

@@ -322,7 +322,7 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
   const [isShardModalOpen, setIsShardModalOpen] = useState(false);
 
   useEffect(() => {
-    try { console.timeEnd && console.timeEnd("openShop"); } catch {}
+    try {  } catch {}
   }, []);
 
   // Обработчик клика по пакету кристаллов
@@ -358,7 +358,6 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
         await refreshBalance();
       }
     } catch (error) {
-      // console.error("Error updating balance:", error);
     }
   }, [refreshBalance, isAdmin]);
 
@@ -491,7 +490,6 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
         }
       }
     } catch (error) {
-      // console.error("❌ Error purchasing booster:", error);
 
       if (typeof window !== "undefined" && window.Telegram?.WebApp) {
         const webApp = window.Telegram.WebApp as any;
@@ -566,7 +564,6 @@ const ShopScreen: React.FC<ShopScreenProps> = ({ onBack, initialTab }) => {
         );
       }
     } catch (error) {
-      // console.error("Error creating ZEN invoice:", error);
       showTelegramAlert("Ошибка при создании инвойса");
     }
   };

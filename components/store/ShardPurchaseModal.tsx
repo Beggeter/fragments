@@ -31,7 +31,6 @@ const ShardPurchaseModal: React.FC<ShardPurchaseModalProps> = ({ isOpen, onClose
         return;
       }
 
-      // console.log('💎 Creating Telegram Stars invoice for shard purchase:', {
       //   userId,
       //   packAmount: pack.amount,
       //   packPrice: pack.price
@@ -41,7 +40,6 @@ const ShardPurchaseModal: React.FC<ShardPurchaseModalProps> = ({ isOpen, onClose
       const result = await createShardsInvoice(userId, pack.amount, pack.price);
 
       if (result.success) {
-        // console.log('✅ Payment successful!');
         
         // Показываем уведомление пользователю
         showTelegramAlert('Оплата прошла успешно! Осколки начислены.');
@@ -60,7 +58,6 @@ const ShardPurchaseModal: React.FC<ShardPurchaseModalProps> = ({ isOpen, onClose
       }
 
     } catch (e: any) {
-      // console.error('❌ Error creating Telegram Stars invoice:', e);
       setError('Ошибка создания инвойса: ' + (e.message || 'Неизвестная ошибка'));
     } finally {
       setIsLoading(false);
@@ -91,14 +88,12 @@ const ShardPurchaseModal: React.FC<ShardPurchaseModalProps> = ({ isOpen, onClose
       });
       
       if (res.ok) {
-        // console.log('✅ Test purchase successful');
         onSuccess();
       } else {
         const errorData = await res.json();
         setError('Ошибка тестовой покупки: ' + (errorData.error || 'Неизвестная ошибка'));
       }
     } catch (e: any) {
-      // console.error('❌ Test purchase error:', e);
       setError('Ошибка: ' + (e.message || 'Неизвестная ошибка'));
     }
     setIsLoading(false);

@@ -45,7 +45,6 @@ export class CurrencyService {
 
       return true;
     } catch (error) {
-      // console.error('Error adding currency:', error);
       return false;
     }
   }
@@ -93,7 +92,6 @@ export class CurrencyService {
 
       return true;
     } catch (error) {
-      // console.error('Error deducting currency:', error);
       return false;
     }
   }

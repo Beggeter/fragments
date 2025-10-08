@@ -235,7 +235,7 @@ export const LoadingSpinner: React.FC<{
   const [allLinesFinished, setAllLinesFinished] = useState(false);
 
   const handleLineFinish = () => {
-    console.log("line finished");
+    
 
     finishedCount.current += 1;
     if (finishedCount.current === 8) {

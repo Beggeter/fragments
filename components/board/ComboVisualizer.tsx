@@ -207,7 +207,6 @@ export const ComboVisualizer: React.FC<ComboVisualizerProps> = ({
         const fallbackSize = 350; // fallback размер для production
 
         if (newSize.width < minSize || newSize.height < minSize) {
-          // console.warn(
           //   "ComboVisualizer: размеры слишком маленькие, используем fallback",
           //   newSize
           // );

@@ -93,7 +93,7 @@ export default async function handler(
         // Обновляем Zen рекорд пользователя
         const updatedUser = await UserService.updateRecord(user[0].id, newRecord, 'zen');
         if (!updatedUser) {
-          console.error('Failed to update Zen record for user:', user[0].id);
+          
         }
       }
 
@@ -120,7 +120,7 @@ export default async function handler(
       return res.status(405).json({ error: 'Method not allowed' });
     }
   } catch (error) {
-    console.error('Error handling Zen game:', error);
+    
     return res.status(500).json({ error: 'Internal server error' });
   }
 } 

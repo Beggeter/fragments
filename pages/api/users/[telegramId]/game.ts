@@ -93,7 +93,7 @@ export default async function handler(
         // Обновляем Classic рекорд пользователя
         const updatedUser = await UserService.updateRecord(user[0].id, newRecord, 'classic');
         if (!updatedUser) {
-          console.error('Failed to update Classic record for user:', user[0].id);
+          
         }
       }
 
@@ -120,7 +120,7 @@ export default async function handler(
       return res.status(405).json({ error: 'Method not allowed' });
     }
   } catch (error) {
-    console.error('Error handling Classic game:', error);
+    
     return res.status(500).json({ error: 'Internal server error' });
   }
 } 

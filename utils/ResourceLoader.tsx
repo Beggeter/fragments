@@ -45,7 +45,6 @@ async function loadAndDecodeAudio(src: string): Promise<AudioBuffer | null> {
     const arrayBuffer = await response.arrayBuffer();
     return await audioContext.decodeAudioData(arrayBuffer);
   } catch (e) {
-    console.warn('Failed to load/decode audio', src, e);
     return null;
   }
 }
@@ -150,7 +149,6 @@ export const ResourceLoader: React.FC<ResourceLoaderProps> = ({
             };
             
             img.onerror = () => {
-              console.warn(`Failed to load image: ${src}`);
               updateProgress(false);
               resolve();
             };
@@ -168,7 +166,6 @@ export const ResourceLoader: React.FC<ResourceLoaderProps> = ({
                 resolve();
               })
               .catch(() => {
-                console.warn(`Failed to load resource: ${src}`);
                 updateProgress(false);
                 resolve();
               });
@@ -202,7 +199,6 @@ export const ResourceLoader: React.FC<ResourceLoaderProps> = ({
         setIsLoading(false);
         onLoadingComplete();
       } catch (error) {
-        console.error("Error loading resources:", error);
         // Даже при ошибках продолжаем игру
         setIsLoading(false);
         onLoadingComplete();

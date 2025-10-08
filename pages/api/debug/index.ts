@@ -5,7 +5,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const payload = req.body;
     // Just log to server stdout; on prod pm2 captures this
-    console.log('🟡 CLIENT_DEBUG:', JSON.stringify(payload));
+    
   } catch (e) {
     // ignore
   }

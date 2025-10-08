@@ -12,16 +12,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    console.log('🚀 Initializing default boosters...');
+    
     await BoosterService.initializeDefaultBoosters();
-    console.log('✅ Default boosters created successfully');
+    
     
     return res.status(200).json({ 
       success: true, 
       message: 'Default boosters initialized successfully' 
     });
   } catch (error) {
-    console.error('❌ Error initializing boosters:', error);
+    
     return res.status(500).json({ 
       error: 'Failed to initialize boosters',
       details: error

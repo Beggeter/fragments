@@ -108,7 +108,7 @@ function waitForTelegramWebApp(maxAttempts = 40, interval = 250): Promise<boolea
     const checkTelegram = () => {
       // Сначала быстрая проверка
       if (window.Telegram?.WebApp) {
-        console.log('✅ Telegram WebApp API found!');
+        
         resolve(true);
         return;
       }
@@ -119,14 +119,14 @@ function waitForTelegramWebApp(maxAttempts = 40, interval = 250): Promise<boolea
       const currentInterval = attempts > 10 ? interval * 2 : interval;
 
       if (attempts >= maxAttempts) {
-        console.warn(`❌ Telegram WebApp API not loaded after ${maxAttempts} attempts`);
+        
         resolve(false);
         return;
       }
 
       // Логируем каждые 5 попыток для отладки мобильных сетей
       if (attempts % 5 === 0) {
-        console.log(`🔄 Still waiting for Telegram API... (${attempts}/${maxAttempts})`);
+        
       }
 
       setTimeout(checkTelegram, currentInterval);
@@ -170,7 +170,7 @@ function setupFullscreen(tg: TelegramWebApp) {
       tg.requestFullscreen();
     }
   } catch (error) {
-    console.warn('Failed to setup fullscreen:', error);
+    
   }
 }
 
@@ -184,11 +184,11 @@ function setupFallbackViewport() {
 // Основная функция инициализации
 async function performInitialization(): Promise<boolean> {
   try {
-    console.log('🔄 Starting Telegram WebApp initialization...');
+    
 
     // Проверяем, что мы на клиенте
     if (typeof window === "undefined") {
-      console.warn('❌ Window is undefined, cannot initialize Telegram WebApp');
+      
       return false;
     }
 
@@ -198,28 +198,28 @@ async function performInitialization(): Promise<boolean> {
     // Дополнительная проверка сети
     const connectionType = (navigator as any)?.connection?.effectiveType;
     if (connectionType) {
-      console.log('📶 Network type detected:', connectionType);
+      
     }
 
     // Если не в Telegram, настраиваем fallback
     if (!isLaunchedInTelegram()) {
-      console.log('🌐 Not in Telegram, setting up fallback viewport');
+      
       setupFallbackViewport();
       return true; // Считаем успешной инициализацию для браузера
     }
 
-    console.log('📱 In Telegram environment, waiting for API...');
+    
 
     // Ждем загрузки Telegram WebApp API
     const isLoaded = await waitForTelegramWebApp();
     if (!isLoaded) {
-      console.warn('❌ Telegram WebApp API failed to load, setting up fallback');
+      
       setupFallbackViewport();
       return false;
     }
 
     const tg = window.Telegram!.WebApp!;
-    console.log('✅ Telegram WebApp API loaded successfully');
+    
 
     // Базовая инициализация
     tg.ready();
@@ -234,7 +234,7 @@ async function performInitialization(): Promise<boolean> {
       try {
         tg.setHeaderColor('#1a1a2e');
       } catch (error) {
-        console.warn('Failed to set header color:', error);
+        
       }
     }
 
@@ -247,11 +247,11 @@ async function performInitialization(): Promise<boolean> {
     // Сохраняем cleanup функцию для будущего использования
     (window as any).__telegramCleanup = cleanupViewport;
 
-    console.log('🎉 Telegram WebApp initialization completed successfully');
+    
     return true;
 
   } catch (error) {
-    console.error('❌ Telegram WebApp initialization failed:', error);
+    
     setupFallbackViewport();
     return false;
   }
@@ -283,7 +283,7 @@ export async function initializeTelegramWebApp(): Promise<boolean> {
       try {
         callback(success);
       } catch (error) {
-        console.error('Error in init callback:', error);
+        
       }
     });
 
@@ -291,7 +291,7 @@ export async function initializeTelegramWebApp(): Promise<boolean> {
   } catch (error) {
     isInitializing = false;
     isInitialized = false;
-    console.error('Failed to initialize Telegram WebApp:', error);
+    
     return false;
   }
 }
@@ -332,7 +332,7 @@ export function cleanupTelegramWebApp() {
       (window as any).__telegramCleanup();
       delete (window as any).__telegramCleanup;
     } catch (error) {
-      console.error('Error during Telegram WebApp cleanup:', error);
+      
     }
   }
 }

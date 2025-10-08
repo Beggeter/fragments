@@ -1591,7 +1591,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
           useGameStore.setState({
             score: newScore,
           });
-          // await saveAfterAction().catch(console.error);
         }, 300);
 
       }
@@ -1621,7 +1620,6 @@ export const GameBoard: React.FC<GameBoardProps> = ({
 
       // Добавляем дополнительную переменную для отладки
       // if (process.env.NODE_ENV === "development") {
-      //   console.log("GameBoard: установлена --app-vw:", clampedWidth, "px");
       // }
     };
 

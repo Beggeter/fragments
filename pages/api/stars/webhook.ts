@@ -60,7 +60,7 @@ function parseCompactPayload(payload: string): Record<string, any> {
 
     return result;
   } catch (error) {
-    console.error('Error parsing compact payload:', error);
+    
     throw new Error('Invalid payload format');
   }
 }
@@ -71,17 +71,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    console.log('📦 Stars webhook received:', {
-      body: req.body,
-      headers: req.headers
-    });
+    
 
     const update = req.body;
 
     // Обрабатываем pre-checkout query
     if (update.pre_checkout_query) {
       const query = update.pre_checkout_query;
-      console.log('🔍 Processing pre-checkout query:', query);
+      
 
       try {
         const paymentData = parseCompactPayload(query.invoice_payload);
@@ -89,7 +86,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         // Проверяем существование пользователя
         const user = await UserService.getUserById(paymentData.userId);
         if (!user) {
-          console.error('❌ User not found for pre-checkout:', paymentData.userId);
+          
 
           // Отвечаем через answerPreCheckoutQuery
           await bot.answerPreCheckoutQuery(query.id, false, { error_message: 'User not found' });
@@ -97,12 +94,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         // Подтверждаем платеж через answerPreCheckoutQuery
-        console.log('✅ Pre-checkout query approved');
+        
         await bot.answerPreCheckoutQuery(query.id, true);
         return res.status(200).json({ ok: true });
 
       } catch (error) {
-        console.error('❌ Pre-checkout query error:', error);
+        
 
         // Отвечаем через answerPreCheckoutQuery с ошибкой
         await bot.answerPreCheckoutQuery(query.id, false, { error_message: 'Invalid payload' });
@@ -113,7 +110,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Обрабатываем успешный платеж (Stars mini-app)
     if (update.successful_payment) {
       const payment = update.successful_payment;
-      console.log('💰 Processing successful payment (Stars):', payment);
+      
       await handleSuccessfulPayment(payment, res);
       return;
     }
@@ -121,7 +118,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Обрабатываем успешный платеж (обычный бот)
     if (update.message?.successful_payment) {
       const payment = update.message.successful_payment;
-      console.log('💰 Processing successful payment (message):', payment);
+      
       await handleSuccessfulPayment(payment, res);
       return;
     }
@@ -214,7 +211,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({ ok: true });
 
   } catch (error: any) {
-    console.error('❌ Webhook processing error:', error);
+    
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
@@ -226,7 +223,7 @@ async function handleSuccessfulPayment(payment: any, res: NextApiResponse) {
     // Получаем пользователя
     const user = await UserService.getUserById(paymentData.userId);
     if (!user) {
-      console.error('❌ User not found for payment:', paymentData.userId);
+      
       return res.status(200).json({ ok: true });
     }
     // Обрабатываем платеж в зависимости от типа товара
@@ -238,11 +235,7 @@ async function handleSuccessfulPayment(payment: any, res: NextApiResponse) {
           'STARS_PURCHASE' as any,
           `Stars purchase: ${paymentData.amount} shards`
         );
-        console.log('✅ Shards payment processed:', {
-          userId: user.id,
-          telegramId: user.telegramId,
-          amount: paymentData.amount
-        });
+        
         break;
       case 'booster': {
         // Robust parsing of booster identifier: allow numeric ID or string name
@@ -263,10 +256,7 @@ async function handleSuccessfulPayment(payment: any, res: NextApiResponse) {
         }
 
         if (!Number.isFinite(boosterTypeId as number)) {
-          console.error('❌ Invalid booster itemId in Stars payload:', {
-            rawItemId,
-            paymentData
-          });
+          
           // Do not fail webhook; acknowledge to avoid repeated retries
           return res.status(200).json({ ok: true });
         }
@@ -276,20 +266,11 @@ async function handleSuccessfulPayment(payment: any, res: NextApiResponse) {
           : 1;
 
         await BoosterService.addUserBooster(user.id, boosterTypeId as number, qty);
-        console.log('✅ Booster payment processed:', {
-          userId: user.id,
-          telegramId: user.telegramId,
-          boosterId: boosterTypeId,
-          quantity: qty
-        });
+        
         break;
       }
       case 'subscription': {
-        console.log('📅 Processing subscription purchase (Stars):', {
-          userId: paymentData.userId,
-          subscriptionId: paymentData.itemId,
-          price: paymentData.price
-        });
+        
 
         // Обрабатываем ZEN подписку
         const rawPeriod = String(paymentData.itemId || '').toLowerCase(); // 'month' | 'year'
@@ -315,25 +296,19 @@ async function handleSuccessfulPayment(payment: any, res: NextApiResponse) {
             role: nextRole,
           });
 
-          console.log('✅ ZEN subscription activated successfully (Stars):', {
-            userId: paymentData.userId,
-            subscriptionPeriod: rawPeriod || 'month',
-            endDate,
-            price,
-            wasExtended: Boolean(currentEnd && currentEnd > now)
-          });
+          
         } catch (subscriptionError) {
-          console.error('❌ Failed to activate ZEN subscription (Stars):', subscriptionError);
+          
           return res.status(500).json({ error: 'Failed to activate subscription' });
         }
         break;
       }
       default:
-        console.warn('⚠️ Unsupported payment type:', paymentData.itemType);
+        
     }
     return res.status(200).json({ ok: true });
   } catch (error) {
-    console.error('❌ Payment processing error:', error);
+    
     return res.status(200).json({ ok: true });
   }
 } 

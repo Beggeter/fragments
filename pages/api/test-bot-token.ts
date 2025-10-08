@@ -30,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         botInfo = await response.json();
       }
     } catch (error) {
-      console.error('Error checking bot:', error);
+      
     }
 
     const result = {
@@ -51,12 +51,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       botApiResponse: botInfo
     };
 
-    console.log('🔑 BOT TOKEN TEST:', result);
+    
     
     res.status(200).json(result);
 
   } catch (error) {
-    console.error('💥 BOT TOKEN TEST: Error:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 } 

@@ -4,13 +4,13 @@ const crypto = require('crypto');
 const password = Math.floor(100000 + Math.random() * 900000).toString();
 const expiresAt = new Date(Date.now() + 12 * 60 * 60 * 1000); // 12 часов
 
-console.log('='.repeat(50));
-console.log('🔐 ADMIN PASSWORD GENERATED 🔐');
-console.log('🔑 Password:', password);
-console.log('⏰ Valid until:', expiresAt.toLocaleString());
-console.log('='.repeat(50));
+
+
+
+
+
 
 // Сохраняем в файл для удобства
 const fs = require('fs');
 fs.writeFileSync('admin-password.txt', `Password: ${password}\nExpires: ${expiresAt.toISOString()}\n`);
-console.log('💾 Пароль сохранен в admin-password.txt'); 
+ 

@@ -57,7 +57,6 @@ export class DifficultyEvaluator {
     private evaluateSize(block: Block): number {
         // Проверяем, что матрица существует и имеет правильную форму
         if (!block.matrix || !block.matrix.length || !block.matrix[0] || !block.matrix[0].length) {
-            // console.warn('Invalid block matrix in evaluateSize:', block);
             return 0;
         }
 
@@ -72,7 +71,6 @@ export class DifficultyEvaluator {
     private evaluateShape(block: Block): number {
         // Проверяем, что матрица существует и имеет правильную форму
         if (!block.matrix || !block.matrix.length || !block.matrix[0] || !block.matrix[0].length) {
-            // console.warn('Invalid block matrix in evaluateShape:', block);
             return 0;
         }
 
@@ -96,7 +94,6 @@ export class DifficultyEvaluator {
     private evaluateClearPotential(block: Block, board: Matrix): number {
         // Проверяем, что матрица существует и имеет правильную форму
         if (!block.matrix || !block.matrix.length || !block.matrix[0] || !block.matrix[0].length) {
-            // console.warn('Invalid block matrix in evaluateClearPotential:', block);
             return 0;
         }
 
@@ -148,7 +145,6 @@ export class DifficultyEvaluator {
     ): number {
         // Проверяем, что матрица существует и имеет правильную форму
         if (!block.matrix || !block.matrix.length || !block.matrix[0] || !block.matrix[0].length) {
-            // console.warn('Invalid block matrix in evaluateComboPotential:', block);
             return 0;
         }
 

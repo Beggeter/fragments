@@ -9,7 +9,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const { testData, botToken } = req.body;
     
-    console.log('🧪 TEST SIGNATURE: Testing with data:', testData);
+    
     
     // Создаем строку для проверки
     const dataCheckString = Object.keys(testData)
@@ -21,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .map(key => `${key}=${testData[key]}`)
       .join('\n');
 
-    console.log('📝 TEST SIGNATURE: Data check string:', dataCheckString);
+    
 
     // Создаем секретный ключ
     const secretKey = crypto.createHmac('sha256', 'WebAppData').update(botToken).digest();
@@ -37,12 +37,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       secretKeyLength: secretKey.length
     };
 
-    console.log('🔐 TEST SIGNATURE: Result:', result);
+    
     
     res.status(200).json(result);
 
   } catch (error) {
-    console.error('💥 TEST SIGNATURE: Error:', error);
+    
     res.status(500).json({ error: 'Internal server error' });
   }
 } 

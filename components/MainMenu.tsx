@@ -94,7 +94,7 @@ const MainMenu: FC<MainMenuProps> = ({
               if (ready) setShowBonusModal(true);
               else {
                 // Можно заменить на ваш тостер
-                console.warn('User not ready yet, delaying Daily Bonus open');
+                
               }
             }}
             disabled={!isInteractive}

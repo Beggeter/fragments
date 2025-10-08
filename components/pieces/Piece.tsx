@@ -59,7 +59,6 @@ export const Piece: React.FC<PieceProps> = ({ color, size = 32, isClearing, isPr
     preloadAllImages();
   }, []);
 
-  // console.log('🔍 Piece render:', {
   //   color,
   //   size,
   //   isClearing,
@@ -125,7 +124,6 @@ export const Piece: React.FC<PieceProps> = ({ color, size = 32, isClearing, isPr
           opacity,
         }}
         onError={() => {
-          // console.log('❌ Image failed to load:', `/${color}.svg`);
           setImageError(true);
         }}
       />
