@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import GameBoard from "../components/GameBoard";
 import { ZenGameBoard } from "../components/ZenGameBoard";
 import MainMenu from "@/components/MainMenu";
@@ -20,6 +20,11 @@ import { useWindowErrorLogger } from "@/hooks/useWindowErrorLogger";
 import { usePointerOverlayGuard } from "@/hooks/usePointerOverlayGuard";
 import { HomeScreen } from "@/types/home";
 import { SlowStartupToast } from "@/components/UI/SlowStartupToast";
+
+const WATCHDOG_THRESHOLD = 4000; // milliseconds without progress before marking a stall
+const WATCHDOG_INTERVAL = 500; // watchdog polling interval
+const WATCHDOG_LOG_INTERVAL = 4000; // limit repeated stall logs
+const IS_DEV_ENV = process.env.NODE_ENV !== "production";
 
 const HomePage: React.FC = () => {
   // --- все хуки должны быть до любых return! ---
@@ -73,11 +78,116 @@ const HomePage: React.FC = () => {
     sessionToken,
   } = userState;
 
+  const [watchdogActive, setWatchdogActive] = useState(false);
+  const lastProgressRef = useRef<number>(Date.now());
+  const statusSnapshotRef = useRef({
+    appState,
+    isFullyReady,
+    currentScreen,
+    slowStartupActive: slowStartup.active,
+    isInitialized,
+    resourcesLoaded,
+    userLoading,
+    adminLoading,
+    autoAuthCompleted,
+    isAppInteractive: isFullyReady && appState === 'idle',
+  });
+  const watchdogRef = useRef(false);
+  const lastWatchdogLogRef = useRef(0);
+
   const handleRestartComplete = useCallback(() => {
     setIsIntentionalRestart(false);
   }, []);
 
   const isAppInteractive = isFullyReady && appState === 'idle';
+
+  useEffect(() => {
+    statusSnapshotRef.current = {
+      appState,
+      isFullyReady,
+      currentScreen,
+      slowStartupActive: slowStartup.active,
+      isInitialized,
+      resourcesLoaded,
+      userLoading,
+      adminLoading,
+      autoAuthCompleted,
+      isAppInteractive,
+    };
+
+    lastProgressRef.current = Date.now();
+
+    if (watchdogRef.current) {
+      if (IS_DEV_ENV) {
+        console.info('[WATCHDOG] Progress detected, clearing stall', statusSnapshotRef.current);
+      }
+      watchdogRef.current = false;
+      setWatchdogActive(false);
+    }
+  }, [
+    appState,
+    isFullyReady,
+    currentScreen,
+    slowStartup.active,
+    isInitialized,
+    resourcesLoaded,
+    userLoading,
+    adminLoading,
+    autoAuthCompleted,
+    isAppInteractive,
+  ]);
+
+  useEffect(() => {
+    watchdogRef.current = watchdogActive;
+  }, [watchdogActive]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      const now = Date.now();
+      const snapshot = statusSnapshotRef.current;
+      const blocking =
+        snapshot.slowStartupActive ||
+        !snapshot.isFullyReady ||
+        snapshot.appState !== 'idle' ||
+        !snapshot.resourcesLoaded ||
+        !snapshot.isInitialized ||
+        snapshot.userLoading ||
+        snapshot.adminLoading ||
+        !snapshot.isAppInteractive;
+      const elapsed = now - lastProgressRef.current;
+
+      if (blocking) {
+        if (elapsed >= WATCHDOG_THRESHOLD) {
+          if (!watchdogRef.current) {
+            watchdogRef.current = true;
+            setWatchdogActive(true);
+            lastWatchdogLogRef.current = now;
+            if (IS_DEV_ENV) {
+              console.warn('[WATCHDOG] UI stall detected', { elapsed, snapshot });
+            }
+          } else if (now - lastWatchdogLogRef.current >= WATCHDOG_LOG_INTERVAL) {
+            lastWatchdogLogRef.current = now;
+            if (IS_DEV_ENV) {
+              console.warn('[WATCHDOG] Stall ongoing', { elapsed, snapshot });
+            }
+          }
+        }
+      } else if (watchdogRef.current) {
+        watchdogRef.current = false;
+        setWatchdogActive(false);
+        lastProgressRef.current = now;
+        if (IS_DEV_ENV) {
+          console.info('[WATCHDOG] Stall resolved', snapshot);
+        }
+      }
+    }, WATCHDOG_INTERVAL);
+
+    return () => window.clearInterval(interval);
+  }, []);
   const interactionLabel = !isFullyReady
     ? 'Загрузка…'
     : appState === 'transitioning'
@@ -87,7 +197,11 @@ const HomePage: React.FC = () => {
         : 'Загрузка…';
 
   const toastActive =
-    slowStartup.active || !isFullyReady || appState === 'transitioning' || appState === 'loading';
+    slowStartup.active ||
+    !isFullyReady ||
+    appState === 'transitioning' ||
+    appState === 'loading' ||
+    watchdogActive;
 
   const ensureStorageAccessible = useCallback(() => {
     if (typeof window === "undefined") {
@@ -133,6 +247,14 @@ const HomePage: React.FC = () => {
 
   const handleStartClassic = useCallback(async () => {
     if (appState !== "idle") return;
+    if (IS_DEV_ENV) {
+      console.info('[WATCHDOG] Classic mode requested', {
+        appState,
+        isFullyReady,
+        currentScreen,
+        timestamp: Date.now(),
+      });
+    }
     setAppState("transitioning");
 
     try {
@@ -147,7 +269,23 @@ const HomePage: React.FC = () => {
   }, [appState, ensureStorageAccessible, setAppState, setCurrentScreen]);
 
   const handleStartZen = useCallback(async () => {
-    if (appState !== "idle") return;
+    if (appState !== "idle") {
+      if (IS_DEV_ENV) {
+        console.warn('[WATCHDOG] Zen mode request ignored because appState is not idle', {
+          appState,
+          currentScreen,
+        });
+      }
+      return;
+    }
+    if (IS_DEV_ENV) {
+      console.info('[WATCHDOG] Zen mode requested', {
+        appState,
+        isFullyReady,
+        currentScreen,
+        timestamp: Date.now(),
+      });
+    }
     setAppState("transitioning");
 
     try {
@@ -162,7 +300,21 @@ const HomePage: React.FC = () => {
   }, [appState, ensureStorageAccessible, setAppState, setCurrentScreen]);
 
   const handleGoToMenu = useCallback(() => {
-    if (appState !== "idle") return;
+    if (appState !== "idle") {
+      if (IS_DEV_ENV) {
+        console.warn('[WATCHDOG] Go-to-menu ignored: appState not idle', {
+          appState,
+          currentScreen,
+        });
+      }
+      return;
+    }
+    if (IS_DEV_ENV) {
+      console.info('[WATCHDOG] Returning to main menu', {
+        currentScreen,
+        timestamp: Date.now(),
+      });
+    }
     setAppState("transitioning");
     setCurrentScreen("main menu");
     setAppState("idle");
