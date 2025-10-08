@@ -3,6 +3,7 @@
 interface TelegramWebApp {
   ready: () => void;
   expand: () => void;
+  isExpanded?: boolean;
   onEvent?: (eventType: string, callback: () => void) => void;
   offEvent?: (eventType: string, callback: () => void) => void;
   disableClosingConfirmation?: () => void;
