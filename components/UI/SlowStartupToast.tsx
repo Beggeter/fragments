@@ -9,13 +9,19 @@ interface SlowStartupToastProps {
 
 export const SlowStartupToast: React.FC<SlowStartupToastProps> = ({ active }) => {
   return (
-    <div className="pointer-events-none fixed inset-x-0 top-0 z-[4000] flex justify-center pt-6">
+    <div
+      className="pointer-events-none fixed left-0 bottom-0 z-[4000] flex justify-start pl-5 pb-5"
+      style={{
+        paddingBottom: `calc(var(--tg-content-safe-area-inset-bottom, 0px) + 20px)`,
+        paddingLeft: `calc(var(--tg-content-safe-area-inset-left, 0px) + 20px)`,
+      }}
+    >
       <AnimatePresence>
         {active && (
           <motion.div
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -10, opacity: 0 }}
+            exit={{ y: 10, opacity: 0 }}
             transition={{ type: "spring", stiffness: 320, damping: 26 }}
             className="pointer-events-auto relative flex h-[56px] w-[56px] items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-white/80 p-2 shadow-[0_18px_40px_rgba(0,0,0,0.35)] backdrop-blur-xl"
           >
