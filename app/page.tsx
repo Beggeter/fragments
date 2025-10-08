@@ -18,7 +18,7 @@ import { useTelegramApp } from "@/hooks/useTelegramApp";
 import { useDisableContextMenu } from "@/hooks/useDisableContextMenu";
 import { useWindowErrorLogger } from "@/hooks/useWindowErrorLogger";
 import { usePointerOverlayGuard } from "@/hooks/usePointerOverlayGuard";
-import { AppStateStatus, HomeScreen } from "@/types/home";
+import { HomeScreen } from "@/types/home";
 import { SlowStartupToast } from "@/components/UI/SlowStartupToast";
 
 const HomePage: React.FC = () => {
@@ -61,7 +61,6 @@ const HomePage: React.FC = () => {
     handleAdminLoginSuccess,
     handleTelegramLoginSuccess,
     slowStartup,
-    dismissSlowStartup,
   } = useTelegramApp();
 
   const { isAdmin, isLoading: adminLoading } = adminAuth;
@@ -78,31 +77,6 @@ const HomePage: React.FC = () => {
     setIsIntentionalRestart(false);
   }, []);
 
-  const slowStepMessages: Record<string, string> = {
-    'sdk-init': 'Подключаем Telegram SDK…',
-    'telegram-init': 'Инициализируем Telegram WebApp…',
-    'session-restore': 'Восстанавливаем ваш сеанс…',
-    'auto-auth': 'Подтверждаем данные Telegram…',
-  };
-
-  const slowStartupDescription =
-    slowStartup.step && slowStepMessages[slowStartup.step]
-      ? slowStepMessages[slowStartup.step]
-      : "Подключаемся к сервису, это может занять немного больше времени.";
-
-  const appStateMessages: Record<AppStateStatus, string> = {
-    loading: 'Подключаем Telegram WebApp…',
-    transitioning: 'Готовим экран…',
-    idle: '',
-    error: 'Не удалось подготовить приложение. Попробуйте обновить.',
-  };
-
-  const appStateTitles: Partial<Record<AppStateStatus, string>> = {
-    loading: 'Подключаемся…',
-    transitioning: 'Почти готово…',
-    error: 'Ошибка запуска',
-  };
-
   const isAppInteractive = isFullyReady && appState === 'idle';
   const interactionLabel = !isFullyReady
     ? 'Загрузка…'
@@ -112,18 +86,8 @@ const HomePage: React.FC = () => {
         ? 'Ошибка'
         : 'Загрузка…';
 
-  const toastActive = slowStartup.active || !isFullyReady;
-  const toastTitle = slowStartup.active
-    ? 'Загрузка затянулась…'
-    : !isFullyReady
-      ? 'Подготавливаем приложение…'
-      : appStateTitles[appState] ?? 'Загрузка…';
-  const toastDescription = slowStartup.active
-    ? slowStartupDescription
-    : !isFullyReady
-      ? 'Ждём полной загрузки приложения и подключения Telegram.'
-      : appStateMessages[appState] || slowStartupDescription;
-  const toastDismiss = slowStartup.active ? dismissSlowStartup : undefined;
+  const toastActive =
+    slowStartup.active || !isFullyReady || appState === 'transitioning' || appState === 'loading';
 
   const ensureStorageAccessible = useCallback(() => {
     if (typeof window === "undefined") {
@@ -370,12 +334,7 @@ const HomePage: React.FC = () => {
       }}
     >
 
-      <SlowStartupToast
-        active={toastActive}
-        title={toastTitle}
-        description={toastDescription}
-        onDismiss={toastDismiss}
-      />
+      <SlowStartupToast active={toastActive} />
 
       {/* Piece Return Animation */}
       {pieceReturnAnimation && boardRect && (
