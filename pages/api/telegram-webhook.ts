@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { UserService, BoosterService, CurrencyService } from '@/lib/db/services';
 import { PaymentPayload } from '@/types/shop';
-import { CurrencyTransactionType } from '@/lib/db/types';
+import { CurrencyTransactionType, UserRole } from '@/lib/db/types';
 import TelegramBot from 'node-telegram-bot-api';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -251,9 +251,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         // Обновляем статус подписки пользователя
         try {
+          const nextRole =
+            currentUser.role === UserRole.USER ? UserRole.PREMIUM : currentUser.role;
+
           await UserService.updateUser(paymentPayload.userId, {
             hasZenSubscription: true,
-            zenSubscriptionEndDate: endDate
+            zenSubscriptionEndDate: endDate,
+            role: nextRole,
           });
           
           console.log('✅ ZEN subscription activated successfully:', {

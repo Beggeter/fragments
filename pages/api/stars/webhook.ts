@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import TelegramBot from 'node-telegram-bot-api';
 import { UserService, CurrencyService, BoosterService } from '../../../lib/db/services';
+import { UserRole } from '@/lib/db/types';
 
 const botToken = process.env.STARS_BOT_TOKEN;
 if (!botToken) {
@@ -305,9 +306,13 @@ async function handleSuccessfulPayment(payment: any, res: NextApiResponse) {
 
         // Обновляем статус подписки пользователя
         try {
+          const nextRole =
+            user.role === UserRole.USER ? UserRole.PREMIUM : user.role;
+
           await UserService.updateUser(paymentData.userId, {
             hasZenSubscription: true,
-            zenSubscriptionEndDate: endDate
+            zenSubscriptionEndDate: endDate,
+            role: nextRole,
           });
 
           console.log('✅ ZEN subscription activated successfully (Stars):', {

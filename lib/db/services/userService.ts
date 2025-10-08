@@ -1,7 +1,7 @@
 import { eq, and, desc, ne, count, sum, gt } from 'drizzle-orm';
 import { db } from '../index';
 import { users, userGames, currencyTransactions, recordHistory } from '../schema';
-import type { User, NewUser, UserRole } from '../types';
+import { UserRole, type User, type NewUser } from '../types';
 
 export class UserService {
   private static async refreshZenSubscriptionStatus(user: User | null): Promise<User | null> {
@@ -20,11 +20,14 @@ export class UserService {
       return user;
     }
 
+    const shouldResetRole = user.role === UserRole.PREMIUM;
+
     const [updated] = await db
       .update(users)
       .set({
         hasZenSubscription: false,
         zenSubscriptionEndDate: null,
+        role: shouldResetRole ? UserRole.USER : user.role,
         updatedAt: new Date(),
       })
       .where(eq(users.id, user.id))
@@ -38,6 +41,7 @@ export class UserService {
       ...user,
       hasZenSubscription: false,
       zenSubscriptionEndDate: null,
+      role: shouldResetRole ? UserRole.USER : user.role,
     };
   }
 
