@@ -123,6 +123,70 @@ export const useTelegramApp = (): UseTelegramAppResult => {
   const slowStateRef = useRef<SlowStartupState>({ active: false });
   const suppressedStepsRef = useRef<Set<StartupMilestone>>(new Set());
   const suppressionTimersRef = useRef<Partial<Record<StartupMilestone, number>>>({});
+  const recomputeReadiness = useCallback(() => {
+    const ready = docReadyRef.current && telegramReadyRef.current && appState === 'idle';
+    setIsFullyReady(ready);
+  }, [appState]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    if (document.readyState === 'complete') {
+      docReadyRef.current = true;
+      recomputeReadiness();
+      return;
+    }
+
+    const handleReadyState = () => {
+      if (document.readyState === 'complete') {
+        docReadyRef.current = true;
+        recomputeReadiness();
+        document.removeEventListener('readystatechange', handleReadyState);
+        window.removeEventListener('load', handleLoad);
+      }
+    };
+
+    const handleLoad = () => {
+      docReadyRef.current = true;
+      recomputeReadiness();
+      document.removeEventListener('readystatechange', handleReadyState);
+      window.removeEventListener('load', handleLoad);
+    };
+
+    document.addEventListener('readystatechange', handleReadyState);
+    window.addEventListener('load', handleLoad);
+
+    return () => {
+      document.removeEventListener('readystatechange', handleReadyState);
+      window.removeEventListener('load', handleLoad);
+    };
+  }, [recomputeReadiness]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.Telegram?.WebApp) return;
+
+    const onReady = () => {
+      telegramReadyRef.current = true;
+      recomputeReadiness();
+    };
+
+    try {
+      window.Telegram.WebApp.onEvent?.('web_app_ready', onReady);
+    } catch (error) {
+      console.warn('Failed to bind web_app_ready event', error);
+    }
+
+    if (window.Telegram.WebApp?.isExpanded || window.Telegram.WebApp?.initData) {
+      telegramReadyRef.current = true;
+      recomputeReadiness();
+    }
+
+    return () => {
+      try {
+        window.Telegram?.WebApp?.offEvent?.('web_app_ready', onReady);
+      } catch {}
+    };
+  }, [recomputeReadiness]);
 
   const persistMetrics = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -246,71 +310,6 @@ export const useTelegramApp = (): UseTelegramAppResult => {
       clearSlowForStep(step);
     });
   }, [cancelMilestoneTimer, clearSlowForStep]);
-
-  const recomputeReadiness = useCallback(() => {
-    const ready = docReadyRef.current && telegramReadyRef.current && appState === 'idle';
-    setIsFullyReady(ready);
-  }, [appState]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    if (document.readyState === 'complete') {
-      docReadyRef.current = true;
-      recomputeReadiness();
-      return;
-    }
-
-    const handleReadyState = () => {
-      if (document.readyState === 'complete') {
-        docReadyRef.current = true;
-        recomputeReadiness();
-        document.removeEventListener('readystatechange', handleReadyState);
-        window.removeEventListener('load', handleLoad);
-      }
-    };
-
-    const handleLoad = () => {
-      docReadyRef.current = true;
-      recomputeReadiness();
-      document.removeEventListener('readystatechange', handleReadyState);
-      window.removeEventListener('load', handleLoad);
-    };
-
-    document.addEventListener('readystatechange', handleReadyState);
-    window.addEventListener('load', handleLoad);
-
-    return () => {
-      document.removeEventListener('readystatechange', handleReadyState);
-      window.removeEventListener('load', handleLoad);
-    };
-  }, [recomputeReadiness]);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !window.Telegram?.WebApp) return;
-
-    const onReady = () => {
-      telegramReadyRef.current = true;
-      recomputeReadiness();
-    };
-
-    try {
-      window.Telegram.WebApp.onEvent?.('web_app_ready', onReady);
-    } catch (error) {
-      console.warn('Failed to bind web_app_ready event', error);
-    }
-
-    if (window.Telegram.WebApp?.isExpanded || window.Telegram.WebApp?.initData) {
-      telegramReadyRef.current = true;
-      recomputeReadiness();
-    }
-
-    return () => {
-      try {
-        window.Telegram?.WebApp?.offEvent?.('web_app_ready', onReady);
-      } catch {}
-    };
-  }, [recomputeReadiness]);
 
   useEffect(() => {
     loginUserRef.current = userState.loginUser;

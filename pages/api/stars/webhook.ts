@@ -18,6 +18,7 @@ function getMainMenu() {
     webAppUrl
       ? [{ text: "▶️ Играть", web_app: { url: webAppUrl } }]
       : [],
+    [{ text: "🧩 Fragments channel", url: "https://t.me/Fragments_Games" }],
     [{ text: "🛠 Поддержка (RU)", callback_data: "support_ru" }],
     [{ text: "🛠 Support (EN)", callback_data: "support_en" }],
     [{ text: "📄 Условия", callback_data: "terms" }],
@@ -142,14 +143,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
         switch (action) {
           case "support_ru":
-            await bot.sendMessage(chatId, `ℹ️ Поддержка по покупкам\n\nЕсли у тебя возникли проблемы с покупкой, пожалуйста, отправь в поддержку:\n\n1. Свой @username\n2. Название товара (например, ZEN-подписка, бустер и т.д.)\n3. Примерное время покупки\n4. Что произошло\n\n📬 Поддержка: @fragments_support_bot`, {
+            await bot.sendMessage(chatId, `ℹ️ Поддержка по покупкам\n\nЕсли у тебя возникли проблемы с покупкой, пожалуйста, отправь в чат:\n\n1. Свой @username\n2. Название товара (например, ZEN-подписка, бустер и т.д.)\n3. Примерное время покупки\n4. Что произошло`, {
               reply_markup: {
                 inline_keyboard: [[{ text: "🔙 Назад", callback_data: "back_to_main" }]]
               }
             });
             break;
           case "support_en":
-            await bot.sendMessage(chatId, `ℹ️ Purchase Support\n\nIf you experienced an issue with a purchase, please send us:\n\n1. Your @username\n2. Product name (e.g. ZEN subscription, booster, etc.)\n3. Approximate time of purchase\n4. Short description of the issue\n\n📬 Contact: @fragments_support_bot`, {
+            await bot.sendMessage(chatId, `ℹ️ Purchase Support\n\nIf you experienced an issue with a purchase, please send us:\n\n1. Your @username\n2. Product name (e.g. ZEN subscription, booster, etc.)\n3. Approximate time of purchase\n4. Short description of the issue`, {
               reply_markup: {
                 inline_keyboard: [[{ text: "🔙 Back", callback_data: "back_to_main" }]]
               }
