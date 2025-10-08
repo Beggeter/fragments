@@ -29,6 +29,10 @@ export const SlowStartupToast: React.FC<SlowStartupToastProps> = ({ active }) =>
               <span className="absolute bottom-1 left-1 h-5 w-5 rounded-full border border-cyan-300/80 shadow-[0_0_12px_rgba(34,211,238,0.65)]" />
               <span className="absolute bottom-1 left-1 h-5 w-5 rounded-full border border-cyan-200/40 animate-ping" />
               <span className="absolute bottom-1 left-1 h-5 w-5 rounded-full bg-cyan-300/30 blur-[4px]" />
+              <span className="absolute bottom-1 left-1 h-5 w-5 rounded-full border border-white/15 opacity-40" />
+              <span className="absolute bottom-1 left-1 h-5 w-5 animate-[spin_1.8s_linear_infinite] rounded-full border border-transparent">
+                <span className="absolute left-1/2 top-0 h-[6px] w-[6px] -translate-x-1/2 rounded-full bg-cyan-100 shadow-[0_0_12px_rgba(34,211,238,0.85)]" />
+              </span>
               <span className="sr-only">Загрузка</span>
             </div>
           </motion.div>
