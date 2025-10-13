@@ -25,7 +25,7 @@ const emptyDayStatuses = (): DayStatuses => ({
   skippedDays: [],
 });
 
-const ensureUniqueSorted = (values: unknown[]): number[] => {
+const ensureUniqueSorted = (values: unknown): number[] => {
   if (!Array.isArray(values)) return [];
 
   const unique = new Set<number>();
