@@ -9,7 +9,7 @@ import {
   primaryKey,
   index
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 // Пользователи
 export const users = pgTable("users", {
@@ -115,6 +115,7 @@ export const dailyBonuses = pgTable("daily_bonuses", {
   currentWeek: integer("current_week").notNull().default(1),
   currentDay: integer("current_day").notNull().default(1),
   lastClaimDate: timestamp("last_claim_date"),
+  dayStatuses: jsonb("day_statuses").notNull().default(sql`'{"claimedDays":[],"skippedDays":[]}'::jsonb`),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({

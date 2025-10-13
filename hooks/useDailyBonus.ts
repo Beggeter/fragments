@@ -175,5 +175,6 @@ export const useDailyBonus = () => {
     streakLength: bonusData?.streakLength ?? 0,
     nextClaimAvailableAt: bonusData?.nextClaimAvailableAt ?? null,
     lastClaimDate: bonusData?.lastClaimDate ?? null,
+    skippedDays: bonusData?.skippedDays ?? [],
   };
 }; 

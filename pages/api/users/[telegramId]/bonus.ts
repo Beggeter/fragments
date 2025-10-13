@@ -41,6 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         lastClaimDate: bonusState.lastClaimDate,
         nextClaimAvailableAt: bonusState.nextClaimAvailableAt,
         todayReward: bonusState.todayReward,
+        skippedDays: bonusState.skippedDays,
       };
 
       return res.status(200).json(response);
@@ -63,6 +64,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             lastClaimDate: updatedState.lastClaimDate,
             nextClaimAvailableAt: updatedState.nextClaimAvailableAt,
             todayReward: updatedState.todayReward,
+            skippedDays: updatedState.skippedDays,
           },
         });
       } catch (error) {

@@ -49,12 +49,25 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
     nextClaimAvailableAt,
     lastClaimDate,
     loadBonusData,
+    skippedDays,
   } = useDailyBonus();
   const { user } = useUser();
+
+  const skippedDaySet = useMemo(() => {
+    const set = new Set<string>();
+    skippedDays?.forEach((item) => {
+      set.add(`${item.week}-${item.day}`);
+    });
+    return set;
+  }, [skippedDays]);
 
   // Преобразуем данные из API в формат для компонента
   const resolveDayStatus = (weekNumber: number, dayNumber: number): RewardStatus => {
     if (!bonusData) return "locked";
+
+    if (skippedDaySet.has(`${weekNumber}-${dayNumber}`)) {
+      return "skipped";
+    }
 
     if (weekNumber < currentWeek) {
       return "claimed";
@@ -111,12 +124,12 @@ export const DailyBonusModal: React.FC<DailyBonusModalProps> = ({
 
   const classicRewards = useMemo(
     () => (currentWeekData ? transformRewards(currentWeekData) : []),
-    [currentWeekData, currentDay, canClaimToday]
+    [currentWeekData, currentDay, canClaimToday, skippedDaySet]
   );
 
   const zenRewards = useMemo(
     () => (currentWeekData ? transformZenRewards(currentWeekData) : []),
-    [currentWeekData, currentDay, canClaimToday]
+    [currentWeekData, currentDay, canClaimToday, skippedDaySet]
   );
 
   const unlockAnimations = useUnlockAnimations(classicRewards);

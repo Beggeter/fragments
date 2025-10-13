@@ -25,6 +25,11 @@ export interface DailyBonusConfig {
   weeks: DailyBonusWeek[];
 }
 
+export interface DailyBonusSkippedDay {
+  week: number;
+  day: number;
+}
+
 export interface DailyBonusState {
   currentWeek: number;
   currentDay: number;
@@ -34,6 +39,7 @@ export interface DailyBonusState {
   nextClaimAvailableAt: string | null;
   streakLength: number;
   todayReward: DailyBonusReward | null;
+  skippedDays: DailyBonusSkippedDay[];
 }
 
 export interface DailyBonusResponse {
@@ -46,4 +52,5 @@ export interface DailyBonusResponse {
   lastClaimDate: string | null;
   nextClaimAvailableAt: string | null;
   todayReward: DailyBonusReward | null;
+  skippedDays: DailyBonusSkippedDay[];
 } 
