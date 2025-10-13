@@ -92,7 +92,7 @@ export const ZenGameBoard: React.FC<ZenGameBoardProps> = ({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-[#001225] via-[#061024] to-[#01060f] flex items-center justify-center">
         <LoadingScreen />
       </div>
     );
@@ -100,7 +100,7 @@ export const ZenGameBoard: React.FC<ZenGameBoardProps> = ({
 
   if (gameOver) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-b from-[#001225] via-[#061024] to-[#01060f] flex items-center justify-center">
         <GameOver
           onPlayAgain={handleRestart}
           onBackToMenu={handleBackToMenu}
@@ -111,7 +111,7 @@ export const ZenGameBoard: React.FC<ZenGameBoardProps> = ({
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-b from-[#001225] via-[#061024] to-[#01060f] relative overflow-hidden">
       {/* ZEN режим - точно такой же интерфейс как в Classic */}
       <GameBoard
         onScoreUpdate={(score) => {
