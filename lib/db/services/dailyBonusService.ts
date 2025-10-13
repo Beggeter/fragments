@@ -1,6 +1,23 @@
 import { db } from '../index';
 import { dailyBonuses, users } from '../schema';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
+let dayStatusesColumnEnsured = false;
+
+const ensureDayStatusesColumn = async () => {
+  if (dayStatusesColumnEnsured) return;
+
+  try {
+    await db.execute(sql`
+      ALTER TABLE "daily_bonuses"
+      ADD COLUMN IF NOT EXISTS "day_statuses" jsonb NOT NULL DEFAULT '{"claimedDays":[],"skippedDays":[]}'
+    `);
+  } catch (_) {
+    // no-op: if we can't add the column, subsequent queries will surface the real error
+  } finally {
+    dayStatusesColumnEnsured = true;
+  }
+};
+
 import dailyBonusConfig from '../../data/dailyBonusConfig.json';
 import {
   DailyBonusConfig,
@@ -253,6 +270,8 @@ export class DailyBonusService {
    * Получить или создать запись о бонусах пользователя
    */
   static async getOrCreateUserBonus(userId: number) {
+    await ensureDayStatusesColumn();
+
     const existing = await db
       .select()
       .from(dailyBonuses)
