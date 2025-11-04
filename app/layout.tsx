@@ -59,18 +59,30 @@ export default function RootLayout({
     >
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-        
+
         {/* Предварительное подключение для ускорения загрузки через мобильные сети */}
         <link rel="preconnect" href="https://telegram.org" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        
+
         {/* Telegram Web App Script - оптимизированная загрузка для мобильных сетей */}
         <Script
           src="https://telegram.org/js/telegram-web-app.js"
           strategy="beforeInteractive"
         />
-                {/* Telegram WebApp initialization now handled in React components */}
+
+        <Script
+          src="https://js.onclckvd.com/in-stream-ad-admanager/tma.js"
+          strategy="afterInteractive"
+        />
+        <Script id="tma-init" strategy="afterInteractive">
+          {`
+            window.initCdTma?.({ id: 'Your Spot ID' })
+              .then(show => window.show = show)
+              .catch(e => console.log(e));
+          `}
+        </Script>
+        {/* Telegram WebApp initialization now handled in React components */}
         <link
           href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&family=Fredoka:wght@700&display=swap"
           rel="stylesheet"

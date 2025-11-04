@@ -29,6 +29,21 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu, g
   }, [user, score, gameMode]);
 
   useEffect(() => {
+    // Запускаем рекламу через 300 ms после появления экрана Game Over
+    const timer = setTimeout(() => {
+      if (typeof window !== "undefined" && window.show) {
+        window.show()
+          .then(() => console.log("Ad completed"))
+          .catch((e) => console.log("Ad error", e));
+      } else {
+        console.log("Ad not ready yet");
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
     if (isAdmin) {
       setIsRecordLoading(true);
       fetch("/api/users/610936383")
@@ -90,21 +105,21 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu, g
           </div>
         </div>
         <span className="flex flex-col gap-5 w-full items-center">
-        <MenuButton
-          // text={t('game_over.play_again')}
-          text={'Play Again'}
-          gradientClass="green-gradient"
-          className="rounded-3xl px-8 py-4  font-bold  w-[60%]"
-          textClasses="font-black italic text-3xl"
-          onClick={onPlayAgain}
-        />
-        <MenuButton
-          text={'Back to menu'}
-          gradientClass="orange-gradient"
-          className="rounded-3xl px-8 py-4 font-bold w-[60%] mt-2"
-          textClasses="font-black italic text-3xl"
-          onClick={onBackToMenu}
-        />
+          <MenuButton
+            // text={t('game_over.play_again')}
+            text={'Play Again'}
+            gradientClass="green-gradient"
+            className="rounded-3xl px-8 py-4  font-bold  w-[60%]"
+            textClasses="font-black italic text-3xl"
+            onClick={onPlayAgain}
+          />
+          <MenuButton
+            text={'Back to menu'}
+            gradientClass="orange-gradient"
+            className="rounded-3xl px-8 py-4 font-bold w-[60%] mt-2"
+            textClasses="font-black italic text-3xl"
+            onClick={onBackToMenu}
+          />
         </span>
       </div>
     </div>
