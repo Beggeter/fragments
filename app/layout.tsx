@@ -74,14 +74,18 @@ export default function RootLayout({
         <Script
           src="https://js.onclckvd.com/in-stream-ad-admanager/tma.js"
           strategy="afterInteractive"
+          onLoad={() => {
+            // Инициализируем рекламный движок после загрузки скрипта
+            if (typeof window !== 'undefined' && window.initCdTma) {
+              window.initCdTma({ id: '6097083' })
+                .then((show) => {
+                  window.show = show;
+                  console.log('Ad manager initialized successfully');
+                })
+                .catch((e) => console.error('Ad manager initialization error:', e));
+            }
+          }}
         />
-        <Script id="tma-init" strategy="afterInteractive">
-          {`
-            window.initCdTma?.({ id: 'Your Spot ID' })
-              .then(show => window.show = show)
-              .catch(e => console.log(e));
-          `}
-        </Script>
         {/* Telegram WebApp initialization now handled in React components */}
         <link
           href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&family=Fredoka:wght@700&display=swap"

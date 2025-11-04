@@ -33,10 +33,26 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu, g
     const timer = setTimeout(() => {
       if (typeof window !== "undefined" && window.show) {
         window.show()
-          .then(() => console.log("Ad completed"))
-          .catch((e) => console.log("Ad error", e));
+          .then(() => {
+            console.log("Ad completed successfully");
+            // Можно добавить логику награды после просмотра рекламы
+          })
+          .catch((e: any) => {
+            console.error("Ad error:", e);
+            // Игнорируем ошибки рекламы - игра продолжает работать
+          });
       } else {
-        console.log("Ad not ready yet");
+        console.warn("Ad not ready yet - window.show is not available");
+        // Пытаемся инициализировать если скрипт уже загружен
+        if (typeof window !== "undefined" && window.initCdTma) {
+          window.initCdTma({ id: '6097083' })
+            .then((show) => {
+              window.show = show;
+              return show();
+            })
+            .then(() => console.log("Ad completed after initialization"))
+            .catch((e: any) => console.error("Ad initialization/display error:", e));
+        }
       }
     }, 300);
 
