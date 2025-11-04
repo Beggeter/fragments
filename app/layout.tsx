@@ -3,6 +3,7 @@ import { Figtree, Geist, Geist_Mono, Manrope, Mulish } from "next/font/google";
 import "./globals.scss";
 import Script from "next/script";
 import { I18nProvider } from "./i18n-provider";
+import { AdManager } from "@/components/AdManager";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -70,22 +71,6 @@ export default function RootLayout({
           src="https://telegram.org/js/telegram-web-app.js"
           strategy="beforeInteractive"
         />
-
-        <Script
-          src="https://js.onclckvd.com/in-stream-ad-admanager/tma.js"
-          strategy="afterInteractive"
-          onLoad={() => {
-            // Инициализируем рекламный движок после загрузки скрипта
-            if (typeof window !== 'undefined' && window.initCdTma) {
-              window.initCdTma({ id: '6097083' })
-                .then((show) => {
-                  window.show = show;
-                  console.log('Ad manager initialized successfully');
-                })
-                .catch((e) => console.error('Ad manager initialization error:', e));
-            }
-          }}
-        />
         {/* Telegram WebApp initialization now handled in React components */}
         <link
           href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&family=Fredoka:wght@700&display=swap"
@@ -97,6 +82,7 @@ export default function RootLayout({
         ></link>
       </head>
       <body>
+        <AdManager />
         <I18nProvider>{children}</I18nProvider>
       </body>
     </html>
