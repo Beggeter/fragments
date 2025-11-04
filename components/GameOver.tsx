@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useGameStore } from "../lib/state/store";
 import BackgroundAnimation from "@/components/UI/BackgroundAnimation";
 import MenuButton from "@/components/UI/MenuButton";
@@ -22,38 +22,45 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu, g
   const [highScore, setHighScore] = useState<number>(gameMode === 'zen' ? (user?.zenRecord ?? 0) : (user?.record ?? 0));
   const [isRecordLoading, setIsRecordLoading] = useState(true);
   const { t } = useTranslation();
+  
+  // Используем useRef для хранения функции show, как в гайде OnClick Ad
+  const showAd = useRef<(() => Promise<void>) | null>(null);
+  const [id] = useState('6097083');
 
   useEffect(() => {
     const userRecord = gameMode === 'zen' ? (user?.zenRecord ?? 0) : (user?.record ?? 0);
     setHighScore(score > userRecord ? score : userRecord);
   }, [user, score, gameMode]);
 
+  // Инициализация рекламного движка, как в гайде OnClick Ad
   useEffect(() => {
-    // Запускаем рекламу через 300 ms после появления экрана Game Over
+    if (typeof window === "undefined") return;
+    
+    // Initialize the ad engine and get the SHOW method to display ads
+    window.initCdTma?.({ id })
+      .then((show: () => Promise<void>) => {
+        showAd.current = show;
+        console.log("Ad manager initialized successfully in GameOver");
+      })
+      .catch((e: any) => {
+        console.error("Ad initialization error:", e);
+      });
+  }, [id]);
+
+  // Показываем рекламу при появлении экрана Game Over
+  useEffect(() => {
+    // Запускаем рекламу через 300ms после появления экрана Game Over
     const timer = setTimeout(() => {
-      if (typeof window !== "undefined" && window.show) {
-        window.show()
-          .then(() => {
-            console.log("Ad completed successfully");
-            // Можно добавить логику награды после просмотра рекламы
-          })
-          .catch((e: any) => {
-            console.error("Ad error:", e);
-            // Игнорируем ошибки рекламы - игра продолжает работать
-          });
-      } else {
-        console.warn("Ad not ready yet - window.show is not available");
-        // Пытаемся инициализировать если скрипт уже загружен
-        if (typeof window !== "undefined" && window.initCdTma) {
-          window.initCdTma({ id: '6097083' })
-            .then((show) => {
-              window.show = show;
-              return show();
-            })
-            .then(() => console.log("Ad completed after initialization"))
-            .catch((e: any) => console.error("Ad initialization/display error:", e));
-        }
-      }
+      // When the button is pressed, we activate the obtained SHOW method
+      showAd.current?.()
+        .then(() => {
+          console.log("Ad completed successfully");
+          // Можно добавить логику награды после просмотра рекламы
+        })
+        .catch((err: any) => {
+          console.error("Ad error:", err);
+          // Игнорируем ошибки рекламы - игра продолжает работать
+        });
     }, 300);
 
     return () => clearTimeout(timer);
