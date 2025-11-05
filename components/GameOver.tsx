@@ -7,6 +7,7 @@ import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { ScoreDisplay } from "./board/ScoreDisplay";
 import { LoadingNumberAnimation } from "./LoadingNumberAnimation";
 import { useTranslation } from "react-i18next";
+import { AdOverlay } from "./AdOverlay";
 
 interface GameOverProps {
   onPlayAgain: () => void;
@@ -21,6 +22,7 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu, g
   const [adminRecord, setAdminRecord] = useState<number | null>(null);
   const [highScore, setHighScore] = useState<number>(gameMode === 'zen' ? (user?.zenRecord ?? 0) : (user?.record ?? 0));
   const [isRecordLoading, setIsRecordLoading] = useState(true);
+  const [isAdShowing, setIsAdShowing] = useState(false);
   const { t } = useTranslation();
   
   useEffect(() => {
@@ -34,9 +36,43 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu, g
     if (typeof window === "undefined") return;
     
     let attempts = 0;
-    const maxAttempts = 30; // Пытаемся 30 раз (~7.5 секунд)
+    const maxAttempts = 30; // Пытаемся 30 раз
     let intervalId: NodeJS.Timeout;
+    let fastIntervalId: NodeJS.Timeout;
     let adShown = false; // Флаг, чтобы показывать рекламу только один раз
+    
+    const showAd = () => {
+      if (adShown || !window.show) return;
+      
+      adShown = true;
+      console.log(`Showing ad immediately (attempt ${attempts + 1})`);
+      
+      // Показываем подложку перед показом рекламы
+      setIsAdShowing(true);
+      
+      // When the button is pressed, we activate the obtained SHOW method
+      window.show()
+        .then(() => {
+          console.log("Ad completed successfully");
+          // Скрываем подложку после завершения рекламы
+          setIsAdShowing(false);
+          // Можно добавить логику награды после просмотра рекламы
+        })
+        .catch((err: any) => {
+          // Улучшенная обработка ошибок - логируем детали
+          const errorMessage = err?.message || err?.toString() || String(err) || 'Unknown error';
+          const errorDetails = {
+            message: errorMessage,
+            error: err,
+            stack: err?.stack,
+            name: err?.name
+          };
+          console.error("Ad error:", errorDetails);
+          // Скрываем подложку при ошибке
+          setIsAdShowing(false);
+          // Игнорируем ошибки рекламы - игра продолжает работать
+        });
+    };
     
     const tryShowAd = () => {
       // Если реклама уже показана, не пытаемся снова
@@ -49,28 +85,8 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu, g
       
       // Используем window.show который устанавливается в AdManager
       if (window.show) {
-        adShown = true; // Устанавливаем флаг перед показом
-        console.log(`Attempting to show ad... (attempt ${attempts})`);
         clearInterval(intervalId); // Останавливаем интервал
-        
-        // When the button is pressed, we activate the obtained SHOW method
-        window.show()
-          .then(() => {
-            console.log("Ad completed successfully");
-            // Можно добавить логику награды после просмотра рекламы
-          })
-          .catch((err: any) => {
-            // Улучшенная обработка ошибок - логируем детали
-            const errorMessage = err?.message || err?.toString() || String(err) || 'Unknown error';
-            const errorDetails = {
-              message: errorMessage,
-              error: err,
-              stack: err?.stack,
-              name: err?.name
-            };
-            console.error("Ad error:", errorDetails);
-            // Игнорируем ошибки рекламы - игра продолжает работать
-          });
+        showAd();
       } else {
         if (attempts % 4 === 0) { // Логируем каждые 4 попытки
           console.log(`Ad not ready yet, attempt ${attempts}/${maxAttempts}`);
@@ -82,13 +98,38 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu, g
       }
     };
 
-    // Начинаем попытки сразу после появления экрана Game Over
-    tryShowAd();
-    // Проверяем каждые 250ms
-    intervalId = setInterval(tryShowAd, 250);
+    // Сразу проверяем, готова ли реклама - если да, запускаем немедленно
+    if (window.show) {
+      showAd();
+    } else {
+      // Если реклама не готова, начинаем частые проверки
+      // Сначала проверяем каждые 50ms для быстрого старта
+      fastIntervalId = setInterval(() => {
+        if (window.show) {
+          clearInterval(fastIntervalId);
+          showAd();
+        } else {
+          attempts++;
+          if (attempts >= 10) {
+            // После 10 быстрых попыток (500ms) переходим на обычный интервал
+            clearInterval(fastIntervalId);
+            intervalId = setInterval(tryShowAd, 250);
+          }
+        }
+      }, 50);
+      
+      // Ограничиваем время быстрых проверок
+      setTimeout(() => {
+        clearInterval(fastIntervalId);
+        if (!adShown) {
+          intervalId = setInterval(tryShowAd, 250);
+        }
+      }, 500);
+    }
 
     return () => {
-      clearInterval(intervalId);
+      if (intervalId) clearInterval(intervalId);
+      if (fastIntervalId) clearInterval(fastIntervalId);
     };
   }, []);
 
@@ -118,9 +159,16 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu, g
   }, [isAdmin, adminRecord, score]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center min-h-screen w-full fade-in-animation-fast">
-      {/* Фоновая анимация как в MainMenu */}
-      <BackgroundAnimation className="absolute inset-0 -z-10 -top-15" />
+    <>
+      {/* Подложка для рекламы - показывается поверх всего контента */}
+      <AdOverlay 
+        isVisible={isAdShowing}
+        onAdComplete={() => setIsAdShowing(false)}
+      />
+      
+      <div className="fixed inset-0 z-50 flex items-center justify-center min-h-screen w-full fade-in-animation-fast">
+        {/* Фоновая анимация как в MainMenu */}
+        <BackgroundAnimation className="absolute inset-0 -z-10 -top-15" />
       <div className="flex flex-col items-center gap-15 max-w-md w-[90vw]">
         <h2 className="text-6xl font-bold font-figtree text-white mb-2 tracking-wide menu-shadow">
           Game Over
@@ -171,6 +219,7 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu, g
           />
         </span>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
