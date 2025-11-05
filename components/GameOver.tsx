@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useGameStore } from "../lib/state/store";
 import BackgroundAnimation from "@/components/UI/BackgroundAnimation";
 import MenuButton from "@/components/UI/MenuButton";
@@ -23,43 +23,28 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu, g
   const [isRecordLoading, setIsRecordLoading] = useState(true);
   const { t } = useTranslation();
   
-  // Используем useRef для хранения функции show, как в гайде OnClick Ad
-  const showAd = useRef<(() => Promise<void>) | null>(null);
-  const [id] = useState('6097083');
-
   useEffect(() => {
     const userRecord = gameMode === 'zen' ? (user?.zenRecord ?? 0) : (user?.record ?? 0);
     setHighScore(score > userRecord ? score : userRecord);
   }, [user, score, gameMode]);
 
-  // Инициализация рекламного движка, как в гайде OnClick Ad
+  // Показываем рекламу при появлении экрана Game Over
+  // Используем window.show который устанавливается в AdManager
   useEffect(() => {
     if (typeof window === "undefined") return;
     
-    // Initialize the ad engine and get the SHOW method to display ads
-    window.initCdTma?.({ id })
-      .then((show: () => Promise<void>) => {
-        showAd.current = show;
-        console.log("Ad manager initialized successfully in GameOver");
-      })
-      .catch((e: any) => {
-        console.error("Ad initialization error:", e);
-      });
-  }, [id]);
-
-  // Показываем рекламу при появлении экрана Game Over
-  useEffect(() => {
     let attempts = 0;
-    const maxAttempts = 20; // Пытаемся 20 раз (5 секунд)
+    const maxAttempts = 30; // Пытаемся 30 раз (~7.5 секунд)
     let intervalId: NodeJS.Timeout;
     
     const tryShowAd = () => {
       attempts++;
       
-      if (showAd.current) {
-        console.log("Attempting to show ad...");
+      // Используем window.show который устанавливается в AdManager
+      if (window.show) {
+        console.log(`Attempting to show ad... (attempt ${attempts})`);
         // When the button is pressed, we activate the obtained SHOW method
-        showAd.current()
+        window.show()
           .then(() => {
             console.log("Ad completed successfully");
             clearInterval(intervalId);
@@ -71,7 +56,9 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu, g
             // Игнорируем ошибки рекламы - игра продолжает работать
           });
       } else {
-        console.log(`Ad not ready yet, attempt ${attempts}/${maxAttempts}`);
+        if (attempts % 4 === 0) { // Логируем каждые 4 попытки
+          console.log(`Ad not ready yet, attempt ${attempts}/${maxAttempts}`);
+        }
         if (attempts >= maxAttempts) {
           console.warn("Ad not available after multiple attempts");
           clearInterval(intervalId);
@@ -79,15 +66,12 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu, g
       }
     };
 
-    // Начинаем попытки через 500ms после появления экрана Game Over
-    const timeoutId = setTimeout(() => {
-      tryShowAd();
-      // Проверяем каждые 250ms
-      intervalId = setInterval(tryShowAd, 250);
-    }, 500);
+    // Начинаем попытки сразу после появления экрана Game Over
+    tryShowAd();
+    // Проверяем каждые 250ms
+    intervalId = setInterval(tryShowAd, 250);
 
     return () => {
-      clearTimeout(timeoutId);
       clearInterval(intervalId);
     };
   }, []);
