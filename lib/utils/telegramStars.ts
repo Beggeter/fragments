@@ -199,10 +199,11 @@ export const createBoosterInvoice = async (
 };
 
 // Создает инвойс для покупки ZEN подписки
+// ВАЖНО: priceStars игнорируется - цена берется из базы данных на сервере для безопасности
 export const createZenInvoice = async (
   userId: number,
   subscriptionPeriod: string,
-  priceStars: number
+  priceStars: number // Оставлено для обратной совместимости, но игнорируется на сервере
 ): Promise<{ success: boolean; error?: string }> => {
   try {
     if (typeof window === 'undefined') {
@@ -212,6 +213,7 @@ export const createZenInvoice = async (
     
 
     // 1. Создаем инвойс на сервере
+    // Цена теперь берется из базы данных на сервере для безопасности
     const response = await fetch('/api/payment/create-invoice', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -219,8 +221,8 @@ export const createZenInvoice = async (
         userId,
         item: { 
           type: 'subscription', 
-          itemId: subscriptionPeriod,
-          price: priceStars
+          itemId: subscriptionPeriod
+          // price НЕ передаем - берется из базы данных на сервере
         }
       })
     });

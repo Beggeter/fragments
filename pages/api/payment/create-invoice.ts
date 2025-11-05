@@ -1,6 +1,6 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import TelegramBot from 'node-telegram-bot-api';
-import { SHARD_PACKS, BOOSTERS } from '@/components/store/storeItems';
+import { SHARD_PACKS, BOOSTERS, ZEN_SUBS } from '@/components/store/storeItems';
 import { UserService } from '@/lib/db/services';
 
 const botToken = process.env.STARS_BOT_TOKEN;
@@ -123,11 +123,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse<
       }
 
       case 'subscription': {
-        const subscriptionPeriod = item.itemId; // 'month', 'year', etc.
-        const price = item.price || 0;
-
-        if (!price) {
-          return res.status(400).json({ success: false, error: 'Price is required for subscription' });
+        const subscriptionPeriod = item.itemId; // '1m', '3m', '6m', '12m', etc.
+        
+        // НАЙТИ ЦЕНУ ИЗ БАЗЫ ДАННЫХ, А НЕ ИЗ КЛИЕНТА!
+        const subscription = ZEN_SUBS.find(sub => sub.period === subscriptionPeriod);
+        if (!subscription) {
+          return res.status(404).json({ success: false, error: 'Subscription not found' });
+        }
+        
+        const price = subscription.priceStars; // Берем цену из базы данных
+        
+        if (!price || price <= 0) {
+          return res.status(400).json({ success: false, error: 'Invalid subscription price' });
         }
 
         // Создаем compact payload

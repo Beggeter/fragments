@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import TelegramBot from 'node-telegram-bot-api';
 import { UserService, CurrencyService, BoosterService } from '../../../lib/db/services';
 import { UserRole } from '@/lib/db/types';
+import { SHARD_PACKS, BOOSTERS, ZEN_SUBS } from '@/components/store/storeItems';
 
 const botToken = process.env.STARS_BOT_TOKEN;
 if (!botToken) {
@@ -220,12 +221,60 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 async function handleSuccessfulPayment(payment: any, res: NextApiResponse) {
   try {
     const paymentData = parseCompactPayload(payment.invoice_payload);
+    
+    // КРИТИЧЕСКИ ВАЖНО: Проверяем фактически оплаченную сумму
+    const actualPaidAmount = payment.total_amount || 0;
+    let expectedPrice = 0;
+    
+    // Получаем ожидаемую цену из базы данных в зависимости от типа товара
+    switch (paymentData.itemType) {
+      case 'shards': {
+        const shardPack = SHARD_PACKS.find(pack => pack.amount.toString() === paymentData.itemId);
+        if (!shardPack) {
+          console.error(`[SECURITY] Shard pack not found: ${paymentData.itemId}`);
+          return res.status(200).json({ ok: true });
+        }
+        expectedPrice = shardPack.price;
+        break;
+      }
+      case 'booster': {
+        const booster = BOOSTERS.find(b => b.id === paymentData.itemId);
+        if (!booster) {
+          console.error(`[SECURITY] Booster not found: ${paymentData.itemId}`);
+          return res.status(200).json({ ok: true });
+        }
+        const quantity = Number(paymentData.quantity) || 1;
+        expectedPrice = booster.price_stars * quantity;
+        break;
+      }
+      case 'subscription': {
+        const subscription = ZEN_SUBS.find(sub => sub.period === paymentData.itemId);
+        if (!subscription) {
+          console.error(`[SECURITY] Subscription not found: ${paymentData.itemId}`);
+          return res.status(200).json({ ok: true });
+        }
+        expectedPrice = subscription.priceStars;
+        break;
+      }
+      default:
+        console.error(`[SECURITY] Unknown item type: ${paymentData.itemType}`);
+        return res.status(200).json({ ok: true });
+    }
+    
+    // СРАВНИВАЕМ ФАКТИЧЕСКУЮ ОПЛАЧЕННУЮ СУММУ С ОЖИДАЕМОЙ ЦЕНОЙ
+    if (actualPaidAmount !== expectedPrice) {
+      console.error(`[SECURITY] Price mismatch! Expected: ${expectedPrice}, Paid: ${actualPaidAmount}, UserId: ${paymentData.userId}, ItemType: ${paymentData.itemType}, ItemId: ${paymentData.itemId}`);
+      // НЕ ОБРАБАТЫВАЕМ ПЛАТЕЖ - возможна попытка обмана
+      return res.status(200).json({ ok: true });
+    }
+    
     // Получаем пользователя
     const user = await UserService.getUserById(paymentData.userId);
     if (!user) {
       
       return res.status(200).json({ ok: true });
     }
+    
     // Обрабатываем платеж в зависимости от типа товара
     switch (paymentData.itemType) {
       case 'shards':
@@ -270,14 +319,20 @@ async function handleSuccessfulPayment(payment: any, res: NextApiResponse) {
         break;
       }
       case 'subscription': {
-        
-
         // Обрабатываем ZEN подписку
-        const rawPeriod = String(paymentData.itemId || '').toLowerCase(); // 'month' | 'year'
-        const price = Number(paymentData.price) || 0;
-
-        // Нормализуем длительность в днях, чтобы избежать переполнения дат (например, 31 -> февраль)
-        const periodDays = rawPeriod === 'year' ? 365 : 30;
+        const rawPeriod = String(paymentData.itemId || '').toLowerCase(); // '1m', '3m', '6m', '12m'
+        
+        // Получаем подписку из базы данных для проверки периода
+        const subscription = ZEN_SUBS.find(sub => sub.period === rawPeriod);
+        if (!subscription) {
+          console.error(`[SECURITY] Subscription not found: ${rawPeriod}`);
+          return res.status(200).json({ ok: true });
+        }
+        
+        // Нормализуем длительность в днях
+        const periodDays = rawPeriod === '12m' ? 365 : 
+                          rawPeriod === '6m' ? 180 :
+                          rawPeriod === '3m' ? 90 : 30;
         const now = new Date();
         const currentEnd = user.hasZenSubscription && user.zenSubscriptionEndDate
           ? new Date(user.zenSubscriptionEndDate)
