@@ -51,7 +51,15 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu, g
             // Можно добавить логику награды после просмотра рекламы
           })
           .catch((err: any) => {
-            console.error("Ad error:", err);
+            // Улучшенная обработка ошибок - логируем детали
+            const errorMessage = err?.message || err?.toString() || String(err) || 'Unknown error';
+            const errorDetails = {
+              message: errorMessage,
+              error: err,
+              stack: err?.stack,
+              name: err?.name
+            };
+            console.error("Ad error:", errorDetails);
             clearInterval(intervalId);
             // Игнорируем ошибки рекламы - игра продолжает работать
           });
