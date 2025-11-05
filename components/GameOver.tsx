@@ -49,21 +49,47 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu, g
 
   // Показываем рекламу при появлении экрана Game Over
   useEffect(() => {
-    // Запускаем рекламу через 300ms после появления экрана Game Over
-    const timer = setTimeout(() => {
-      // When the button is pressed, we activate the obtained SHOW method
-      showAd.current?.()
-        .then(() => {
-          console.log("Ad completed successfully");
-          // Можно добавить логику награды после просмотра рекламы
-        })
-        .catch((err: any) => {
-          console.error("Ad error:", err);
-          // Игнорируем ошибки рекламы - игра продолжает работать
-        });
-    }, 300);
+    let attempts = 0;
+    const maxAttempts = 20; // Пытаемся 20 раз (5 секунд)
+    let intervalId: NodeJS.Timeout;
+    
+    const tryShowAd = () => {
+      attempts++;
+      
+      if (showAd.current) {
+        console.log("Attempting to show ad...");
+        // When the button is pressed, we activate the obtained SHOW method
+        showAd.current()
+          .then(() => {
+            console.log("Ad completed successfully");
+            clearInterval(intervalId);
+            // Можно добавить логику награды после просмотра рекламы
+          })
+          .catch((err: any) => {
+            console.error("Ad error:", err);
+            clearInterval(intervalId);
+            // Игнорируем ошибки рекламы - игра продолжает работать
+          });
+      } else {
+        console.log(`Ad not ready yet, attempt ${attempts}/${maxAttempts}`);
+        if (attempts >= maxAttempts) {
+          console.warn("Ad not available after multiple attempts");
+          clearInterval(intervalId);
+        }
+      }
+    };
 
-    return () => clearTimeout(timer);
+    // Начинаем попытки через 500ms после появления экрана Game Over
+    const timeoutId = setTimeout(() => {
+      tryShowAd();
+      // Проверяем каждые 250ms
+      intervalId = setInterval(tryShowAd, 250);
+    }, 500);
+
+    return () => {
+      clearTimeout(timeoutId);
+      clearInterval(intervalId);
+    };
   }, []);
 
   useEffect(() => {

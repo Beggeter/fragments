@@ -30,7 +30,12 @@ const nextConfig: NextConfig = {
           // Расслабленная CSP для Telegram Mini Apps
           {
             key: 'Content-Security-Policy',
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:; frame-ancestors 'self' https://web.telegram.org;",
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://telegram.org https://js.onclckvd.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https:; frame-ancestors 'self' https://web.telegram.org;",
+          },
+          // Permissions Policy для разрешения accelerometer (для рекламы)
+          {
+            key: 'Permissions-Policy',
+            value: 'accelerometer=*, gyroscope=*, magnetometer=*, camera=(), microphone=(), geolocation=()',
           },
           // Оптимизация кэширования для мобильных сетей
           {
