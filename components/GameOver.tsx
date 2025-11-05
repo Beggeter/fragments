@@ -36,18 +36,27 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu, g
     let attempts = 0;
     const maxAttempts = 30; // Пытаемся 30 раз (~7.5 секунд)
     let intervalId: NodeJS.Timeout;
+    let adShown = false; // Флаг, чтобы показывать рекламу только один раз
     
     const tryShowAd = () => {
+      // Если реклама уже показана, не пытаемся снова
+      if (adShown) {
+        clearInterval(intervalId);
+        return;
+      }
+      
       attempts++;
       
       // Используем window.show который устанавливается в AdManager
       if (window.show) {
+        adShown = true; // Устанавливаем флаг перед показом
         console.log(`Attempting to show ad... (attempt ${attempts})`);
+        clearInterval(intervalId); // Останавливаем интервал
+        
         // When the button is pressed, we activate the obtained SHOW method
         window.show()
           .then(() => {
             console.log("Ad completed successfully");
-            clearInterval(intervalId);
             // Можно добавить логику награды после просмотра рекламы
           })
           .catch((err: any) => {
@@ -60,7 +69,6 @@ export const GameOver: React.FC<GameOverProps> = ({ onPlayAgain, onBackToMenu, g
               name: err?.name
             };
             console.error("Ad error:", errorDetails);
-            clearInterval(intervalId);
             // Игнорируем ошибки рекламы - игра продолжает работать
           });
       } else {
