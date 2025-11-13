@@ -47,6 +47,7 @@ import LoadingSpinner from "./LoadingSpinner";
 import { useTranslation } from "react-i18next";
 import { vibrate } from "@/utils/helpers";
 import PseudoAdBanner from "./PseudoAdBanner";
+import { AdOverlay } from "./AdOverlay";
 import { safeLocalStorage } from "@/lib/utils/telegramSDK";
 import {
   GameBoardProps,
@@ -61,6 +62,7 @@ import {
   clamp,
 } from "./game-board/constants";
 import { ContoursOverlay } from "./game-board/ContoursOverlay";
+import { useAdController } from "@/hooks/useAdController";
 
 // Выносим функции за пределы компонента для оптимизации
 
@@ -115,6 +117,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
   } = useDnDLogic();
 
   const { t } = useTranslation();
+
+  const { isAdShowing, requestAd } = useAdController();
 
   const [clearingCells, setClearingCells] = useState<boolean[][]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
@@ -1671,31 +1675,34 @@ export const GameBoard: React.FC<GameBoardProps> = ({
     : undefined;
 
   return (
-    <div className="relative">
-      <div
-        className={`glow-side glow-left${
-          showSpinnerAnimation ? " glow-visible" : ""
-        }`}
-      />
-      <div
-        className={`glow-side glow-right${
-          showSpinnerAnimation ? " glow-visible" : ""
-        }`}
-      />
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        onRestart={() => {
-          setIsIntentionalRestart(true); // Устанавливаем флаг перед сбросом
-          resetGame();
-          setIsSettingsOpen(false);
-        }}
-        onGoHome={onGoHome}
-        onOpenShop={onOpenShop}
-      />
-      <div
-        className={`flex flex-col items-center gap-5 min-h-screen bg-[var(--game-background)] p-4 no-select will-change-auto`}
-      >
+    <>
+      <AdOverlay isVisible={isAdShowing} />
+      <div className="relative">
+        <div
+          className={`glow-side glow-left${
+            showSpinnerAnimation ? " glow-visible" : ""
+          }`}
+        />
+        <div
+          className={`glow-side glow-right${
+            showSpinnerAnimation ? " glow-visible" : ""
+          }`}
+        />
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          onRestart={() => {
+            setIsIntentionalRestart(true); // Устанавливаем флаг перед сбросом
+            setIsSettingsOpen(false);
+            void requestAd();
+            resetGame();
+          }}
+          onGoHome={onGoHome}
+          onOpenShop={onOpenShop}
+        />
+        <div
+          className={`flex flex-col items-center gap-5 min-h-screen bg-[var(--game-background)] p-4 no-select will-change-auto`}
+        >
         <div
           className="flex justify-between w-full -mb-2 items-center sm:max-w-xs sm:max-h-xs"
           style={{ paddingTop: "var(--tg-content-safe-area-inset-top, 0px)" }}
@@ -2140,7 +2147,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
         {/* Баннер для тестеров (только в Classic режиме) */}
         {(user?.role === 'tester' || isAdmin) && gameMode !== 'zen' && <PseudoAdBanner />}
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 
