@@ -175,7 +175,7 @@ const PieceReturnAnimation: React.FC<PieceReturnAnimationProps> = ({
         animate={{
           x: targetX - pieceWidth / 2,
           y: targetY - pieceHeight / 2,
-          scale: 0.5,
+          scale: [1, 1.2, 0.6], // начальный -> максимум -> конечный
           opacity: 1,
         }}
         transition={{
@@ -185,7 +185,6 @@ const PieceReturnAnimation: React.FC<PieceReturnAnimationProps> = ({
             duration: 0.8,
             ease: "easeInOut",
             times: [0, 0.5, 1], // 0% -> 50% -> 100%
-            values: [1, 1.2, 0.6], // начальный -> максимум -> конечный
           },
         }}
         style={{
