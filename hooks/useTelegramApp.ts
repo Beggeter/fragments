@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { init } from '@telegram-apps/sdk';
 import { HomeScreen, AppStateStatus } from '@/types/home';
-import { initializeTelegramWebApp, isLaunchedInTelegram, safeLocalStorage } from '@/lib/utils/telegramSDK';
+import { initializeTelegramWebApp, isLaunchedInTelegram, onTelegramWebAppReady, safeLocalStorage } from '@/lib/utils/telegramSDK';
 import { useAdminAuth } from './useAdminAuth';
 import { useUser } from './useUser';
 
@@ -163,28 +163,78 @@ export const useTelegramApp = (): UseTelegramAppResult => {
   }, [recomputeReadiness]);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || !window.Telegram?.WebApp) return;
+    if (typeof window === 'undefined') return;
 
-    const onReady = () => {
+    let detachReadyListener: (() => void) | undefined;
+    let waitForTelegramTimer: number | undefined;
+    let fallbackTimer: number | undefined;
+
+    const markTelegramReady = () => {
+      if (telegramReadyRef.current) return;
       telegramReadyRef.current = true;
       recomputeReadiness();
     };
 
-    try {
-      window.Telegram.WebApp.onEvent?.('web_app_ready', onReady);
-    } catch (error) {
-      
+    const attachTelegramListener = () => {
+      const tg = window.Telegram?.WebApp;
+      if (!tg) return false;
+
+      const handleReady = () => {
+        markTelegramReady();
+      };
+
+      try {
+        tg.onEvent?.('web_app_ready', handleReady);
+      } catch (error) {
+        
+      }
+
+      if (tg.isExpanded || tg.initData) {
+        handleReady();
+      }
+
+      detachReadyListener = () => {
+        try {
+          tg.offEvent?.('web_app_ready', handleReady);
+        } catch (error) {
+          
+        }
+      };
+
+      return true;
+    };
+
+    if (!attachTelegramListener()) {
+      waitForTelegramTimer = window.setInterval(() => {
+        if (attachTelegramListener()) {
+          if (waitForTelegramTimer) {
+            window.clearInterval(waitForTelegramTimer);
+            waitForTelegramTimer = undefined;
+          }
+        }
+      }, 300);
     }
 
-    if (window.Telegram.WebApp?.isExpanded || window.Telegram.WebApp?.initData) {
-      telegramReadyRef.current = true;
-      recomputeReadiness();
-    }
+    const unsubscribeInit = onTelegramWebAppReady((success) => {
+      if (success) {
+        markTelegramReady();
+        attachTelegramListener();
+      }
+    });
+
+    fallbackTimer = window.setTimeout(() => {
+      markTelegramReady();
+    }, 8000);
 
     return () => {
-      try {
-        window.Telegram?.WebApp?.offEvent?.('web_app_ready', onReady);
-      } catch {}
+      unsubscribeInit?.();
+      if (waitForTelegramTimer) {
+        window.clearInterval(waitForTelegramTimer);
+      }
+      if (fallbackTimer) {
+        window.clearTimeout(fallbackTimer);
+      }
+      detachReadyListener?.();
     };
   }, [recomputeReadiness]);
 
