@@ -1,0 +1,164 @@
+{
+  "weeks": [
+    {
+      "week": 1,
+      "days": [
+        {
+          "day": 1,
+          "regular": { "type": "currency", "amount": 1 },
+          "premium": { "type": "booster", "name": "undo", "amount": 2 }
+        },
+        {
+          "day": 2,
+          "regular": { "type": "currency", "amount": 2 },
+          "premium": { "type": "currency", "amount": 3 }
+        },
+        {
+          "day": 3,
+          "regular": { "type": "currency", "amount": 2 },
+          "premium": { "type": "currency", "amount": 4 }
+        },
+        {
+          "day": 4,
+          "regular": { "type": "currency", "amount": 3 },
+          "premium": { "type": "currency", "amount": 4 }
+        },
+        {
+          "day": 5,
+          "regular": { "type": "currency", "amount": 3 },
+          "premium": { "type": "currency", "amount": 4 }
+        },
+        {
+          "day": 6,
+          "regular": { "type": "currency", "amount": 4 },
+          "premium": { "type": "currency", "amount": 5 }
+        },
+        {
+          "day": 7,
+          "regular": { "type": "booster", "name": "undo", "amount": 1 },
+          "premium": { "type": "booster", "name": "bomb", "amount": 1 }
+        }
+      ]
+    },
+    {
+      "week": 2,
+      "days": [
+        {
+          "day": 1,
+          "regular": { "type": "currency", "amount": 1 },
+          "premium": { "type": "currency", "amount": 4 }
+        },
+        {
+          "day": 2,
+          "regular": { "type": "currency", "amount": 2 },
+          "premium": { "type": "currency", "amount": 4 }
+        },
+        {
+          "day": 3,
+          "regular": { "type": "currency", "amount": 2 },
+          "premium": { "type": "currency", "amount": 5 }
+        },
+        {
+          "day": 4,
+          "regular": { "type": "currency", "amount": 3 },
+          "premium": { "type": "currency", "amount": 5 }
+        },
+        {
+          "day": 5,
+          "regular": { "type": "currency", "amount": 3 },
+          "premium": { "type": "currency", "amount": 6 }
+        },
+        {
+          "day": 6,
+          "regular": { "type": "currency", "amount": 4 },
+          "premium": { "type": "currency", "amount": 6 }
+        },
+        {
+          "day": 7,
+          "regular": { "type": "currency", "amount": 5 },
+          "premium": { "type": "booster", "name": "bomb", "amount": 1 }
+        }
+      ]
+    },
+    {
+      "week": 3,
+      "days": [
+        {
+          "day": 1,
+          "regular": { "type": "currency", "amount": 1 },
+          "premium": { "type": "currency", "amount": 4 }
+        },
+        {
+          "day": 2,
+          "regular": { "type": "currency", "amount": 2 },
+          "premium": { "type": "currency", "amount": 4 }
+        },
+        {
+          "day": 3,
+          "regular": { "type": "currency", "amount": 2 },
+          "premium": { "type": "currency", "amount": 5 }
+        },
+        {
+          "day": 4,
+          "regular": { "type": "currency", "amount": 3 },
+          "premium": { "type": "currency", "amount": 6 }
+        },
+        {
+          "day": 5,
+          "regular": { "type": "currency", "amount": 3 },
+          "premium": { "type": "currency", "amount": 6 }
+        },
+        {
+          "day": 6,
+          "regular": { "type": "currency", "amount": 4 },
+          "premium": { "type": "booster", "name": "undo", "amount": 1 }
+        },
+        {
+          "day": 7,
+          "regular": { "type": "currency", "amount": 5 },
+          "premium": { "type": "booster", "name": "whirlwind", "amount": 1 }
+        }
+      ]
+    },
+    {
+      "week": 4,
+      "days": [
+        {
+          "day": 1,
+          "regular": { "type": "currency", "amount": 1 },
+          "premium": { "type": "currency", "amount": 4 }
+        },
+        {
+          "day": 2,
+          "regular": { "type": "currency", "amount": 2 },
+          "premium": { "type": "currency", "amount": 4 }
+        },
+        {
+          "day": 3,
+          "regular": { "type": "currency", "amount": 2 },
+          "premium": { "type": "currency", "amount": 5 }
+        },
+        {
+          "day": 4,
+          "regular": { "type": "currency", "amount": 3 },
+          "premium": { "type": "currency", "amount": 5 }
+        },
+        {
+          "day": 5,
+          "regular": { "type": "currency", "amount": 3 },
+          "premium": { "type": "currency", "amount": 6 }
+        },
+        {
+          "day": 6,
+          "regular": { "type": "currency", "amount": 4 },
+          "premium": { "type": "currency", "amount": 6 }
+        },
+        {
+          "day": 7,
+          "regular": { "type": "booster", "name": "undo", "amount": 1 },
+          "premium": { "type": "currency", "amount": 10 }
+        }
+      ]
+    }
+  ]
+}

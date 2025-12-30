@@ -1,0 +1,126 @@
+import { NextApiRequest, NextApiResponse } from 'next';
+import { db } from '@/lib/db';
+import { users, userGames } from '@/lib/db/schema';
+import { eq, and } from 'drizzle-orm';
+import { verifyToken } from '@/lib/utils/auth';
+import { UserService } from '@/lib/db/services/userService';
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
+  const { telegramId } = req.query;
+
+  if (!telegramId || typeof telegramId !== 'string') {
+    return res.status(400).json({ error: 'Invalid telegramId' });
+  }
+
+  // Проверяем авторизацию
+  const authResult = await verifyToken(req);
+  if (!authResult.success) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    if (req.method === 'GET') {
+      // Сначала получаем пользователя
+      const user = await db
+        .select()
+        .from(users)
+        .where(eq(users.telegramId, telegramId))
+        .limit(1);
+
+      if (user.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Получаем текущую Zen игру пользователя
+      const currentGame = await db
+        .select()
+        .from(userGames)
+        .where(
+          and(
+            eq(userGames.userId, user[0].id),
+            eq(userGames.gameMode, 'zen'),
+            eq(userGames.isActive, true)
+          )
+        )
+        .limit(1);
+
+      if (currentGame.length === 0) {
+        return res.status(404).json({ error: 'No active Zen game found' });
+      }
+
+      return res.status(200).json({
+        currentGame: currentGame[0]
+      });
+    } else if (req.method === 'DELETE') {
+      // Завершаем Zen игру
+      const { finalScore, level, gameData } = req.body;
+
+      // Получаем пользователя
+      const user = await db
+        .select()
+        .from(users)
+        .where(eq(users.telegramId, telegramId))
+        .limit(1);
+
+      if (user.length === 0) {
+        return res.status(404).json({ error: 'User not found' });
+      }
+
+      // Получаем текущую активную игру
+      const currentGame = await db
+        .select()
+        .from(userGames)
+        .where(
+          and(
+            eq(userGames.userId, user[0].id),
+            eq(userGames.gameMode, 'zen'),
+            eq(userGames.isActive, true)
+          )
+        )
+        .limit(1);
+
+      let newRecord = user[0].zenRecord;
+      let recordUpdated = false;
+
+      // Проверяем, является ли это новым рекордом для Zen режима
+      if (finalScore > user[0].zenRecord) {
+        newRecord = finalScore;
+        recordUpdated = true;
+
+        // Обновляем Zen рекорд пользователя
+        const updatedUser = await UserService.updateRecord(user[0].id, newRecord, 'zen');
+        if (!updatedUser) {
+          
+        }
+      }
+
+      // Деактивируем текущую игру
+      if (currentGame.length > 0) {
+        await db
+          .update(userGames)
+          .set({ 
+            isActive: false,
+            finalScore: finalScore,
+            level: level,
+            gameData: gameData,
+            endedAt: new Date()
+          })
+          .where(eq(userGames.id, currentGame[0].id));
+      }
+
+      return res.status(200).json({
+        success: true,
+        recordUpdated,
+        newRecord
+      });
+    } else {
+      return res.status(405).json({ error: 'Method not allowed' });
+    }
+  } catch (error) {
+    
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+} 
