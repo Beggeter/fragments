@@ -1,0 +1,122 @@
+import React from "react";
+import { getThemeByScore } from "./UI/colorThemes";
+import ClickEffect from "./ClickEffect";
+
+interface BoosterWithCount {
+  id: string;
+  name: string;
+  icon: string;
+  quantity: number;
+}
+
+interface BoostersPanelProps {
+  boosters: BoosterWithCount[];
+  onBoosterClick: (boosterId: string) => void;
+  className?: string;
+  comboLevel?: number;
+  activeBooster?: string;
+  gameOver?: boolean;
+  onOpenShop?: () => void;
+}
+
+export const BoostersPanel: React.FC<BoostersPanelProps> = ({
+  boosters,
+  onBoosterClick,
+  className = "",
+  comboLevel,
+  activeBooster,
+  gameOver,
+  onOpenShop,
+}) => {
+  const theme = getThemeByScore(comboLevel);
+
+  return (
+    <div
+      className={`booster-container bg-gray-800/60 px-6  h-14 pb-2 pt-3
+        rounded-full  -mt-6
+          border-1 border-white/20  backdrop-blur-xl ${className}`}
+      style={
+        {
+          "--outline-color": theme.borderMiddle,
+        } as React.CSSProperties
+      }
+    >
+      <div className="flex justify-between gap-3 ">
+        {boosters.map((booster) => {
+          const isDisabled = !!activeBooster && activeBooster !== booster.name;
+          const isAvailable = booster.quantity > 0;
+          // Цвета для пузырика
+          let bubbleColor = "#2868C3";
+          let bubbleBorder = "#3AA3FB";
+          if (booster.id === "bomb") {
+            bubbleColor = "#A90E24";
+            bubbleBorder = "#E53142";
+          } else if (booster.id === "whirlwind") {
+            bubbleColor = "#481C8D";
+            bubbleBorder = "#6E2DAE";
+          }
+
+          const ringColors = {
+            default: "ring-blue-500",
+            bomb: "ring-red-500",
+            whirlwind: "ring-purple-500",
+          } as any;
+
+          return (
+            <ClickEffect key={booster.id}>
+              <button
+                className={`w-11 h-11 rounded-full aspect-square shadow-md
+               flex items-center justify-center hover:scale-110 transition-all relative 
+               ${
+                 activeBooster === booster.name
+                   ? `ring-3  ${ringColors[booster.id] || ringColors.default}`
+                   : "ring-0.5 ring-transparent "
+               }`}
+                type="button"
+                style={{ padding: 0 }}
+                onClick={() =>
+                  isAvailable ? onBoosterClick(booster.id) : onOpenShop?.()
+                }
+                disabled={
+                  isDisabled ||
+                  gameOver ||
+                  (activeBooster === booster.name && activeBooster !== "bomb")
+                }
+              >
+                <span
+                  className={`absolute right-0 top-0 flex items-center justify-center
+                     translate-x-1/5 -translate-y-1/5 text-white font-bold rounded-full
+                      transition-all duration-200 border-2 border-gray-700 select-none  tracking-wider ${
+                        isAvailable
+                          ? "font-figtree min-w-[16px] min-h-[16px] px-1 py-0.5 text-[11px] leading-[14px]"
+                          : "w-[20px] h-[20px] font-black text-[16px] leading-none"
+                      } `}
+                  style={{
+                    // pointerEvents: "none",
+                    background: isAvailable ? bubbleColor : "#16a34a",
+                    borderColor: isAvailable ? bubbleBorder : "#16a34a",
+                    boxShadow: "0 1px 4px 0 rgba(0,0,0,0.18)",
+                    textShadow: "0 1px 2px rgba(0,0,0,0.18)",
+                    zIndex: 2,
+                  }}
+                >
+                  <span className="-mb-[1px]">
+                    {booster.quantity === 0 ? "+" : booster.quantity}
+                  </span>
+                </span>
+                <img
+                  src={booster.icon}
+                  alt={booster.name}
+                  className={`w-9 h-9 transition-all duration-200 ${
+                    gameOver || isDisabled ? "opacity-90 grayscale" : ""
+                  }`}
+                  draggable={false}
+                />
+              </button>
+            </ClickEffect>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
