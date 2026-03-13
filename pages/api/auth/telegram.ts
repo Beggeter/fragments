@@ -18,29 +18,34 @@ interface TelegramAuthData {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  
+  console.log('[auth/telegram] request', { method: req.method });
 
   if (req.method !== 'POST') {
-    
+    console.log('[auth/telegram] method not allowed');
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
     const authData: TelegramAuthData = req.body;
-    
+    console.log('[auth/telegram] payload', {
+      hasId: !!authData?.id,
+      hasFirstName: !!authData?.first_name,
+      hasHash: !!authData?.hash,
+      hasAuthDate: !!authData?.auth_date,
+    });
 
     // Проверяем наличие всех необходимых полей
     if (!authData.id || !authData.first_name || !authData.hash) {
-      
+      console.log('[auth/telegram] missing required fields');
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
     // Rate limiting для предотвращения атак
     const clientIP = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
-    
+    console.log('[auth/telegram] client', { clientIP });
     
     if (!checkRateLimit(`telegram_auth_${clientIP}`, 5, 60 * 1000)) { // 5 попыток в минуту
-      
+      console.log('[auth/telegram] rate limit exceeded');
       return res.status(429).json({ error: 'Too many requests' });
     }
 
@@ -54,19 +59,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       
 
       if (timeDiff > maxAge) {
-        
+        console.log('[auth/telegram] auth data too old');
         return res.status(401).json({ error: 'Authentication data is too old' });
       }
     } else {
-      
+      console.log('[auth/telegram] auth_date missing');
     }
 
     // Проверяем подпись Telegram
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    
+    console.log('[auth/telegram] bot token present', { hasToken: !!botToken });
 
     if (!botToken) {
-      
+      console.log('[auth/telegram] missing bot token');
       return res.status(500).json({ error: 'Server configuration error' });
     }
 
@@ -76,6 +81,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // ВРЕМЕННО: Отключаем проверку подписи для тестирования
     
     isValidSignature = true; // Временно всегда возвращаем true
+    console.log('[auth/telegram] signature result', { isValidSignature });
     
     /*
     if (authData.initData) {
@@ -90,16 +96,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
 
     if (!isValidSignature) {
-      
+      console.log('[auth/telegram] invalid signature');
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
     // Ищем пользователя в базе данных
-    
+    console.log('[auth/telegram] lookup user', { telegramId: authData.id });
     let user = await db.select().from(users).where(eq(users.telegramId, authData.id.toString())).limit(1);
 
     if (user.length === 0) {
-      
+      console.log('[auth/telegram] user not found, creating');
 
       // Создаем нового пользователя
       const newUser = {
@@ -116,11 +122,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const [createdUser] = await db.insert(users).values(newUser).returning();
       user = [createdUser];
+      console.log('[auth/telegram] user created', { userId: createdUser.id });
       // Убрана выдача бустеров новым пользователям
       
       
     } else {
-      
+      console.log('[auth/telegram] user found', { userId: user[0].id });
 
       // Обновляем время последнего входа
       await db
@@ -133,12 +140,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           avatarUrl: authData.photo_url || null,
         })
         .where(eq(users.telegramId, authData.id.toString()));
-      
+      console.log('[auth/telegram] user updated');
       
     }
 
     // Генерируем JWT токен
-    
+    console.log('[auth/telegram] generate session token');
 
     const sessionToken = generateJWT({
       userId: user[0].id,
@@ -160,12 +167,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       sessionToken,
     };
 
-    
+    console.log('[auth/telegram] success', { userId: user[0].id, telegramId: user[0].telegramId });
 
     res.status(200).json(responseData);
 
   } catch (error) {
-    
+    console.log('[auth/telegram] error', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 }
